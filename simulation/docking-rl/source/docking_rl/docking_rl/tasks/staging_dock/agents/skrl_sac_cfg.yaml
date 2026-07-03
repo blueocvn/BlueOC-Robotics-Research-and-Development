@@ -1,0 +1,145 @@
+# SAC configuration for the JetRacer staging-pose docking task.
+#
+# The guide's Table 4/5 review found SAC to consistently outperform on-policy methods (PPO) for
+# this kind of continuous-control parking/docking task, hence SAC here rather than the PPO default
+# used by most Isaac Lab example tasks (see cartpole's skrl_ppo_cfg.yaml for that pattern).
+#
+# NOTE: this targets the SAC agent/runner API of the skrl version installed in this Isaac Lab
+# environment (dataclass-based AgentCfg, explicit target_critic_1/2 models). If you upgrade skrl,
+# diff this against a freshly-generated `isaaclab.sh -n` template and skrl's own SAC example.
+
+seed: 42
+
+models:
+  separate: True
+  policy:
+    class: GaussianMixin
+    # FALSE -- this is the actual root cause of the sustained critic/Q-value divergence chased
+    # across many earlier attempts (reward-scale rebalancing, learning rate, max_log_std, global
+    # reward_shaper_scale, exposing hidden state to the observation -- none of which stopped it).
+    # Proven via a clean ablation on Isaac Lab's own Cartpole task, identical config except this
+    # flag: clip_actions=True diverged (critic loss to 500 BILLION by step 8000); clip_actions=
+    # False converged perfectly (critic loss down to 0.0001, Q1(mean) stable near 0).
+    #
+    # Root cause: skrl's GaussianMixin.act() computes log_prob on the ALREADY-CLAMPED action, not
+    # the raw pre-clip sample (see skrl/models/torch/gaussian.py: `actions = clamp(...); log_prob
+    # = distribution.log_prob(actions)`). If the policy's mean drifts outside the valid range, the
+    # continuous log-density evaluated AT the clamped boundary keeps getting more negative as the
+    # mean drifts further out -- and SAC's target uses `-alpha * log_prob`, so a more-negative
+    # log_prob makes the target MORE POSITIVE. That rewards the policy for drifting its mean
+    # further out of bounds: a self-reinforcing feedback loop, exactly matching the measured
+    # divergence shape (Q-values climbing without bound, accelerating).
+    #
+    # Safe to disable here specifically because AckermannAction.process_actions already clamps
+    # raw actions to [-1, 1] itself before scaling -- the physical robot command stays bounded
+    # regardless of this setting. clip_actions=True was only ever needed to avoid `torch.clamp:
+    # at least one of min/max must not be None` on the (originally unbounded) action space; the
+    # StagingDockEnv action-space override already solves that independently of this flag.
+    clip_actions: False
+    clip_log_std: True
+    min_log_std: -20.0
+    # tightened from 2.0 (std up to e^2~7.4, very large for a bounded [-1,1] action): a Gaussian
+    # that wide has near-flat density, pushing log_prob to extreme values, which feed directly
+    # into SAC's entropy-adjusted Q-target (target = reward + discount*(min(Q1',Q2') -
+    # alpha*log_prob')) -- a plausible contributor to the critic-divergence seen at 20k steps
+    # (Loss/Entropy loss exploded in the same synchronized pattern as Loss/Critic loss). 1.0 (std
+    # up to e^1~2.7) is still plenty of exploration range for a 2D action.
+    max_log_std: 1.0
+    initial_log_std: 0.0
+    network:
+      - name: net
+        input: OBSERVATIONS
+        layers: [128, 128]
+        activations: elu
+    output: ACTIONS
+  critic_1:
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: concatenate([OBSERVATIONS, ACTIONS])
+        layers: [128, 128]
+        activations: elu
+    output: ONE
+  critic_2:
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: concatenate([OBSERVATIONS, ACTIONS])
+        layers: [128, 128]
+        activations: elu
+    output: ONE
+  target_critic_1:
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: concatenate([OBSERVATIONS, ACTIONS])
+        layers: [128, 128]
+        activations: elu
+    output: ONE
+  target_critic_2:
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: concatenate([OBSERVATIONS, ACTIONS])
+        layers: [128, 128]
+        activations: elu
+    output: ONE
+
+# Replay memory. SAC is off-policy, so (unlike PPO's rollout memory) this must be sized explicitly
+# rather than left at -1 (which would fall back to a nonexistent `agent.rollouts` field).
+memory:
+  class: RandomMemory
+  memory_size: 100000
+
+# SAC agent configuration (field names are from skrl's SAC_CFG dataclass)
+agent:
+  class: SAC
+  gradient_steps: 1
+  batch_size: 256
+  # 0.97, not SAC's usual 0.99: shortens the effective horizon (~33 steps, ~1.1s) somewhat, without
+  # gutting long-horizon credit for the far side of the 180-deg arc starts (up to ~1.8m, several
+  # seconds of driving needed) the way 0.95 (~20-step horizon) risked. Termination-on-success
+  # (staging_pose_success, dwell-gated -- see StagingPoseCommand) already removes most of the
+  # reward-available-later that would make an agent prefer loitering over finishing, independent
+  # of this value; this is a secondary lever, not the primary fix for that failure mode.
+  discount_factor: 0.97
+  polyak: 0.005
+  # lowered from 3.0e-04: a 20k-step run showed the critic diverging (Q1 mean 0.14 -> 453,149,
+  # critic loss into the quintillions by step 9800) while total reward plateaued instead of
+  # improving -- grad_norm_clip bounds each update's step size but not the cumulative drift of
+  # many updates sharing a persistent directional bias. A smaller learning rate gives the
+  # bootstrapped critic more margin against that compounding, at the cost of somewhat slower
+  # convergence if training turns out to be stable at this rate.
+  learning_rate: 1.0e-04
+  random_timesteps: 2000
+  learning_starts: 2000
+  grad_norm_clip: 1.0   # clip gradient norm -- second guard against SAC divergence/NaN
+  # Global reward scale-down -- skrl's runner auto-builds `rewards_shaper = lambda r: r * scale`
+  # from this field (see skrl/utils/runner/torch/runner.py). This is the standard Isaac Lab
+  # mechanism for exactly this problem: many of Isaac Lab's own official tasks use it (Franka lift
+  # 0.01, Allegro hand 0.1) because raw per-step reward magnitude feeds directly into the
+  # bootstrapped Bellman target, and SAC/PPO critics are well known to destabilize when that's
+  # large. Rebalancing individual term weights (spin_in_place_penalty, learning_rate, max_log_std
+  # above) roughly halved the critic-divergence rate at 8-9k steps (quintillion-scale critic loss
+  # down to ~1.2 trillion) but did NOT stop it -- Q1(mean) was still climbing. This attacks the
+  # AGGREGATE per-step reward magnitude (currently averaging around -0.3/step, with instantaneous
+  # spikes into the -10s) directly, rather than continuing to whack-a-mole individual terms.
+  rewards_shaper_scale: 0.1
+  learn_entropy: True
+  initial_entropy_value: 0.01
+  target_entropy: null
+  experiment:
+    directory: "jetracer_dock_staging"
+    experiment_name: ""
+    write_interval: auto
+    checkpoint_interval: auto
+
+# Sequential trainer
+trainer:
+  class: SequentialTrainer
+  timesteps: 500000
+  environment_info: log

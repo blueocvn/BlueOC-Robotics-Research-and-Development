@@ -1,0 +1,39 @@
+{# Stepper + ETA. Expects `order` (a store.view dict) and `steps`. #}
+{% set water = order.type == "water" %}
+{% set accent = "#22c55e" if order.delivered else ("#ef4444" if order.failed else ("#1a56db" if water else "#0ea5e9")) %}
+
+<div class="flex items-center">
+  {% for key, label in steps %}
+    {% set done = loop.index0 < order.step_index %}
+    {% set active = loop.index0 == order.step_index %}
+    <div class="flex flex-col items-center gap-1">
+      <div class="size-6 rounded-full flex items-center justify-center border-2 transition-all duration-500"
+           style="border-color: {{ accent if (done or active) else '#e2e8f0' }};
+                  background-color: {{ accent if done else ('white' if active else '#f8fafc') }};">
+        {% if done %}
+          <svg class="size-3" fill="none" viewBox="0 0 12 12">
+            <path d="M2.5 6L5 8.5L9.5 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        {% else %}
+          <div class="size-2 rounded-full transition-all duration-500"
+               style="background-color: {{ accent if active else '#cbd5e1' }};"></div>
+        {% endif %}
+      </div>
+      <span class="font-mono text-[8.5px] whitespace-nowrap leading-tight transition-colors duration-300"
+            style="color: {{ '#94a3b8' if loop.index0 > order.step_index else (accent if active else '#64748b') }};">
+        {{ label }}
+      </span>
+    </div>
+    {% if not loop.last %}
+    <div class="flex-1 h-[2px] mx-1 mb-4 rounded-full transition-all duration-500"
+         style="background-color: {{ accent if done else '#e2e8f0' }};"></div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+{% if order.eta %}
+<div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+  <span class="font-mono text-[10px] text-[#90a1b9] uppercase tracking-wider">Estimated arrival</span>
+  <span class="font-mono text-[12px] font-semibold text-[#314158]">{{ order.eta }}</span>
+</div>
+{% endif %}

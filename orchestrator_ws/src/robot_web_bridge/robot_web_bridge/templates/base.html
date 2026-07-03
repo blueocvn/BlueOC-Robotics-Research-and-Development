@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BlueOC · Robot Assistant</title>
+  <meta name="description" content="Request water or a refill and the robot delivers it to your table." />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#1a3a8f" />
+  <link rel="icon" type="image/png" href="/static/blueoc_icon_white.png" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            blueoc: { dark: '#1a3a8f', mid: '#1d4ed8', main: '#2563eb', brand: '#1a56db', green: '#10b981' },
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { font-family: 'Inter', sans-serif; }
+    .bg-blueoc-gradient {
+      background: linear-gradient(139.159deg, #1a3a8f 8.49%, #1d4ed8 45.85%, #2563eb 91.51%);
+    }
+    .dot-grid {
+      background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    @keyframes ping-slow { 75%, 100% { transform: scale(2); opacity: 0; } }
+    .animate-ping-slow { animation: ping-slow 1.2s cubic-bezier(0,0,0.2,1) infinite; }
+    /* tiny fade so HTMX swaps don't flash */
+    .htmx-swapping { opacity: 0; transition: opacity .12s ease-out; }
+  </style>
+</head>
+
+<body class="bg-blueoc-gradient flex justify-center min-h-full">
+  <div class="bg-blueoc-gradient relative w-full max-w-sm min-h-[100dvh] h-[100dvh] flex flex-col overflow-hidden">
+    <!-- dot grid overlay -->
+    <div class="dot-grid absolute inset-0 pointer-events-none opacity-10"></div>
+
+    {% include "_header.html" %}
+
+    <!-- swappable content region -->
+    <main id="content" class="relative z-10 flex flex-col flex-1">
+      {% include content_template %}
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.egg-info/
+source/docking_rl/docking_rl.egg-info/
+outputs/
+logs/

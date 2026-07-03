@@ -1,0 +1,22 @@
+# Ignore build, install, and log directories
+build/
+install/
+log/
+
+# Local network config with real IPs (copy from network.env.example)
+network.env
+
+# DDS profiles rendered at runtime from *.template (contain real IPs)
+jetracer_ws/fastdds.xml
+cyclonedds.xml
+
+# Local-only debug script (not for version control)
+jetracer_eth_debug.sh
+
+# Ignore rosbag2 recordings
+rosbag2_*/
+*.db3
+*.db3-shm
+*.db3-wal
+*.mcap
+metadata.yaml

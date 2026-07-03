@@ -1,0 +1,75 @@
+{% from "_robot.html" import robot %}
+{# Task / order-tracking screen. While the order is live it re-fetches itself every
+   2s (GET /orders/{id}) and swaps #content, so the headline, robot colour, stepper
+   and buttons all stay in sync. The poller is omitted once delivered/cancelled,
+   which stops the polling. #}
+
+{% set water = order.type == "water" %}
+{% set accent = "#22c55e" if order.delivered else ("#ef4444" if order.failed else ("#1a56db" if water else "#0ea5e9")) %}
+{% set title = "Get Water" if water else "Refill" %}
+{% set done = order.delivered or order.cancelled or order.failed %}
+
+{% if not done %}
+<div hx-get="/orders/{{ order.id }}" hx-trigger="every 2s"
+     hx-target="#content" hx-swap="innerHTML" class="hidden"></div>
+{% endif %}
+
+<!-- Back + title -->
+<div class="px-6 pt-6 pb-2 flex flex-col gap-1">
+  <button hx-get="/" hx-target="#content" hx-swap="innerHTML"
+          class="flex items-center gap-1.5 text-white/60 text-[13px] font-mono mb-2 active:opacity-70 transition-opacity w-fit">
+    <svg class="size-3.5" fill="none" viewBox="0 0 14 14">
+      <path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    Back
+  </button>
+  <p class="font-mono text-[10px] uppercase tracking-[0.9px] text-white/60">Your request</p>
+  <h1 class="font-bold text-[28px] text-white leading-[35px] tracking-[-0.7px]">
+    {{ title }}
+  </h1>
+  <p class="text-[14px] text-white/65 leading-[22.75px] mt-1">
+    {% if order.delivered %}Your order has been delivered. Enjoy!
+    {% elif order.failed %}Sorry — the robot couldn't finish this one. Please try again.
+    {% elif order.cancelled %}No problem — your request was cancelled.
+    {% elif order.status == "on_the_way" %}BOC-R3 is on the way to your table.
+    {% elif order.status == "preparing" %}BOC-R3 is preparing your order.
+    {% elif order.busy %}{% if order.ahead > 0 %}The robot is busy — there {{ "is" if order.ahead == 1 else "are" }} <span class="font-semibold text-white">{{ order.ahead }}</span> order{{ "" if order.ahead == 1 else "s" }} ahead of you.{% else %}The robot is finishing another delivery.{% endif %} You're queued and next in line.
+    {% else %}We've received your request. Hang tight!{% endif %}
+  </p>
+</div>
+
+<!-- Progress card -->
+<div class="mx-5 mt-3">
+  <div class="bg-white rounded-2xl shadow-[0px_20px_12.5px_rgba(0,0,0,0.1),0px_8px_5px_rgba(0,0,0,0.1)] p-5">
+    <div class="flex items-center gap-3 mb-4">
+      {{ robot(accent) }}
+      <div>
+        <p class="font-mono text-[9px] uppercase tracking-[0.9px] text-blueoc-brand opacity-70 mb-1">Task Progress</p>
+        <p class="font-semibold text-[13px] text-[#314158] leading-snug">
+          {% if order.delivered %}Delivered!{% elif order.failed %}Failed{% elif order.cancelled %}Cancelled{% else %}{{ steps[order.step_index][1] }}…{% endif %}
+        </p>
+        <p class="font-mono text-[11px] text-[#90a1b9] mt-0.5">Jetracer · Office 2</p>
+      </div>
+    </div>
+    {% include "_progress.html" %}
+  </div>
+</div>
+
+<div class="flex-1"></div>
+
+<!-- Bottom action -->
+<div class="px-6 pb-10">
+  {% if done %}
+  <button hx-get="/" hx-target="#content" hx-swap="innerHTML"
+          class="w-full rounded-full flex items-center justify-center py-4 active:scale-[0.98] transition-all shadow-[0px_10px_7.5px_rgba(0,0,0,0.1)]"
+          style="background:{{ '#22c55e' if order.delivered else 'rgba(255,255,255,0.15)' }};border:1px solid rgba(255,255,255,0.35);">
+    <span class="font-semibold text-[15px] text-white">{{ "Try Again" if order.failed else "Back to Home" }}</span>
+  </button>
+  {% else %}
+  <button hx-post="/orders/{{ order.id }}/cancel" hx-target="#content" hx-swap="innerHTML"
+          class="w-full rounded-full flex items-center justify-center py-4 bg-white/15 border border-white/35 active:scale-[0.98] transition-all">
+    <span class="font-semibold text-[15px] text-white">Cancel Request</span>
+  </button>
+  {% endif %}
+  <p class="font-mono text-[10px] text-white/40 text-center mt-4">Powered by BlueOC Robotics</p>
+</div>

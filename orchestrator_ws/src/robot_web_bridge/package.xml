@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robot_web_bridge</name>
+  <version>0.1.0</version>
+  <description>
+    HTTP API and mobile web UI (HTMX + Tailwind) for commanding the JetRacer over
+    ROS 2. v1 ships the public user pages (request water / refill, live order status);
+    the PIN-gated admin portal and rclpy bridge are added on top of this skeleton.
+  </description>
+
+  <maintainer email="ivanchen.code@gmail.com">BlueOC</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>python3-fastapi</exec_depend>
+  <exec_depend>python3-uvicorn</exec_depend>
+  <exec_depend>python3-jinja2</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
