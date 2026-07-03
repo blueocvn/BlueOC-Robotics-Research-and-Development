@@ -1,0 +1,20 @@
+FROM osrf/ros:humble-ros-base
+
+# Lean image for orchestrator_ws (robot_web_bridge) ONLY -- no SLAM/Nav2, no
+# GUI tools (rviz2/gazebo pulled in by desktop-full), no Isaac Sim tooling.
+# For running/deploying the web bridge on its own, talking to a robot (real or
+# simulated) elsewhere on the same DDS domain. See Dockerfile.dev for the
+# combined jetracer_ws + orchestrator_ws image used for local dev.
+
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    ros-humble-rmw-cyclonedds-cpp \
+    && rm -rf /var/lib/apt/lists/*
+
+# robot_web_bridge web UI/API deps (FastAPI + HTMX/Jinja stack)
+RUN pip install --no-cache-dir \
+    fastapi "uvicorn[standard]" jinja2 pyyaml python-multipart
+
+RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc
+
+CMD ["bash"]
