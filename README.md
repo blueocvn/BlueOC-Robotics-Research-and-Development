@@ -5,26 +5,32 @@ ROS 2 workstation packages for the JetRacer (AMR) + robot-arm fulfillment system
 ## Architecture
 
 ```mermaid
-graph TD
-    subgraph Humble["Humble Docker container (jetracer-workstation:humble)"]
-        SLAM["jetracer_ws<br/>SLAM · Nav2 · ackermann control · Isaac Sim"]
-        Bridge["orchestrator_ws<br/>robot_web_bridge (FastAPI + HTMX)"]
-        SLAM <-->|"ROS 2 topics<br/>(/docking_state, /chassis/odom, /dock_robot, /cmd_vel, ...)"| Bridge
-    end
+---
+config:
+  layout: dagre
+---
+flowchart TB
+ subgraph Virtual["Virtual stack — Isaac Sim"]
+    direction TB
+        AMR_sim["simulated AMR"]
+        RA_sim["simulated arm"]
+  end
+ subgraph Physical["Physical stack — real hardware"]
+    direction TD
+        AMR_real["JetRacer<br>⚠️ no driver yet - planned"]
+        RA_real["arm<br>⚠️ no kortex/robotiq driver yet — planned"]
+  end
+    User@{ label: "Customer's phone<br>(scans QR → web UI)" } -- HTTP --> Orchestrator["orchestrator_ws<br>robot_web_bridge (FastAPI + HTMX)"]
+    Operator["Operator<br>(admin PIN-gated controls)"] -- HTTP (cookie auth) --> Orchestrator
+    Orchestrator <-- ROS 2 messaging<br>(sim mode) --> Virtual
+    Virtual ~~~ Debug_AMR["jetracer_ws<br>dev/debug: SLAM · rviz2 · Nav2 viewing"]
+    Debug_AMR ~~~ Debug_RA["ra_ws<br>dev/debug: MoveIt · MTC"]
+    Debug_AMR -. observe/debug .-> AMR_sim & AMR_real
+    Debug_RA -. observe/debug .-> RA_sim & RA_real
+    Debug_RA ~~~ Physical
+    Orchestrator <-. ROS 2 messaging<br>(real mode) .-> Physical
 
-    Arm["ra_ws<br/>Robot arm: MoveIt · kortex/robotiq · MTC"]
-
-    AMR["AMR (JetRacer chassis)<br/>⚠️ no on-device firmware yet — planned"]
-    User["Customer's phone<br/>(scans QR → web UI)"]
-    Operator["Operator<br/>(admin PIN-gated controls)"]
-
-    SLAM <-->|"DDS, shared ROS_DOMAIN_ID"| AMR
-    SLAM <-.->|"DDS, shared ROS_DOMAIN_ID"| Arm
-    User -->|HTTP| Bridge
-    Operator -->|HTTP + PIN| Bridge
-
-    style Humble fill:#eef,stroke:#446
-    style AMR fill:#fee,stroke:#944,stroke-dasharray: 5 5
+    User@{ shape: rect}
 ```
 
 **Current state:** `jetracer_ws` is the **workstation-side** control stack (SLAM,
