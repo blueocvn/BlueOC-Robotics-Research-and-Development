@@ -20,9 +20,42 @@ if TYPE_CHECKING:
 
 
 def position_progress(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
-    """Dense shaping: negative distance to the staging pose."""
-    command = env.command_manager.get_command(command_name)
-    return -torch.norm(command[:, :2], dim=1)
+    """Dense shaping: potential-based progress delta (prev_distance - curr_distance), NOT raw
+    -distance.
+
+    This is the textbook potential-based shaping form (Ng et al. 1999: F = gamma*Phi(s') - Phi(s),
+    here undiscounted since it's evaluated every step with Phi = -distance) -- provably preserves
+    the optimal policy, unlike an arbitrary shaping term. The distinction matters concretely here:
+    a bare potential (``-distance``, the previous version of this function) pays the same fixed
+    reward for merely SITTING at some distance every step; the delta form pays exactly 0 for
+    standing still and only rewards actually closing the gap. A training run showed total reward
+    and position_progress improving then plateauing hard around step 33k (of 100k) while
+    staging_pose_reached stayed flat throughout and the SAC entropy coefficient collapsed to ~0 --
+    consistent with the policy settling into "hover near the goal" as a locally-decent optimum
+    under the old bare-potential form, since standing still there was already free reward.
+
+    Reads ``StagingPoseCommand.progress_delta`` (computed once per step in ``_update_command``,
+    zeroed on the first step after a reset) rather than recomputing distance here, so reward and
+    observation always agree on the same underlying distance calculation.
+    """
+    command_term = env.command_manager.get_term(command_name)
+    return command_term.progress_delta
+
+
+def staging_pose_hold_credit(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
+    """Dense shaping: partial credit for dwell-gate progress, in [0, 1] (see
+    ``StagingPoseCommand.hold_progress``).
+
+    The sparse ``staging_pose_reached`` bonus only fires once the tolerance has held for
+    ``success_hold_steps`` consecutive steps -- an all-or-nothing cliff. At the observed ~0.2-0.3%
+    per-step success rate, that +25 bonus is so rare in the replay buffer that it provides almost
+    no gradient toward actually finishing the approach (as opposed to just getting close). This
+    term gives a smooth, continuous signal for progress *through* the hold -- 2/5 steps in
+    tolerance is worth more than 0/5 -- so the critic has something to climb toward completion
+    instead of a near-invisible jackpot.
+    """
+    command_term = env.command_manager.get_term(command_name)
+    return command_term.hold_progress
 
 
 def heading_alignment(env: ManagerBasedRLEnv, command_name: str, gate_distance: float = 0.6) -> torch.Tensor:

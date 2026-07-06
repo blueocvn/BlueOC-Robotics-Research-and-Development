@@ -38,6 +38,18 @@ from docking_rl.assets import JETRACER_CFG
 CAR_SPAWN_POS = (0.0, 0.0, 0.063)
 STAGING_NOMINAL_POS_B = (1.5, 0.0, 0.06)
 
+# Visual-only parking-lot outline (purely cosmetic -- painted lines, no collision/rigid_props, so
+# it can't affect physics or be observed by the policy). Sized a bit past the car footprint plus
+# the success_pos_tolerance (0.3 m) so the tolerance zone reads as "inside the box". Centered on
+# STAGING_NOMINAL_POS_B and axis-aligned with heading 0 (the staging heading is +x, so the long
+# axis of the rectangle runs along the approach direction).
+PARKING_LOT_HALF_LENGTH = 0.45  # along x (approach/heading direction)
+PARKING_LOT_HALF_WIDTH = 0.3  # along y
+# Thick/tall enough (5 cm wide, 6 cm tall -- like a curb) to actually read at normal viewport zoom;
+# a thin painted-line thickness (~1-2 cm) was visually imperceptible next to the car/goal-arrow scale.
+PARKING_LOT_LINE_THICKNESS = 0.05
+PARKING_LOT_LINE_HEIGHT = 0.06
+
 
 ##
 # Scene definition
@@ -61,6 +73,67 @@ class DockingSceneCfg(InteractiveSceneCfg):
                 dynamic_friction=1.0,
                 friction_combine_mode="max",
             ),
+        ),
+    )
+
+    # Parking-lot outline: four thin, non-colliding bars painted on the ground marking the
+    # staging-pose bay, purely for visual reference when watching play.py -- no rigid_props/
+    # collision_props, so it's invisible to physics and to the policy (which never observes scene
+    # geometry, only the staging-pose error). See PARKING_LOT_* constants above for sizing.
+    parking_lot_edge_far = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/ParkingLotEdgeFar",
+        init_state=AssetBaseCfg.InitialStateCfg(
+            pos=(
+                STAGING_NOMINAL_POS_B[0] + PARKING_LOT_HALF_LENGTH,
+                STAGING_NOMINAL_POS_B[1],
+                PARKING_LOT_LINE_HEIGHT / 2,
+            )
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(
+                PARKING_LOT_LINE_THICKNESS,
+                2 * PARKING_LOT_HALF_WIDTH + PARKING_LOT_LINE_THICKNESS,
+                PARKING_LOT_LINE_HEIGHT,
+            ),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.85, 0.0), emissive_color=(1.0, 0.7, 0.0)),
+        ),
+    )
+    parking_lot_edge_near = parking_lot_edge_far.replace(
+        prim_path="{ENV_REGEX_NS}/ParkingLotEdgeNear",
+        init_state=AssetBaseCfg.InitialStateCfg(
+            pos=(
+                STAGING_NOMINAL_POS_B[0] - PARKING_LOT_HALF_LENGTH,
+                STAGING_NOMINAL_POS_B[1],
+                PARKING_LOT_LINE_HEIGHT / 2,
+            )
+        ),
+    )
+    parking_lot_edge_left = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/ParkingLotEdgeLeft",
+        init_state=AssetBaseCfg.InitialStateCfg(
+            pos=(
+                STAGING_NOMINAL_POS_B[0],
+                STAGING_NOMINAL_POS_B[1] + PARKING_LOT_HALF_WIDTH,
+                PARKING_LOT_LINE_HEIGHT / 2,
+            )
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(
+                2 * PARKING_LOT_HALF_LENGTH + PARKING_LOT_LINE_THICKNESS,
+                PARKING_LOT_LINE_THICKNESS,
+                PARKING_LOT_LINE_HEIGHT,
+            ),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.85, 0.0), emissive_color=(1.0, 0.7, 0.0)),
+        ),
+    )
+    parking_lot_edge_right = parking_lot_edge_left.replace(
+        prim_path="{ENV_REGEX_NS}/ParkingLotEdgeRight",
+        init_state=AssetBaseCfg.InitialStateCfg(
+            pos=(
+                STAGING_NOMINAL_POS_B[0],
+                STAGING_NOMINAL_POS_B[1] - PARKING_LOT_HALF_WIDTH,
+                PARKING_LOT_LINE_HEIGHT / 2,
+            )
         ),
     )
 
@@ -193,10 +266,27 @@ class RewardsCfg:
     """
 
     # -- primary shaping: progress toward + alignment with the staging pose
-    position_progress = RewTerm(func=mdp.position_progress, weight=1.0, params={"command_name": "staging_pose"})
+    #
+    # weight raised from 1.0 to 10.0: position_progress switched from a bare potential
+    # (-distance, ~-1 to -1.8/step) to a potential-based DELTA (prev_distance - curr_distance,
+    # see its docstring) -- summed over an episode a delta telescopes to just
+    # (initial_distance - final_distance), a few meters total, not hundreds. At weight=1.0 that's
+    # a barely-perceptible ~+0.004/step average, negligible next to the penalty terms (spin/loiter
+    # sum to roughly -5 to -15/episode), which would leave little positive incentive to approach
+    # at all. 10.0 brings a full successful approach's total contribution to roughly +10 to +18 --
+    # a meaningful counterweight to the penalties without swamping the +25 terminal bonus.
+    position_progress = RewTerm(func=mdp.position_progress, weight=10.0, params={"command_name": "staging_pose"})
     heading_alignment = RewTerm(func=mdp.heading_alignment, weight=0.5, params={"command_name": "staging_pose"})
     staging_pose_reached = RewTerm(
         func=mdp.staging_pose_reached, weight=25.0, params={"command_name": "staging_pose"}
+    )
+    # smooth partial credit toward completing the dwell-time hold gate -- see
+    # staging_pose_hold_credit's docstring. Added after a 100k-step run showed total reward and
+    # position_progress plateauing (entropy coefficient also collapsed to ~0) while
+    # staging_pose_reached stayed flat the whole run: the sparse +25 bonus alone wasn't providing
+    # enough gradient toward actually finishing, only toward getting close.
+    staging_pose_hold_credit = RewTerm(
+        func=mdp.staging_pose_hold_credit, weight=2.0, params={"command_name": "staging_pose"}
     )
     # reward actually STOPPING near the goal, not just arriving -- see loiter_penalty's docstring;
     # added after a step-5000 checkpoint showed the car orbiting near the goal for the full

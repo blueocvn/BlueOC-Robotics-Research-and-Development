@@ -18,6 +18,7 @@ from .rewards import (  # noqa: F401
     loiter_penalty,
     position_progress,
     spin_in_place_penalty,
+    staging_pose_hold_credit,
     staging_pose_reached,
 )
 from .terminations import out_of_bounds, staging_pose_success  # noqa: F401

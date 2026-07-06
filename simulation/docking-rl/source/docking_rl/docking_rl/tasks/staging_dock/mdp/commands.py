@@ -57,6 +57,18 @@ class StagingPoseCommand(CommandTerm):
         self._success_hold_counter = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
         self.success_held = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
+        # Potential-based progress delta (Ng et al. 1999 shaping form: gamma*Phi(s')-Phi(s), here
+        # undiscounted since it's evaluated every step): reward = prev_distance - curr_distance,
+        # NOT raw -distance. A bare potential (-distance) pays the same fixed amount for merely
+        # SITTING at some distance every step; the delta form pays exactly 0 for standing still
+        # and only rewards actually closing the gap. `_has_prev_distance` guards the first
+        # _update_command after a reset, where there's no meaningful "previous step" to diff
+        # against (comparing against the last episode's final distance would inject a spurious
+        # reward/penalty spike at every reset).
+        self._prev_distance = torch.zeros(self.num_envs, device=self.device)
+        self._has_prev_distance = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        self.progress_delta = torch.zeros(self.num_envs, device=self.device)
+
     def __str__(self) -> str:
         return f"StagingPoseCommand:\n\tCommand dimension: {tuple(self.command.shape[1:])}"
 
@@ -98,6 +110,13 @@ class StagingPoseCommand(CommandTerm):
         )
         self.success_held = self._success_hold_counter >= self.cfg.success_hold_steps
 
+        curr_distance = torch.norm(self.pos_command_b, dim=1)
+        self.progress_delta = torch.where(
+            self._has_prev_distance, self._prev_distance - curr_distance, torch.zeros_like(curr_distance)
+        )
+        self._prev_distance = curr_distance
+        self._has_prev_distance[:] = True
+
     @property
     def hold_progress(self) -> torch.Tensor:
         """Fraction of the dwell-time gate completed so far, in [0, 1]. Shape ``(num_envs,)``.
@@ -121,6 +140,8 @@ class StagingPoseCommand(CommandTerm):
         resolved_ids = slice(None) if env_ids is None else env_ids
         self._success_hold_counter[resolved_ids] = 0
         self.success_held[resolved_ids] = False
+        self._has_prev_distance[resolved_ids] = False
+        self.progress_delta[resolved_ids] = 0.0
         return extras
 
     def _set_debug_vis_impl(self, debug_vis: bool):
