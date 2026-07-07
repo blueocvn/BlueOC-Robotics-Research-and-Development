@@ -1,0 +1,13 @@
+# ROS 2 Python packages (installed via apt, listed for reference)
+# ros-jazzy-cv-bridge
+# ros-jazzy-tf2-ros
+# ros-jazzy-tf2-geometry-msgs
+# ros-jazzy-sensor-msgs
+# ros-jazzy-geometry-msgs
+
+# Python packages — install with pip
+numpy>=1.24.0
+opencv-python>=4.8.0
+ultralytics>=8.3.0
+scipy>=1.11.0
+cv_bridge  # if not using system install

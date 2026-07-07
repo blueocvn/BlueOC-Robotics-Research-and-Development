@@ -12,21 +12,32 @@ response_adapters:
 planner_configs:
   RRTConnectkConfigDefault:
     type: geometric::RRTConnect
-    range: 0.0
+    range: 0.3
   RRTkConfigDefault:
     type: geometric::RRT
-    range: 0.0
+    range: 0.3
     goal_bias: 0.05
   PRMkConfigDefault:
     type: geometric::PRM
     max_nearest_neighbors: 10
 
 arm_group:
+  default_planner_config: RRTConnectkConfigDefault
+  projection_evaluator: joints(Rotation,Pitch)
+  # Finer motion-validation resolution. The default segment fraction is coarse
+  # enough that a home-sweep path which GRAZES the kept cup (the 'gripper' wrist
+  # link, which is the hand chain's base and so is never in any allow-collision
+  # set) passes OMPL's own check but is then rejected by the ValidateSolution
+  # response adapter (INVALID_MOTION_PLAN at a single mid-path index). Tightening
+  # this makes RRTConnect see the graze and route the gripper over the cup.
+  longest_valid_segment_fraction: 0.005
   planner_configs:
     - RRTConnectkConfigDefault
     - RRTkConfigDefault
     - PRMkConfigDefault
+  # enforce_constrained_state_space: true
 
 hand_group:
+  default_planner_config: RRTConnectkConfigDefault
   planner_configs:
     - RRTConnectkConfigDefault

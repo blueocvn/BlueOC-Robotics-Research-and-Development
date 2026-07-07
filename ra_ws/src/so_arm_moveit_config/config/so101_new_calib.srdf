@@ -35,13 +35,13 @@
         <joint name="Pitch" value="0.0"/>
         <joint name="Rotation" value="0.0"/>
         <joint name="Wrist_Pitch" value="0.0"/>
-        <joint name="Wrist_Roll" value="1.5718"/>
+        <joint name="Wrist_Roll" value="-1.5718"/>
     </group_state>
     <group_state name="open_grip" group="hand_group">
         <joint name="Jaw" value="1.7453"/>
     </group_state>
     <group_state name="close_grip" group="hand_group">
-        <joint name="Jaw" value="-0.1745"/>
+        <joint name="Jaw" value="0.4"/>
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="gripper" parent_link="gripper" group="hand_group" parent_group="arm_group"/>
