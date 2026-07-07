@@ -13,18 +13,18 @@ flowchart TB
  subgraph Virtual["Virtual stack — Isaac Sim"]
     direction TB
         AMR_sim["simulated AMR"]
-        RA_sim["simulated arm"]
+        RA_sim["simulated SO-ARM 101"]
   end
  subgraph Physical["Physical stack — real hardware"]
     direction TD
         AMR_real["JetRacer<br>⚠️ no driver yet - planned"]
-        RA_real["arm<br>⚠️ no kortex/robotiq driver yet — planned"]
+        RA_real["SO-ARM 101<br>⚠️ no hardware driver yet — planned"]
   end
     User@{ label: "Customer's phone<br>(scans QR → web UI)" } -- HTTP --> Orchestrator["orchestrator_ws<br>robot_web_bridge (FastAPI + HTMX)"]
     Operator["Operator<br>(admin PIN-gated controls)"] -- HTTP (cookie auth) --> Orchestrator
     Orchestrator <-- ROS 2 messaging<br>(sim mode) --> Virtual
     Virtual ~~~ Debug_AMR["jetracer_ws<br>dev/debug: SLAM · rviz2 · Nav2 viewing"]
-    Debug_AMR ~~~ Debug_RA["ra_ws<br>dev/debug: MoveIt · MTC"]
+    Debug_AMR ~~~ Debug_RA["ra_ws<br>dev/debug: MoveIt · MTC · perception · visual servo"]
     Debug_AMR -. observe/debug .-> AMR_sim & AMR_real
     Debug_RA -. observe/debug .-> RA_sim & RA_real
     Debug_RA ~~~ Physical
@@ -48,8 +48,13 @@ they share a **DDS domain**, not a build space.
 | Workspace          | Concern                                                        |
 | ------------------ | ------------------------------------------------------------- |
 | `jetracer_ws/`     | AMR workstation control: SLAM, Nav2, ackermann control, Isaac Sim, interfaces. No on-device JetRacer firmware yet — planned. |
-| `ra_ws/`           | Robot arm: MoveIt, kortex/robotiq drivers, MTC                |
+| `ra_ws/`           | SO-ARM 101 (5-DOF) arm on **ROS 2 Jazzy**: MoveIt 2, MoveIt Task Constructor, YOLO/AprilTag perception, image-based visual-servo grasp → refill → place, driven against Isaac Sim. See [`docs/GET-STARTED.md`](docs/GET-STARTED.md). |
 | `orchestrator_ws/` | `robot_web_bridge` — HTTP/web UI + mission/state logic. Runs in the same Humble container as `jetracer_ws`. |
+
+> **Note:** `ra_ws` targets **ROS 2 Jazzy (Ubuntu 24.04)** and is built and run
+> natively (not inside a Docker container). It interoperates with the other
+> workspaces over DDS as long as they share the same `ROS_DOMAIN_ID`. Full arm
+> setup: [`docs/GET-STARTED.md`](docs/GET-STARTED.md).
 
 ## Network setup
 
