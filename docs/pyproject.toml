@@ -1,0 +1,8 @@
+[project]
+name = "robot-fulfillment-docs"
+version = "0.0.0"
+description = "Documentation site for Robot Fulfillment (MkDocs + Material)"
+requires-python = ">=3.9"
+dependencies = [
+    "mkdocs-material>=9.5",
+]

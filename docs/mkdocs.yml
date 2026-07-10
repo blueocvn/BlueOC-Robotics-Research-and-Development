@@ -1,4 +1,28 @@
-site_name: Robot Fulfillment
+site_name: BlueOC Robotics
+
+nav:
+  - Home: index.md
+  - Get Started: GET-STARTED.md
+  - Robots:
+      - Robot Arm (RA):
+          - Core Concepts: ra_concepts.md
+          - Setup Guide: ra_setup.md
+          - Use Cases:
+              - Pick and Place: ra_pick_and_place.md
+              - Visual Servoing: ra_visual_servoing.md
+      - JetRacer (AMR):
+          - Core Concepts: amr_concepts.md
+          - Setup Guide: amr_setup.md
+          - Use Cases:
+              - Navigate & Deliver: amr_pick_and_place.md
+  - Robotic Solutions:
+      - Pick and Deliver (RA + AMR):
+          - Overview: solution_pick_and_deliver.md
+          - Orchestrator: orchestrator.md
+  - Reference:
+      - Calibration: CALIBRATION.md
+      - Third-party Setup: THIRDPARTY_SETUP.md
+      - Getting Started (legacy): GETTING_STARTED.md
 
 theme:
   name: material

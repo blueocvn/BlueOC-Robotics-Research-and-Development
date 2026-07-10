@@ -1,65 +1,85 @@
 /* =============================================================
-   Robot Fulfillment docs — color modes
+   Robot Fulfillment docs — color modes + component styling
    Light  → robot_arm_mt.html   (clean white surfaces, #1868B0 blue)
    Dark   → jetracer-mt.html     (deep navy #0F1419, #4FE0C8 cyan)
-   Colors are applied by retinting Material's built-in
-   "default" (light) and "slate" (dark) schemes.
+
+   Colors retint Material's built-in "default" (light) and
+   "slate" (dark) schemes; the shared component rules below use
+   Material's CSS variables so they adapt to whichever is active.
    ============================================================= */
 
 /* ----------------------------- LIGHT ----------------------------- */
 [data-md-color-scheme="default"] {
-  /* surfaces / text */
   --md-default-bg-color:             #ffffff;
   --md-default-fg-color:             #14181f;
   --md-default-fg-color--light:      #57616f;
   --md-default-fg-color--lighter:    #6b7684;
   --md-default-fg-color--lightest:   #e6e9ed;
 
-  /* brand / header */
-  --md-primary-fg-color:             #1868b0;
-  --md-primary-fg-color--light:      #3a82c4;
-  --md-primary-fg-color--dark:       #12508a;
-  --md-primary-bg-color:             #ffffff;
-  --md-primary-bg-color--light:      rgba(255, 255, 255, 0.7);
+  /* white header bar (like robot_arm's chromeless top), dark text */
+  --md-primary-fg-color:             #ffffff;
+  --md-primary-fg-color--light:      #ffffff;
+  --md-primary-fg-color--dark:       #f0f2f5;
+  --md-primary-bg-color:             #14181f;
+  --md-primary-bg-color--light:      #57616f;
 
-  /* accent (hover / active / selection) */
-  --md-accent-fg-color:              #147a47;
-  --md-accent-fg-color--transparent: rgba(20, 122, 71, 0.10);
+  /* blue is the accent / link / active color */
+  --md-accent-fg-color:              #1868b0;
+  --md-accent-fg-color--transparent: rgba(24, 104, 176, 0.10);
 
-  /* typography + links */
   --md-typeset-color:                #14181f;
   --md-typeset-a-color:              #1868b0;
 
-  /* inline + block code */
   --md-code-bg-color:                #f4f6f8;
   --md-code-fg-color:                #14181f;
 
-  /* footer */
   --md-footer-bg-color:              #f0f2f5;
   --md-footer-bg-color--dark:        #e6e9ed;
   --md-footer-fg-color:              #14181f;
   --md-footer-fg-color--light:       #57616f;
+
+  /* accent used by the shared rules below */
+  --rf-accent:                       #1868b0;
+  --rf-border:                       #dbdfe5;
+  --rf-surface:                      #ffffff;
+  --rf-surface-2:                    #f4f6f8;
 }
 
 /* faint dotted grid behind content, like the reference pages */
 [data-md-color-scheme="default"] .md-main {
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(20, 24, 31, 0.04) 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, rgba(20, 24, 31, 0.045) 1px, transparent 0);
   background-size: 28px 28px;
+}
+/* keep a hairline under the white header so it separates from content */
+[data-md-color-scheme="default"] .md-header {
+  border-bottom: 1px solid var(--rf-border);
+  box-shadow: none;
+}
+[data-md-color-scheme="default"] .md-header[data-md-state="shadow"],
+[data-md-color-scheme="default"] .md-header--shadow {
+  box-shadow: 0 2px 6px rgba(20, 24, 31, 0.06);
+}
+
+/* h1 gradient like the hero titles */
+[data-md-color-scheme="default"] .md-typeset h1 {
+  background: linear-gradient(180deg, #14181f, #4b5563);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* ------------------------------ DARK ----------------------------- */
 [data-md-color-scheme="slate"] {
   color-scheme: dark;
 
-  /* surfaces / text */
   --md-default-bg-color:             #0f1419;
   --md-default-fg-color:             #e7edf2;
   --md-default-fg-color--light:      #b4c0cc;
   --md-default-fg-color--lighter:    #7c8b99;
   --md-default-fg-color--lightest:   #2a3540;
 
-  /* header stays dark navy; cyan is the accent, not the bar */
+  /* navy panel header (like jetracer's sidebar), light text */
   --md-primary-fg-color:             #1a222a;
   --md-primary-fg-color--light:      #212b35;
   --md-primary-fg-color--dark:       #0d1116;
@@ -79,16 +99,182 @@
   --md-footer-bg-color--dark:        #0d1116;
   --md-footer-fg-color:              #e7edf2;
   --md-footer-fg-color--light:       #7c8b99;
+
+  --rf-accent:                       #4fe0c8;
+  --rf-border:                       #2a3540;
+  --rf-surface:                      #1a222a;
+  --rf-surface-2:                    #0d1116;
 }
 
-/* cards (admonitions / collapsibles) lift off the void like the panels */
-[data-md-color-scheme="slate"] .md-typeset .admonition,
-[data-md-color-scheme="slate"] .md-typeset details {
-  background-color: #1a222a;
-  border-color: #2a3540;
+[data-md-color-scheme="slate"] .md-header {
+  border-bottom: 1px solid var(--rf-border);
+}
+[data-md-color-scheme="slate"] .md-typeset h1 {
+  color: #f2f6f9;
+}
+/* cyan glow on the header brand dot / logo area, subtle */
+[data-md-color-scheme="slate"] .md-nav__link--active,
+[data-md-color-scheme="slate"] .md-nav__item .md-nav__link--active {
+  color: var(--rf-accent);
 }
 
-/* code blocks get a hairline border so they read as panels in both modes */
-[data-md-color-scheme="slate"] .md-typeset pre > code {
-  border: 1px solid #2a3540;
+/* ===================================================================
+   Shared component styling (both modes, driven by --rf-* + md vars)
+   =================================================================== */
+
+/* ---- Global type scale — CHANGE FONT SIZE HERE ----
+   Body copy for all page content. Material's default is 0.8rem;
+   headings/tables are sized in em, so they scale with this.
+   Lower this value to shrink text (e.g. 0.72rem for smaller). */
+.md-typeset {
+  font-size: 0.75rem;
+}
+/* Optional: shrink the ENTIRE UI too (nav, header, table of contents).
+   Uncomment and adjust — 100% is the default browser size (16px). */
+/* :root { font-size: 90%; } */
+
+/* ---- Display headings: JetBrains Mono, tight tracking ---- */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.md-typeset h1 { font-weight: 800; }
+
+/* ---- "Eyebrow" accent kicker above each H2 ---- */
+.md-typeset h2::before {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 2px;
+  margin-bottom: 0.7rem;
+  border-radius: 2px;
+  background: var(--rf-accent);
+}
+
+/* ---- Links ---- */
+.md-typeset a {
+  text-decoration: none;
+  font-weight: 500;
+}
+.md-typeset a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- Inline code: pill in the accent color, like the refs ---- */
+.md-typeset code {
+  border-radius: 5px;
+  padding: 0.12em 0.42em;
+  color: var(--rf-accent);
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--rf-border);
+  font-size: 0.85em;
+}
+/* don't recolor code that sits inside headings / links */
+.md-typeset h1 code,
+.md-typeset h2 code,
+.md-typeset h3 code,
+.md-typeset a code {
+  color: inherit;
+}
+
+/* ---- Code blocks: bordered panels with rounded corners ---- */
+.md-typeset .highlight > pre,
+.md-typeset pre > code {
+  border-radius: 8px;
+}
+.md-typeset .highlight {
+  border: 1px solid var(--rf-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.md-typeset .highlight pre > code {
+  border: 0;
+}
+
+/* ---- Tables as cards: mono uppercase headers, accent first column ---- */
+.md-typeset__table {
+  border-radius: 8px;
+}
+.md-typeset table:not([class]) {
+  border: 1px solid var(--rf-border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.95em; /* relative to the .md-typeset base above */
+}
+.md-typeset table:not([class]) th {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--md-default-fg-color--lighter);
+  background: var(--rf-surface-2);
+  border-bottom: 1px solid var(--rf-border);
+}
+.md-typeset table:not([class]) td {
+  border-top: 1px solid var(--rf-border);
+  color: var(--md-default-fg-color--light);
+  vertical-align: top;
+}
+.md-typeset table:not([class]) td:first-child {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--rf-accent);
+  white-space: nowrap;
+}
+.md-typeset table:not([class]) tr:hover td {
+  background: var(--md-accent-fg-color--transparent);
+}
+
+/* ---- Admonitions / collapsibles as lifted cards ---- */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 8px;
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface);
+  box-shadow: none;
+}
+
+/* ---- Buttons (md-button) in accent ---- */
+.md-typeset .md-button {
+  border-radius: 8px;
+  border-color: var(--rf-accent);
+  color: var(--rf-accent);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+.md-typeset .md-button--primary {
+  background: var(--rf-accent);
+  color: var(--md-default-bg-color);
+}
+
+/* ---- Text selection ---- */
+::selection {
+  background: var(--md-accent-fg-color--transparent);
+}
+
+/* ---- Custom "package" admonition/collapsible (used on package lists) ---- */
+:root {
+  --md-admonition-icon--package: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2 4 6v12l8 4 8-4V6zm0 2.2 5.3 2.6L12 9.4 6.7 6.8zM6 8.5l5 2.5v6.8l-5-2.5zm12 0v6.8l-5 2.5v-6.8z"/></svg>');
+}
+.md-typeset .admonition.package,
+.md-typeset details.package {
+  border-color: var(--rf-accent);
+}
+.md-typeset .package > .admonition-title,
+.md-typeset .package > summary {
+  background-color: var(--md-accent-fg-color--transparent);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+.md-typeset .package > .admonition-title::before,
+.md-typeset .package > summary::before {
+  background-color: var(--rf-accent);
+  -webkit-mask-image: var(--md-admonition-icon--package);
+          mask-image: var(--md-admonition-icon--package);
 }
