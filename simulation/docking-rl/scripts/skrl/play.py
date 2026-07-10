@@ -218,7 +218,41 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     obs, _ = env.reset()
     states = env.state()
     timestep = 0
-    # simulate environment
+    # --- per-env reward readout -----------------------------------------------------------------
+    # Track each env's running EPISODE reward (sum of per-step reward) and its per-TERM breakdown,
+    # so you can see which envs (e.g. the spinning/reversing ones) score badly. The base env's
+    # RewardManager keeps a per-term, per-env running sum in `_episode_sums` that it resets when an
+    # env resets -- so we snapshot it BEFORE stepping (i.e. the value for the episode that is about
+    # to end) and print it for any env that terminates this step.
+    base_env = env.unwrapped
+    num_envs = base_env.num_envs
+    reward_mgr = base_env.reward_manager
+    term_names = list(reward_mgr.active_terms)
+
+    # --- live reward color-tint: each car's body goes red (bad) -> yellow -> green (good) by its
+    # running episode reward, so you can spot the good/bad ones at a glance without reading text.
+    import math as _math
+
+    import omni.usd
+    from pxr import Gf, Vt
+
+    _stage = omni.usd.get_context().get_stage()
+    _color_attrs = []
+    for _i in range(num_envs):
+        _prim = _stage.GetPrimAtPath(f"/World/envs/env_{_i}/JetRacer/chassis/chassis_geom")
+        _color_attrs.append(_prim.GetAttribute("primvars:displayColor") if _prim and _prim.IsValid() else None)
+
+    def _tint_cars():
+        # running per-env episode reward = sum of the per-term episode sums (resets when an env does)
+        ep = sum(reward_mgr._episode_sums[t] for t in term_names)
+        for _i in range(num_envs):
+            _attr = _color_attrs[_i]
+            if _attr is None:
+                continue
+            # squash reward to [0,1] with tanh (scale ~5): <0 -> red, ~0 -> yellow, >0 -> green
+            _t = 0.5 + 0.5 * _math.tanh(ep[_i].item() / 5.0)
+            _attr.Set(Vt.Vec3fArray([Gf.Vec3f(float(1.0 - _t), float(_t), 0.1)]))
+
     while simulation_app.is_running():
         start_time = time.time()
 
@@ -232,9 +266,22 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
             # - single-agent (deterministic) actions
             else:
                 actions = outputs[-1].get("mean_actions", outputs[0])
+            # snapshot per-term episode sums BEFORE the step (the step may reset terminated envs)
+            ep_sums_before = {t: reward_mgr._episode_sums[t].clone() for t in term_names}
             # env stepping
-            obs, _, _, _, _ = env.step(actions)
+            obs, rewards, terminated, truncated, _ = env.step(actions)
             states = env.state()
+
+        # live-tint each car by its running episode reward
+        _tint_cars()
+
+        # report per-env episode reward for any env that just finished
+        dones = (terminated | truncated).nonzero(as_tuple=False).flatten().tolist()
+        for i in dones:
+            total = sum(ep_sums_before[t][i].item() for t in term_names)
+            parts = "  ".join(f"{t}={ep_sums_before[t][i].item():+.2f}" for t in term_names)
+            reason = "success" if bool(terminated[i]) else "timeout/oob"
+            print(f"[env {i:>2d}] episode reward = {total:+7.2f} ({reason})   {parts}", flush=True)
         if args_cli.video:
             timestep += 1
             # exit the play loop after recording one video

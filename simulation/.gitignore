@@ -1,0 +1,17 @@
+# USD editing backups (from the add_*.py scene-patch scripts)
+*.usd.bak
+*_bak
+
+# Python caches
+__pycache__/
+*.pyc
+*.egg-info/
+
+# RL training artifacts (checkpoints, TensorBoard logs, tuning db, exports)
+runs/
+outputs/
+logs/
+*.zip
+*.pth
+events.out.tfevents.*
+tune.db

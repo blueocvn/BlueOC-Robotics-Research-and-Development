@@ -22,15 +22,30 @@ JETRACER_CFG = ArticulationCfg(
         activate_contact_sensors=True,
         # Stability overrides. The steering knuckles and front wheels are co-located, and the
         # wheels sit close to the chassis, so self-collision must be OFF or the articulation
-        # jitters itself apart ("jiggling on the spot"). Bump solver iterations and cap
-        # depenetration velocity so the tiny (20 g) wheels don't get flung on any spawn overlap.
+        # jitters itself apart ("jiggling on the spot").
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
             enabled_self_collisions=False,
-            solver_position_iteration_count=16,
-            solver_velocity_iteration_count=1,
+            # Bumped 16->32 / 1->4: once the wheels were placed correctly at the four corners (the
+            # old model had them collapsed at the center, which was artificially stable), a wild
+            # early-training action could spike a contact the solver couldn't resolve in one
+            # sub-step, producing a NaN that -- via a single gradient update -- permanently bricked
+            # training (all Q/losses -> nan from that step on). More iterations resolve hard
+            # contacts before they explode.
+            solver_position_iteration_count=32,
+            solver_velocity_iteration_count=4,
         ),
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
-            max_depenetration_velocity=1.0,
+            # 1.0 -> 0.1: gentler depenetration so a spawn/contact overlap can't fling the tiny
+            # (20 g) wheels at high speed.
+            max_depenetration_velocity=0.1,
+            # HARD velocity caps -- the key NaN guard. A physics blow-up reaches NaN by letting a
+            # velocity run away to infinity over a few sub-steps; capping velocity means the worst
+            # case is a fast-but-FINITE body that the out_of_bounds/out_of_approach_arc termination
+            # then resets cleanly, instead of a NaN that poisons the replay buffer and network.
+            # 5 m/s is well above the car's real ~1-2 m/s; 3000 deg/s (~52 rad/s) is above the
+            # legitimate wheel spin (drive limit 20 rad/s ~= 1146 deg/s) with headroom.
+            max_linear_velocity=5.0,
+            max_angular_velocity=3000.0,
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
@@ -45,6 +60,14 @@ JETRACER_CFG = ArticulationCfg(
             stiffness=50.0,
             damping=5.0,
             effort_limit_sim=2.0,
+            # armature regularizes the joint-space inertia (added directly to the mass-matrix
+            # diagonal). These are extremely light joints (steer knuckle ~0.01 kg), which make the
+            # articulation mass matrix ill-conditioned; a wild early-training steer command could
+            # drive the solver into a near-singular configuration that produces a NaN and bricks
+            # training (all Q/losses -> nan at a fixed, seed-deterministic step ~2850, even after
+            # velocity caps bounded every value -- proving the NaN is solver-generated, not a
+            # value runaway). A small armature conditions the matrix so that can't happen.
+            armature=0.001,
         ),
         "drive": ImplicitActuatorCfg(
             joint_names_expr=["wheel_joint_R[LR]"],  # rear driven wheels only
@@ -55,6 +78,21 @@ JETRACER_CFG = ArticulationCfg(
             # what caps wheel torque -- too low and the wheels can't reach the commanded speed
             # (slip), too high and they spin up before traction catches (also slip).
             effort_limit_sim=5.0,
+            armature=0.0005,
+        ),
+        # Front wheels: PREVIOUSLY UNCONSTRAINED (not in any actuator group), i.e. free revolute
+        # joints with zero damping and zero armature. Free, ~0.02 kg, tiny-inertia joints are a
+        # well-known articulation-solver instability source -- they can spin up unboundedly and
+        # ill-condition the dynamics. Harmless when the wheels were collapsed at the chassis centre
+        # (the old broken model), but with the wheels correctly at the corners and actually
+        # contacting the ground, they need regularizing. Stiffness 0 keeps them free-rolling
+        # (passive casters); light damping + armature just condition the solver.
+        "front_wheels": ImplicitActuatorCfg(
+            joint_names_expr=["wheel_joint_F[LR]"],
+            stiffness=0.0,
+            damping=0.05,
+            effort_limit_sim=1.0,
+            armature=0.0005,
         ),
     },
 )

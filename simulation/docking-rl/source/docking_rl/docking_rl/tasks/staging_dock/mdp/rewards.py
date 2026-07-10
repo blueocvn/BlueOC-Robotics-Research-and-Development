@@ -8,6 +8,7 @@ separate, classical visual-servo stage (Section 6.4), so tag visibility is not p
 
 from __future__ import annotations
 
+import functools
 from typing import TYPE_CHECKING
 
 import torch
@@ -19,6 +20,68 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
+def _finite(func):
+    """Decorator: replace NaN/+-Inf in a reward term's output with finite values.
+
+    A physics blow-up writes NaN robot velocities/positions; terms that read those raw (e.g.
+    loiter_penalty, spin_in_place_penalty) then return NaN. Crucially this bites EVEN WHEN A TERM'S
+    WEIGHT IS 0 -- the RewardManager still evaluates every term and computes weight*value, and
+    0.0 * NaN == NaN, so a single disabled physics-reading term silently NaN-poisons the total
+    reward -> the SAC critic target -> the whole network, permanently (the seed-deterministic
+    "training dies ~step 3000" failure). Sanitising each term's output closes that path.
+
+    Uses functools.wraps so the wrapped function keeps its original signature, which Isaac Lab's
+    RewardManager introspects to match term params.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return torch.nan_to_num(func(*args, **kwargs), nan=0.0, posinf=1.0e3, neginf=-1.0e3)
+
+    return wrapper
+
+
+@_finite
+def goal_attraction(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    pos_scale: float = 1.0,
+    heading_scale: float = 0.5,
+    speed_scale: float = 1.0,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("car"),
+) -> torch.Tensor:
+    """DENSE pose-attraction: an always-positive reward maximized at the staging pose, aligned and
+    stopped. Designed to *pull* the car to the docked state.
+
+    Why this exists: the potential-based ``position_progress`` + proximity penalties setup was
+    getting reward-hacked -- the policy learned to AVOID the goal vicinity because
+    ``loiter_penalty`` punishes moving near the goal, so staying away minimized cost (success rate
+    fell BELOW random). This term inverts that incentive: it pays the most for being AT the goal.
+
+        base  = exp(-(dist/pos_scale)^2)                 # 1 at goal, ->0 far -- the dominant pull
+        bonus = 1 + exp(-(dheading/heading_scale)^2)      # +up to 1 for facing the staging heading
+              +     exp(-(speed/speed_scale))             # +up to 1 for being stopped
+        reward = base * bonus                             # in [0, 3]; peak 3 only when docked+still
+
+    ``pos_scale=1.0`` gives a usable gradient across the whole ~1.5 m approach (at 1.5 m base~0.1,
+    at 0.5 m ~0.78), so the car is pulled in from the start; the heading/speed bonuses only matter
+    once ``base`` is non-negligible (near the goal), so far away it just says "come here". Being at
+    the goal, aligned and stopped is the global max -- exactly the docked state -- so unlike the
+    potential form there is NO way to farm reward by hovering away from the goal.
+    """
+    command = env.command_manager.get_command(command_name)
+    dist = torch.norm(command[:, :2], dim=1)
+    dheading = command[:, 2]
+    base = torch.exp(-((dist / pos_scale) ** 2))
+
+    asset: Articulation = env.scene[asset_cfg.name]
+    speed = torch.norm(asset.data.root_lin_vel_b[:, :2], dim=1) + asset.data.root_ang_vel_b[:, 2].abs()
+    aligned = torch.exp(-((dheading / heading_scale) ** 2))
+    slow = torch.exp(-speed / speed_scale)
+    return base * (1.0 + aligned + slow)
+
+
+@_finite
 def position_progress(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
     """Dense shaping: potential-based progress delta (prev_distance - curr_distance), NOT raw
     -distance.
@@ -42,6 +105,7 @@ def position_progress(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor
     return command_term.progress_delta
 
 
+@_finite
 def staging_pose_hold_credit(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
     """Dense shaping: partial credit for dwell-gate progress, in [0, 1] (see
     ``StagingPoseCommand.hold_progress``).
@@ -58,6 +122,7 @@ def staging_pose_hold_credit(env: ManagerBasedRLEnv, command_name: str) -> torch
     return command_term.hold_progress
 
 
+@_finite
 def heading_alignment(env: ManagerBasedRLEnv, command_name: str, gate_distance: float = 0.6) -> torch.Tensor:
     """Dense shaping: negative heading error to the staging pose, GATED by proximity.
 
@@ -69,6 +134,14 @@ def heading_alignment(env: ManagerBasedRLEnv, command_name: str, gate_distance: 
     far away only position matters (drive there, any heading); the final heading is aligned only
     near the goal, where it's actually meaningful for the AprilTag handoff.
 
+    NOTE: an experimental linear-gate-with-0.1-floor variant was tried here to "keep a heading
+    gradient in the far field"; it BACKFIRED -- the 0.1 floor kept penalising heading error 1.5 m
+    out, so the policy learned to rotate in place to face the goal (minimising that penalty) instead
+    of driving to it. A 150k straight-line run showed spin_in_place_penalty growing (-0.001 ->
+    -0.14) and staging_pose_reached decaying to ~0. Reverted to this exp gate, whose whole purpose
+    is to prevent exactly that: at a 1.5 m start gate = exp(-(1.5/0.6)^2) ~= 0.002, negligible, so
+    far-field heading exerts no pull and the car just drives.
+
     ``gate_distance=0.6`` (vs. the success radius of 0.3) is deliberately a bit wider than "right at
     the goal": at gate_distance == success_pos_tolerance exactly, a policy could loiter just
     *outside* the success radius (e.g. a wide, gentle circle at ~0.5-0.8 m, too wide to trip the
@@ -76,7 +149,7 @@ def heading_alignment(env: ManagerBasedRLEnv, command_name: str, gate_distance: 
     way, since the heading gate there would be near 0. Widening the gate means that loiter zone
     still costs meaningful heading-error reward, without reaching so far out that it recreates the
     original far-field "rotate to face the goal instead of driving" problem this gating exists to
-    prevent (at a typical 1.5 m start, gate = exp(-(1.5/0.6)^2) ~= 0.002, still negligible there).
+    prevent.
     """
     command = env.command_manager.get_command(command_name)
     dist = torch.norm(command[:, :2], dim=1)
@@ -84,6 +157,8 @@ def heading_alignment(env: ManagerBasedRLEnv, command_name: str, gate_distance: 
     return -torch.abs(command[:, 2]) * gate
 
 
+
+@_finite
 def loiter_penalty(
     env: ManagerBasedRLEnv,
     command_name: str,
@@ -116,6 +191,7 @@ def loiter_penalty(
     return -(lin_speed + ang_speed) * gate
 
 
+@_finite
 def staging_pose_reached(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
     """Sparse bonus: 1.0 on the step ``success_held`` goes True (tolerance held for
     ``success_hold_steps`` consecutive steps -- see :class:`StagingPoseCommand`), else 0.0.
@@ -130,10 +206,11 @@ def staging_pose_reached(env: ManagerBasedRLEnv, command_name: str) -> torch.Ten
     return command_term.success_held.float()
 
 
+@_finite
 def spin_in_place_penalty(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("car"),
-    max_curvature: float = 2.275,  # 1/min_turn_radius; matches 20 deg steer, 0.16 m wheelbase
+    max_curvature: float = 2.193,  # 1/min_turn_radius; matches 20 deg steer, 0.166 m wheelbase
     min_speed_for_curvature: float = 0.05,
     # Capped at 4.0 (was 5.6, matched to the measured worst-case donut's curvature). At weight
     # -2.0 that made peak magnitude -62.7/step -- a 30-3000x outlier against every other reward
@@ -166,9 +243,12 @@ def spin_in_place_penalty(
     fwd_speed = asset.data.root_lin_vel_b[:, 0].abs().clamp(min=min_speed_for_curvature)
     curvature = yaw_rate / fwd_speed
     excess = torch.clamp(curvature - max_curvature, min=0.0, max=max_excess_curvature)
-    return excess**2
+    return torch.tanh(excess)
+    #return excess**2
 
 
+
+@_finite
 def gear_shift_penalty(env: ManagerBasedRLEnv, drive_action_index: int = 1, deadband: float = 0.05) -> torch.Tensor:
     """Penalize forward/reverse switches of the drive command (matches the paper's ANGS metric).
 

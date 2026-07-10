@@ -9,23 +9,64 @@ def Xform "JetRacer" (
     prepend apiSchemas = ["PhysicsArticulationRootAPI"]
 )
 {
-    def Cube "chassis" (
-        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "PhysicsCollisionAPI"]
+    def Xform "chassis" (
+        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
     )
     {
         float physics:mass = 0.25
-        color3f[] primvars:displayColor = [(0.2, 0.35, 0.7)]
-        double size = 1
-        # Y (width) narrowed from 0.16 to 0.11: at 0.16 the chassis half-width (0.08) nearly
-        # equals the wheel-hub offsets (0.0825 front / 0.09 rear), so the wheels ended up ~11mm
-        # (front) / ~3.5mm (rear) EMBEDDED inside the chassis box -- most of each wheel's 27mm
-        # thickness was hidden inside the body instead of standing clear on an axle, which reads
-        # as "wheels bunched near the center" rather than at the four corners. 0.11 gives every
-        # wheel >10mm of clear stick-out. Only wheelbase/track/wheel-size are guide-specified
-        # "measured" values; this chassis width was always an approximate "~0.16m" placeholder.
-        float3 xformOp:scale = (0.3, 0.11, 0.05)
-        double3 xformOp:translate = (0, 0, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        # EXPLICIT inertia for the floating base. The chassis is the articulation ROOT (floating
+        # base); its mass is authored here on the Xml body but the collision SHAPE lives on the
+        # child geom, so PhysX auto-computes the base inertia from that child -- and a bad/degenerate
+        # base inertia makes the free-floating base unstable under torque (joint armature only
+        # conditions the JOINTS, not the floating base). Set it explicitly from the box dimensions
+        # (0.19 x 0.13 x 0.05, m=0.25): Ixx=m/12*(0.13^2+0.05^2), Iyy=m/12*(0.19^2+0.05^2),
+        # Izz=m/12*(0.19^2+0.13^2).
+        float3 physics:diagonalInertia = (0.000404, 0.000804, 0.001104)
+        # ROOT BODY MUST HAVE NO SCALE. This Xform is the articulation ROOT rigid body; PhysX bakes
+        # the root body's xformOp:scale into the frame that EVERY joint's localPos0 offset is
+        # measured in. A non-unit root scale therefore silently multiplies all wheel hub offsets by
+        # that scale -- with the old scaled-Cube chassis (0.19, 0.13, 0.05) the wheels collapsed
+        # toward the chassis centre (verified: authored +/-0.083 x-offset rendered at 0.083*0.19 =
+        # 0.0158, +/-0.0825 y at 0.0825*0.13 = 0.0107, etc. -- an exact match). It looks correct in
+        # the static USD (scale + geometry compose normally) but wrong once PhysX drives the
+        # articulation. Fix: keep the body frame unit-scaled and move all box sizing onto the child
+        # geom below, so the joints reference an unscaled chassis frame and wheel offsets stay in
+        # true world metres.
+        def Cube "chassis_geom" (
+            prepend apiSchemas = ["PhysicsCollisionAPI"]
+        )
+        {
+            color3f[] primvars:displayColor = [(0.2, 0.35, 0.7)]
+            double size = 1
+            # Box SIZED TO FIT AROUND the wheels so they read as sitting at the four corners, not
+            # stranded in the middle. Wheel hubs are the measured ground truth (wheelbase 0.166 ->
+            # hubs at x=+/-0.083; track 0.165 front / 0.18 rear -> hubs at y=+/-0.0825 / +/-0.09)
+            # and are NOT moved -- only this cosmetic box is sized.
+            #   Length (x) 0.19: half-length 0.095 just past the 0.083 hub offset, so each wheel
+            #     (radius 0.0325) sits right at the front/rear corner with a small nose/tail
+            #     overhang, like a real JetRacer body (~0.20 long over a 0.166 wheelbase).
+            #   Width (y) 0.13: half-width 0.065 just inside the 0.0825/0.09 hub offsets, so the
+            #     wheels stick out ~17-25mm clear on each side (visible at the corners).
+            # Scale HERE (child geom) is safe -- it sizes only the visual/collision box, not the
+            # chassis body frame the joints are anchored to. Chassis dims are cosmetic placeholders;
+            # only wheelbase/track/wheel-size are measured.
+            float3 xformOp:scale = (0.19, 0.13, 0.05)
+            uniform token[] xformOpOrder = ["xformOp:scale"]
+        }
+        # FORWARD-DIRECTION INDICATOR: a bright red slab on the +x (front) face of the chassis, so
+        # the robot's facing is obvious at a glance in the viewport (+x is "nose forward", toward
+        # the dock/AprilTag). Visual only -- no physics APIs -- and a child of the chassis body, so
+        # it rides with the chassis. Emissive so it reads clearly regardless of lighting. Sits at
+        # x=0.105, just ahead of the 0.095 front face, spanning most of the body width.
+        def Cube "front_marker"
+        {
+            color3f[] primvars:displayColor = [(0.95, 0.05, 0.05)]
+            color3f[] primvars:emissiveColor = [(0.9, 0.0, 0.0)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 0.1, 0.05)
+            double3 xformOp:translate = (0.105, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
     }
 
     def Cube "steer_link_L" (
@@ -33,10 +74,10 @@ def Xform "JetRacer" (
     )
     {
         float physics:mass = 0.01
-        color3f[] primvars:displayColor = [(0.15, 0.15, 0.15)]
+        color3f[] primvars:displayColor = [(0.12, 0.12, 0.12)]
         double size = 1
         float3 xformOp:scale = (0.02, 0.02, 0.02)
-        double3 xformOp:translate = (0.08, 0.0825, -0.03)
+        double3 xformOp:translate = (0.083, 0.0825, -0.03)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
     }
 
@@ -53,7 +94,7 @@ def Xform "JetRacer" (
         uniform token physics:axis = "Z"
         rel physics:body0 = </JetRacer/chassis>
         rel physics:body1 = </JetRacer/steer_link_L>
-        point3f physics:localPos0 = (0.08, 0.0825, -0.03)
+        point3f physics:localPos0 = (0.083, 0.0825, -0.03)
         point3f physics:localPos1 = (0, 0, 0)
         quatf physics:localRot0 = (1, 0, 0, 0)
         quatf physics:localRot1 = (1, 0, 0, 0)
@@ -68,9 +109,9 @@ def Xform "JetRacer" (
         uniform token axis = "Y"
         double height = 0.027
         float physics:mass = 0.02
-        color3f[] primvars:displayColor = [(0.05, 0.05, 0.05)]
+        color3f[] primvars:displayColor = [(0.08, 0.08, 0.08)]
         double radius = 0.0325
-        double3 xformOp:translate = (0.08, 0.0825, -0.03)
+        double3 xformOp:translate = (0.083, 0.0825, -0.03)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
@@ -90,10 +131,10 @@ def Xform "JetRacer" (
     )
     {
         float physics:mass = 0.01
-        color3f[] primvars:displayColor = [(0.15, 0.15, 0.15)]
+        color3f[] primvars:displayColor = [(0.12, 0.12, 0.12)]
         double size = 1
         float3 xformOp:scale = (0.02, 0.02, 0.02)
-        double3 xformOp:translate = (0.08, -0.0825, -0.03)
+        double3 xformOp:translate = (0.083, -0.0825, -0.03)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
     }
 
@@ -110,7 +151,7 @@ def Xform "JetRacer" (
         uniform token physics:axis = "Z"
         rel physics:body0 = </JetRacer/chassis>
         rel physics:body1 = </JetRacer/steer_link_R>
-        point3f physics:localPos0 = (0.08, -0.0825, -0.03)
+        point3f physics:localPos0 = (0.083, -0.0825, -0.03)
         point3f physics:localPos1 = (0, 0, 0)
         quatf physics:localRot0 = (1, 0, 0, 0)
         quatf physics:localRot1 = (1, 0, 0, 0)
@@ -125,9 +166,9 @@ def Xform "JetRacer" (
         uniform token axis = "Y"
         double height = 0.027
         float physics:mass = 0.02
-        color3f[] primvars:displayColor = [(0.05, 0.05, 0.05)]
+        color3f[] primvars:displayColor = [(0.08, 0.08, 0.08)]
         double radius = 0.0325
-        double3 xformOp:translate = (0.08, -0.0825, -0.03)
+        double3 xformOp:translate = (0.083, -0.0825, -0.03)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
@@ -149,9 +190,9 @@ def Xform "JetRacer" (
         uniform token axis = "Y"
         double height = 0.027
         float physics:mass = 0.02
-        color3f[] primvars:displayColor = [(0.05, 0.05, 0.05)]
+        color3f[] primvars:displayColor = [(0.08, 0.08, 0.08)]
         double radius = 0.0325
-        double3 xformOp:translate = (-0.08, 0.09, -0.03)
+        double3 xformOp:translate = (-0.083, 0.09, -0.03)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
@@ -168,7 +209,7 @@ def Xform "JetRacer" (
         uniform token physics:axis = "Y"
         rel physics:body0 = </JetRacer/chassis>
         rel physics:body1 = </JetRacer/wheel_RL>
-        point3f physics:localPos0 = (-0.08, 0.09, -0.03)
+        point3f physics:localPos0 = (-0.083, 0.09, -0.03)
         point3f physics:localPos1 = (0, 0, 0)
         quatf physics:localRot0 = (1, 0, 0, 0)
         quatf physics:localRot1 = (1, 0, 0, 0)
@@ -181,9 +222,9 @@ def Xform "JetRacer" (
         uniform token axis = "Y"
         double height = 0.027
         float physics:mass = 0.02
-        color3f[] primvars:displayColor = [(0.05, 0.05, 0.05)]
+        color3f[] primvars:displayColor = [(0.08, 0.08, 0.08)]
         double radius = 0.0325
-        double3 xformOp:translate = (-0.08, -0.09, -0.03)
+        double3 xformOp:translate = (-0.083, -0.09, -0.03)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
@@ -200,7 +241,7 @@ def Xform "JetRacer" (
         uniform token physics:axis = "Y"
         rel physics:body0 = </JetRacer/chassis>
         rel physics:body1 = </JetRacer/wheel_RR>
-        point3f physics:localPos0 = (-0.08, -0.09, -0.03)
+        point3f physics:localPos0 = (-0.083, -0.09, -0.03)
         point3f physics:localPos1 = (0, 0, 0)
         quatf physics:localRot0 = (1, 0, 0, 0)
         quatf physics:localRot1 = (1, 0, 0, 0)

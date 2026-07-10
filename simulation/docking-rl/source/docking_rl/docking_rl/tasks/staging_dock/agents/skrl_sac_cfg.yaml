@@ -36,6 +36,18 @@ models:
     # at least one of min/max must not be None` on the (originally unbounded) action space; the
     # StagingDockEnv action-space override already solves that independently of this flag.
     clip_actions: False
+    # TRUE -- the actual remaining fix for the critic divergence. A physics stress test proved the
+    # sim is robust to any action (4000 steps of near-max steer+drive, zero non-finite states), so
+    # the seed-deterministic "Q -> 1e10 -> nan around step 2600" is NOT a physics blow-up -- it's
+    # pure critic divergence. Mechanism: with clip_actions False the raw (unbounded) Gaussian sample
+    # is what gets stored in the replay buffer and fed to the critic as Q(obs, action). As the
+    # policy MEAN drifts, the critic sees ever-larger action inputs, extrapolates a larger Q, which
+    # the Bellman target then chases -- a self-reinforcing runaway (the physics never sees it,
+    # because AckermannAction clamps to [-1,1]). clip_mean_actions clamps the Gaussian MEAN to the
+    # action bounds BEFORE sampling, so the mean can't run away and the critic's action inputs stay
+    # near [-1,1]. Crucially this is NOT clip_actions=True: it clamps the mean, not the sampled
+    # action, so it doesn't corrupt log_prob (the reason clip_actions had to stay False).
+    clip_mean_actions: True
     clip_log_std: True
     min_log_std: -20.0
     # tightened from 2.0 (std up to e^2~7.4, very large for a bounded [-1,1] action): a Gaussian
@@ -128,9 +140,24 @@ agent:
   # down to ~1.2 trillion) but did NOT stop it -- Q1(mean) was still climbing. This attacks the
   # AGGREGATE per-step reward magnitude (currently averaging around -0.3/step, with instantaneous
   # spikes into the -10s) directly, rather than continuing to whack-a-mole individual terms.
-  rewards_shaper_scale: 0.1
-  learn_entropy: True
-  initial_entropy_value: 0.01
+  # RAISED 0.1 -> 1.0: the 0.1 scale-down was a band-aid for the critic divergence that is now
+  # properly fixed by clip_mean_actions (policy-mean clamp). At 0.1 the whole reward signal was
+  # crushed -- position_progress episode contribution ~+0.018 vs spin/heading penalties ~-0.12 to
+  # -0.15, so the penalties outweighed the approach reward ~8x and the policy drifted into a weak,
+  # spinny behavior instead of committing to drive in (staging_pose_reached decayed to ~0). 1.0
+  # restores signal strength; the critic should stay stable now that the real divergence source is
+  # gone. If Q/critic-loss climb again, back off to ~0.3.
+  rewards_shaper_scale: 1.0
+  # DEBUGGING CONFIG: entropy auto-tuning DISABLED, alpha pinned to a constant. With
+  # learn_entropy=True the coefficient ballooned (initial 1.0 + auto-tune: high exploration ->
+  # log_prob+target_entropy stays positive -> log_alpha pushed up every step -> alpha grows ->
+  # the -alpha*log_prob term in the SAC Q-target dominates and the critic loss explodes). Pinning
+  # alpha removes that feedback loop entirely: it can neither balloon nor collapse to ~0 (the
+  # opposite failure the old 0.01 initial value produced). 0.2 is a moderate fixed exploration
+  # level; if the critic is stable at a fixed alpha, the instability was the auto-tuner, and we can
+  # re-enable learn_entropy later with a saner initial + a dedicated (slower) entropy LR.
+  learn_entropy: False
+  initial_entropy_value: 0.05
   target_entropy: null
   experiment:
     directory: "jetracer_dock_staging"

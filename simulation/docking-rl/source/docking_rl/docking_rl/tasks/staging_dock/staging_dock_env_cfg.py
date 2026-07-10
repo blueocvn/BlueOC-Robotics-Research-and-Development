@@ -17,6 +17,8 @@ current, Nav2-provided pose); everything else is the robot's own motion state.
 
 import math
 
+import torch
+
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
@@ -28,9 +30,25 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
+from isaaclab.utils.modifiers import ModifierCfg
 
 import docking_rl.tasks.staging_dock.mdp as mdp
 from docking_rl.assets import JETRACER_CFG
+
+
+def _sanitize_obs(data: torch.Tensor) -> torch.Tensor:
+    """Replace NaN/+-Inf in an observation tensor with finite values. A plain Python wrapper (NOT
+    torch.nan_to_num directly) because the observation manager introspects the modifier func with
+    inspect.signature, which raises on C-builtins like torch.nan_to_num -- this wrapper has a real,
+    introspectable signature."""
+    return torch.nan_to_num(data, nan=0.0, posinf=1.0e3, neginf=-1.0e3)
+
+
+def _nan_guard():
+    """Fresh list holding the nan_to_num observation modifier: so a physics blow-up can never feed a
+    non-finite number into the SAC networks (a single NaN in one gradient update bricks training
+    permanently). Returned as a new list per call so each ObsTerm gets its own cfg."""
+    return [ModifierCfg(func=_sanitize_obs)]
 
 ##
 # Task geometry (env-local frame, i.e. relative to each cloned env's origin).
@@ -38,17 +56,41 @@ from docking_rl.assets import JETRACER_CFG
 CAR_SPAWN_POS = (0.0, 0.0, 0.063)
 STAGING_NOMINAL_POS_B = (1.5, 0.0, 0.06)
 
+# Single source of truth for the position acceptance radius, used both by CommandsCfg.staging_pose
+# below AND to size the parking-lot outline -- so the outline always represents exactly the actual
+# success zone, never an eyeballed guess. (An earlier version sized the outline off a vague "car
+# footprint plus some margin" and ended up ~3x the JetRacer's actual ~0.3 x 0.2 m footprint --
+# chassis Cube in jetracer_docking_scene.usda is scaled (0.3, 0.11, 0.05) -- for no principled
+# reason. Tying it to the tolerance instead means it's allowed to be bigger than the car -- that's
+# the point, it's the "must land somewhere in here" zone, not a snug outline of the chassis.)
+STAGING_SUCCESS_POS_TOLERANCE = 0.3
+
 # Visual-only parking-lot outline (purely cosmetic -- painted lines, no collision/rigid_props, so
-# it can't affect physics or be observed by the policy). Sized a bit past the car footprint plus
-# the success_pos_tolerance (0.3 m) so the tolerance zone reads as "inside the box". Centered on
-# STAGING_NOMINAL_POS_B and axis-aligned with heading 0 (the staging heading is +x, so the long
-# axis of the rectangle runs along the approach direction).
-PARKING_LOT_HALF_LENGTH = 0.45  # along x (approach/heading direction)
-PARKING_LOT_HALF_WIDTH = 0.3  # along y
+# it can't affect physics or be observed by the policy). Sized to exactly the position-tolerance
+# acceptance zone (a square bounding the success radius), centered on STAGING_NOMINAL_POS_B and
+# axis-aligned with heading 0.
+PARKING_LOT_HALF_LENGTH = STAGING_SUCCESS_POS_TOLERANCE
+PARKING_LOT_HALF_WIDTH = STAGING_SUCCESS_POS_TOLERANCE
 # Thick/tall enough (5 cm wide, 6 cm tall -- like a curb) to actually read at normal viewport zoom;
 # a thin painted-line thickness (~1-2 cm) was visually imperceptible next to the car/goal-arrow scale.
 PARKING_LOT_LINE_THICKNESS = 0.05
 PARKING_LOT_LINE_HEIGHT = 0.06
+
+# 180-degree approach apron in front of the staging pose: the robot must stay within this half-disk
+# or the episode terminates (see TerminationsCfg.out_of_approach_arc). APPROACH_DIR = pi points the
+# apron toward -x, matching EventCfg.reset_car_pose's approach_dir -- the side the robot spawns and
+# drives in from. Both the out-of-bounds termination AND the visual arc outline read this one
+# radius, so they can never disagree.
+#
+# NOTE on the radius: the spawn distribution (EventCfg.reset_car_pose.radius_range) currently
+# reaches out to 1.8 m, so this bound is 2.0 m -- large enough to contain every spawn with margin.
+# A tighter 1.0-1.5 m bound (as first sketched) would terminate the farther spawns on step 0; to
+# use one, also lower that radius_range max to ~ (bound - 0.2) so robots spawn comfortably inside.
+APPROACH_ARC_BOUND_RADIUS = 2.0
+APPROACH_ARC_DIR = math.pi
+APPROACH_ARC_LINE_THICKNESS = 0.04
+APPROACH_ARC_LINE_HEIGHT = 0.05
+APPROACH_ARC_NUM_SEGMENTS = 18  # straight chords approximating the 180-degree curved boundary
 
 
 ##
@@ -64,13 +106,19 @@ class DockingSceneCfg(InteractiveSceneCfg):
         prim_path="/World/ground",
         spawn=sim_utils.GroundPlaneCfg(
             size=(20.0, 20.0),
-            # High tyre grip. The default 0.5 friction lets the light rear end slide, so the car
-            # oversteers and pivots ("spins") under steering. More grip keeps the rear planted so a
-            # steering command produces a proper turn radius instead of a spin. combine_mode="max"
-            # ensures the high value wins regardless of the wheel material.
+            # Tyre grip. The 1.2/1.0 originally used here was a HACK for the old broken model whose
+            # wheels were collapsed at the chassis centre (~zero wheelbase/track) -- that car had no
+            # geometric stability, so it oversteered/spun unless friction was cranked up. With the
+            # wheels now correctly at the four corners the real wheelbase/track provides that
+            # stability, so the extreme grip isn't needed for stability alone -- but the real robot
+            # runs on carpet, whose rubber-on-carpet grip is higher than a hard floor, so raised back
+            # up to 1.1/0.9 (below the old 1.2/1.0 that produced hard-corner contact impulses/solver
+            # NaN) to better match that surface. combine_mode="max" ensures this value wins
+            # regardless of the wheel material. If solver NaNs reappear on hard corners, back off
+            # toward 0.9/0.7 first.
             physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=1.2,
-                dynamic_friction=1.0,
+                static_friction=1.1,
+                dynamic_friction=0.9,
                 friction_combine_mode="max",
             ),
         ),
@@ -147,6 +195,51 @@ class DockingSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=1000.0),
     )
 
+    def __post_init__(self):
+        # Visual-only 180-degree approach-apron boundary: a semicircle of radius
+        # APPROACH_ARC_BOUND_RADIUS on the approach side of the staging pose, drawn as a chain of
+        # thin straight cuboid segments (a curved USD outline isn't a spawnable primitive, so we
+        # approximate the arc with APPROACH_ARC_NUM_SEGMENTS chords). Purely cosmetic -- no
+        # collision/rigid props, invisible to physics and the policy -- it just shows where the
+        # out_of_approach_arc termination boundary is. Segments are attached as extra scene fields
+        # here (InteractiveScene spawns every AssetBaseCfg in the cfg's __dict__), flat-named to
+        # avoid the intermediate-Xform cloning requirement.
+        cx, cy = STAGING_NOMINAL_POS_B[0], STAGING_NOMINAL_POS_B[1]
+        radius = APPROACH_ARC_BOUND_RADIUS
+        # boundary spans +/-90 deg around the approach direction -> the full 180-degree apron.
+        a_start = APPROACH_ARC_DIR - math.pi / 2.0
+        a_end = APPROACH_ARC_DIR + math.pi / 2.0
+        n = APPROACH_ARC_NUM_SEGMENTS
+        pts = [
+            (cx + radius * math.cos(a_start + (a_end - a_start) * i / n),
+             cy + radius * math.sin(a_start + (a_end - a_start) * i / n))
+            for i in range(n + 1)
+        ]
+        for i in range(n):
+            ax, ay = pts[i]
+            bx, by = pts[i + 1]
+            mx, my = (ax + bx) / 2.0, (ay + by) / 2.0
+            length = math.hypot(bx - ax, by - ay)
+            yaw = math.atan2(by - ay, bx - ax)
+            setattr(
+                self,
+                f"approach_arc_seg_{i}",
+                AssetBaseCfg(
+                    prim_path=f"{{ENV_REGEX_NS}}/ApproachArcSeg{i}",
+                    init_state=AssetBaseCfg.InitialStateCfg(
+                        pos=(mx, my, APPROACH_ARC_LINE_HEIGHT / 2.0),
+                        rot=(math.cos(yaw / 2.0), 0.0, 0.0, math.sin(yaw / 2.0)),
+                    ),
+                    spawn=sim_utils.CuboidCfg(
+                        # +thickness on length so consecutive chords overlap slightly (no gaps).
+                        size=(length + APPROACH_ARC_LINE_THICKNESS, APPROACH_ARC_LINE_THICKNESS, APPROACH_ARC_LINE_HEIGHT),
+                        visual_material=sim_utils.PreviewSurfaceCfg(
+                            diffuse_color=(0.9, 0.05, 0.05), emissive_color=(0.9, 0.0, 0.0)
+                        ),
+                    ),
+                ),
+            )
+
 
 ##
 # MDP settings
@@ -171,13 +264,17 @@ class CommandsCfg:
         ranges=mdp.StagingPoseCommandCfg.Ranges(
             pos_x=(0.0, 0.0), pos_y=(0.0, 0.0), heading=(0.0, 0.0)
         ),
-        # Success requires the tolerance to hold for 5 consecutive steps (dwell-time gate), not
+        # Success requires the tolerance to hold for a few consecutive steps (dwell-time gate), not
         # just an instantaneous crossing -- see StagingPoseCommand's docstring. Both the
         # staging_pose_reached reward and the staging_pose_success termination read this same
         # gate (StagingPoseCommand.success_held), so they can never fire out of sync.
-        success_pos_tolerance=0.3,
-        success_heading_tolerance=0.175,
-        success_hold_steps=5,
+        # LOOSENED to get an achievable success signal for both the scripted expert and RL: the
+        # forward controllers reached the goal but arrived ~12-38 deg off heading and the tight
+        # 0.2 m / 0.175 rad / 5-step gate never fired. 0.3 m + 0.26 rad (15 deg) + 3-step dwell is
+        # the "get something working first" setting; tighten later via curriculum once it converges.
+        success_pos_tolerance=STAGING_SUCCESS_POS_TOLERANCE,
+        success_heading_tolerance=0.26,
+        success_hold_steps=1,
         debug_vis=True,
     )
 
@@ -191,7 +288,7 @@ class ActionsCfg:
         steer_joint_names=["steer_joint_L", "steer_joint_R"],
         drive_joint_names=["wheel_joint_RL", "wheel_joint_RR"],
         # 20 deg, reduced from the 30 deg physical limit: a shorter max steer means a larger
-        # minimum turn radius (~0.44 m vs ~0.28 m at this 0.16 m wheelbase), so the very short,
+        # minimum turn radius (~0.456 m vs ~0.29 m at this 0.166 m wheelbase), so the very short,
         # light chassis is much less prone to snap-oversteering into a spin. Still well within the
         # joints' +/-30 deg range.
         steer_angle_limit=0.349,
@@ -208,18 +305,30 @@ class ObservationsCfg:
         # goal: (dx, dy, dheading) to the staging pose, in the vehicle frame.
         # This is the only external input -- at deployment it comes from Nav2/AMCL minus the
         # known staging pose. The remaining terms are the robot's own motion state.
-        staging_pose_error = ObsTerm(func=mdp.generated_commands, params={"command_name": "staging_pose"})
-        base_lin_vel = ObsTerm(func=mdp.base_lin_vel, params={"asset_cfg": SceneEntityCfg("car")})
-        base_ang_vel = ObsTerm(func=mdp.base_ang_vel, params={"asset_cfg": SceneEntityCfg("car")})
-        steering_angle = ObsTerm(
-            func=mdp.joint_pos, params={"asset_cfg": SceneEntityCfg("car", joint_names=["steer_joint_L"])}
+        # Every term carries a nan_to_num guard (see _nan_guard) so a physics NaN can never reach
+        # the SAC networks -- the definitive fix for the seed-deterministic "training dies ~step
+        # 3000" failure. Physics tuning (armature/friction/velocity caps) only shifted WHEN the NaN
+        # occurred; this makes training immune to it regardless.
+        staging_pose_error = ObsTerm(
+            func=mdp.generated_commands, params={"command_name": "staging_pose"}, modifiers=_nan_guard()
         )
-        last_action = ObsTerm(func=mdp.last_action)
+        base_lin_vel = ObsTerm(
+            func=mdp.base_lin_vel, params={"asset_cfg": SceneEntityCfg("car")}, modifiers=_nan_guard()
+        )
+        base_ang_vel = ObsTerm(
+            func=mdp.base_ang_vel, params={"asset_cfg": SceneEntityCfg("car")}, modifiers=_nan_guard()
+        )
+        steering_angle = ObsTerm(
+            func=mdp.joint_pos,
+            params={"asset_cfg": SceneEntityCfg("car", joint_names=["steer_joint_L"])},
+            modifiers=_nan_guard(),
+        )
+        last_action = ObsTerm(func=mdp.last_action, modifiers=_nan_guard())
         # dwell-time success-gate progress, in [0,1] -- see hold_progress's docstring: without
         # this, the reward/termination depend on unobserved history (consecutive in-tolerance
         # step count), breaking the Markov property the critic's bootstrapped TD-target relies on
         staging_pose_hold_progress = ObsTerm(
-            func=mdp.staging_pose_hold_progress, params={"command_name": "staging_pose"}
+            func=mdp.staging_pose_hold_progress, params={"command_name": "staging_pose"}, modifiers=_nan_guard()
         )
 
         def __post_init__(self) -> None:
@@ -276,6 +385,10 @@ class RewardsCfg:
     # at all. 10.0 brings a full successful approach's total contribution to roughly +10 to +18 --
     # a meaningful counterweight to the penalties without swamping the +25 terminal bonus.
     position_progress = RewTerm(func=mdp.position_progress, weight=10.0, params={"command_name": "staging_pose"})
+    # DENSE goal-attraction (see goal_attraction docstring): always-positive reward peaking at the
+    # docked pose, to PULL the car in and defeat the loiter-penalty goal-avoidance reward-hack.
+    # weight 3.0 -> up to +3/step near the goal, a strong steady pull the policy can't dodge.
+    goal_attraction = RewTerm(func=mdp.goal_attraction, weight=3.0, params={"command_name": "staging_pose"})
     heading_alignment = RewTerm(func=mdp.heading_alignment, weight=0.5, params={"command_name": "staging_pose"})
     staging_pose_reached = RewTerm(
         func=mdp.staging_pose_reached, weight=25.0, params={"command_name": "staging_pose"}
@@ -322,6 +435,18 @@ class TerminationsCfg:
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     out_of_bounds = DoneTerm(func=mdp.out_of_bounds, params={"asset_cfg": SceneEntityCfg("car")})
+    # 180-degree approach-apron bound: terminate if the robot leaves the half-disk of radius
+    # APPROACH_ARC_BOUND_RADIUS in front of the staging pose (see out_of_approach_arc + the visual
+    # arc drawn in DockingSceneCfg). Keeps episodes on-task -- no wandering off or looping behind
+    # the goal -- and matches the region the robot is spawned into.
+    out_of_approach_arc = DoneTerm(
+        func=mdp.out_of_approach_arc,
+        params={
+            "command_name": "staging_pose",
+            "radius": APPROACH_ARC_BOUND_RADIUS,
+            "approach_dir": APPROACH_ARC_DIR,
+        },
+    )
     # success: the staging-pose tolerance is met. Reaching here hands off to the classical
     # AprilTag visual-servo stage, which is out of scope for this RL task.
     staging_pose_success = DoneTerm(func=mdp.staging_pose_success, params={"command_name": "staging_pose"})

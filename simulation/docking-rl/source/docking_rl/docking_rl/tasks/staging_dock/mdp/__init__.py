@@ -14,6 +14,7 @@ from .events import reset_root_state_in_approach_arc  # noqa: F401
 from .observations import staging_pose_hold_progress  # noqa: F401
 from .rewards import (  # noqa: F401
     gear_shift_penalty,
+    goal_attraction,
     heading_alignment,
     loiter_penalty,
     position_progress,
@@ -21,4 +22,4 @@ from .rewards import (  # noqa: F401
     staging_pose_hold_credit,
     staging_pose_reached,
 )
-from .terminations import out_of_bounds, staging_pose_success  # noqa: F401
+from .terminations import out_of_approach_arc, out_of_bounds, staging_pose_success  # noqa: F401

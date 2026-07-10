@@ -102,6 +102,17 @@ class StagingPoseCommand(CommandTerm):
         self.pos_command_b[:, 1] = -sin_yaw * target_vec[:, 0] + cos_yaw * target_vec[:, 1]
         self.heading_command_b[:] = math_utils.wrap_to_pi(self.heading_command_w - yaw)
 
+        # NaN GUARD (see also the nan_to_num obs modifiers in ObservationsCfg). A physics blow-up
+        # can write a NaN robot pose, which flows straight into pos_command_b/heading_command_b ->
+        # the staging_pose_error observation AND the position_progress/heading_alignment rewards. A
+        # single NaN reward or observation entering ONE SAC gradient update turns the network
+        # weights to NaN permanently (all Q/losses -> nan, seed-deterministic, ~step 3000 -- exactly
+        # the "car disappears / training dies" failure). The out_of_bounds termination resets the
+        # NaN'd env, but not before that transition is recorded; sanitising HERE, at the source,
+        # makes the recorded transition finite so training survives the reset instead of bricking.
+        self.pos_command_b = torch.nan_to_num(self.pos_command_b, nan=0.0, posinf=1.0e3, neginf=-1.0e3)
+        self.heading_command_b = torch.nan_to_num(self.heading_command_b, nan=0.0, posinf=1.0e3, neginf=-1.0e3)
+
         in_tolerance = (torch.norm(self.pos_command_b, dim=1) < self.cfg.success_pos_tolerance) & (
             torch.abs(self.heading_command_b) < self.cfg.success_heading_tolerance
         )
@@ -114,6 +125,9 @@ class StagingPoseCommand(CommandTerm):
         self.progress_delta = torch.where(
             self._has_prev_distance, self._prev_distance - curr_distance, torch.zeros_like(curr_distance)
         )
+        # curr_distance derives from the already-sanitised pos_command_b, so it's finite; guard
+        # progress_delta once more for safety and store the clean distance for next step.
+        self.progress_delta = torch.nan_to_num(self.progress_delta, nan=0.0, posinf=1.0e3, neginf=-1.0e3)
         self._prev_distance = curr_distance
         self._has_prev_distance[:] = True
 
