@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>jetracer_bringup</name>
+  <version>0.0.1</version>
+  <description>JetRacer Nav2 bringup</description>
+  <maintainer email="you@you.com">you</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- dock_pose_publisher runtime deps -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+
+  <!-- autonomous mapping (mapping_bringup.launch.py) -->
+  <exec_depend>explore_lite</exec_depend>
+</package>

@@ -7,11 +7,15 @@ log/
 network.env
 
 # DDS profiles rendered at runtime from *.template (contain real IPs)
-jetracer_ws/fastdds.xml
+fastdds.xml
 cyclonedds.xml
 
 # Local-only debug script (not for version control)
 jetracer_eth_debug.sh
+
+# slam_toolbox serialized pose-graphs (large binary session-resume state, regenerable)
+*.posegraph
+*.data
 
 # Ignore rosbag2 recordings
 rosbag2_*/
@@ -20,3 +24,31 @@ rosbag2_*/
 *.db3-wal
 *.mcap
 metadata.yaml
+
+# Ignore claude and vscode config
+.claude/
+.vscode/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# OS junk
+.DS_Store
+
+# amr/jetracer_ws third-party ROS packages restored via vcstool.
+# Pinned in amr/jetracer_ws/thirdparty.repos — do not commit their source.
+# Reproduce: cd amr/jetracer_ws && vcs import src < thirdparty.repos
+amr/jetracer_ws/src/angles/
+amr/jetracer_ws/src/apriltag_msgs/
+amr/jetracer_ws/src/BehaviorTree.CPP/
+amr/jetracer_ws/src/bond_core/
+amr/jetracer_ws/src/diagnostics/
+amr/jetracer_ws/src/geographic_info/
+amr/jetracer_ws/src/laser_geometry/
+amr/jetracer_ws/src/navigation2/
+amr/jetracer_ws/src/robot_localization/
+amr/jetracer_ws/src/teleop_twist_keyboard/
+# apriltag and rplidar_ros are committed as source (not tag-pinnable — see thirdparty.repos)

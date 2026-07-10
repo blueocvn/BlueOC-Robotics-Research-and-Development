@@ -1,0 +1,32 @@
+# explore_lite (m-explore-ros2) frontier-exploration config for autonomous
+# mapping on the JetRacer.
+#
+# Pairs with a live SLAM stack (running on another machine) that publishes /map
+# and the map->odom TF, plus the Nav2 stack from nav_bringup.launch.py. explore
+# reads the Nav2 GLOBAL costmap (which fuses the SLAM /map via its static_layer
+# and marks unknown space, since global_costmap.track_unknown_space: true), picks
+# frontiers, and drives to them by sending NavigateToPose goals to bt_navigator.
+#
+# NOTE: do NOT also run AMCL/map_server localization while mapping -- the global
+# costmap's static_layer must take /map straight from SLAM. Run hardware + Nav2
+# (controller/planner/behavior/bt_navigator + costmaps) + this; skip map_server
+# and amcl.
+explore_node:
+  ros__parameters:
+    use_sim_time: false
+    robot_base_frame: base_footprint        # matches Nav2/EKF base frame
+    # Full global costmap + incremental updates published by Nav2.
+    costmap_topic: /global_costmap/costmap
+    costmap_updates_topic: /global_costmap/costmap_updates
+    visualize: true                         # publish frontier markers for RViz
+    planner_frequency: 0.33                 # re-evaluate frontiers ~every 3 s
+    progress_timeout: 30.0                  # blacklist a frontier if no progress
+                                            # in 30 s (slow Ackermann + turning
+                                            # radius can stall on a goal)
+    # Frontier cost weighting (cost = potential_scale*dist - gain_scale*size):
+    potential_scale: 3.0                    # >1 favours nearby frontiers (less driving)
+    gain_scale: 1.0                         # favours large unexplored frontiers
+    orientation_scale: 0.0                  # car heading is irrelevant to frontier choice
+    transform_tolerance: 0.5
+    min_frontier_size: 0.15                 # ignore frontiers smaller than 0.15 m
+    return_to_init: false                   # set true to drive home when mapping done

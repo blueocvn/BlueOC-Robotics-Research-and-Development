@@ -1,0 +1,105 @@
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+
+
+def generate_launch_description():
+    map_file = LaunchConfiguration('map')
+    params_file = LaunchConfiguration('params_file')
+
+    lifecycle_nodes = [
+        'map_server',
+        'amcl',
+        'controller_server',
+        'planner_server',
+        'bt_navigator',
+    ]
+
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'map',
+            default_value='/ros2_ws/maps/fake_map.yaml',
+            description='Full path to map yaml'),
+        DeclareLaunchArgument(
+            'params_file',
+            default_value='/ros2_ws/src/jetracer_bringup/config/jetracer_nav2.yaml',
+            description='Full path to Nav2 params yaml'),
+
+        # static TF: odom -> base_link
+        # (only used if EKF is NOT running; comment out when using EKF)
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_odom_base',
+            arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link'],
+            output='screen'),
+
+        # static TF: base_link -> laser  (measure your lidar mount!)
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_base_laser',
+            arguments=['0.10', '0', '0.05', '0', '0', '0', 'base_link', 'laser'],
+            output='screen'),
+
+        # map server
+        Node(
+            package='nav2_map_server',
+            executable='map_server',
+            name='map_server',
+            output='screen',
+            parameters=[params_file, {'yaml_filename': map_file}]),
+
+        # amcl localization
+        Node(
+            package='nav2_amcl',
+            executable='amcl',
+            name='amcl',
+            output='screen',
+            parameters=[params_file]),
+
+        # controller server (Regulated Pure Pursuit)
+        Node(
+            package='nav2_controller',
+            executable='controller_server',
+            name='controller_server',
+            output='screen',
+            parameters=[params_file]),
+
+        # planner server (NavFn)
+        Node(
+            package='nav2_planner',
+            executable='planner_server',
+            name='planner_server',
+            output='screen',
+            parameters=[params_file]),
+
+        # bt navigator
+        Node(
+            package='nav2_bt_navigator',
+            executable='bt_navigator',
+            name='bt_navigator',
+            output='screen',
+            parameters=[params_file]),
+Node(
+    package='nav2_lifecycle_manager',
+    executable='lifecycle_manager',
+    name='lifecycle_manager_navigation',
+    output='screen',
+    parameters=[{
+        'autostart': True,
+        'bond_timeout': 0.0,
+        'node_names': lifecycle_nodes,
+    }]),
+        # lifecycle manager
+        Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_navigation',
+            output='screen',
+            parameters=[{
+                'autostart': True,
+                'node_names': lifecycle_nodes,
+            }]),
+    ])

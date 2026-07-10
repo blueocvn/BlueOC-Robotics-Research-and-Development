@@ -1,0 +1,51 @@
+name: ROS2 CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  test_environment:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+      matrix:
+        ros_distribution: [humble, jazzy, kilted]
+
+        include:
+          - ros_distribution: humble
+            docker_image: rostooling/setup-ros-docker:ubuntu-jammy-ros-humble-ros-base-latest
+            fix_libunwind: true
+
+          - ros_distribution: jazzy
+            docker_image: rostooling/setup-ros-docker:ubuntu-noble-ros-jazzy-ros-base-latest
+            fix_libunwind: false
+
+          - ros_distribution: kilted
+            docker_image: rostooling/setup-ros-docker:ubuntu-noble-ros-kilted-ros-base-latest
+            fix_libunwind: false
+
+    container:
+      image: ${{ matrix.docker_image }}
+
+    steps:
+      # The 22.04 virtual environment includes libunwind-14-dev, which conflicts with libunwind-dev
+      - run: |-
+          sudo apt-get remove libunwind-14 -y
+          sudo apt-get install libunwind-dev -y
+        if: matrix.fix_libunwind
+
+      - run: |-
+          mkdir -p ros_ws/src
+
+      - uses: actions/checkout@v6
+        with:
+          path: ros_ws/src
+
+      - uses: ros-tooling/action-ros-ci@0.4.8
+        with:
+          package-name: gscam2
+          target-ros2-distro: ${{ matrix.ros_distribution }}

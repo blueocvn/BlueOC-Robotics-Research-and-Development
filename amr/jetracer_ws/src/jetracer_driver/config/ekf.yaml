@@ -1,0 +1,44 @@
+ekf_filter_node:
+  ros__parameters:
+    frequency: 20.0
+    sensor_timeout: 0.1
+    two_d_mode: true
+    publish_tf: true
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom
+
+    # Publish state extrapolated to the current time so /odometry/filtered and
+    # the odom->base_footprint TF aren't lagged behind the lidar scan. Reduces
+    # the latency that makes scans look "smeared" relative to TF in SLAM.
+    predict_to_current_time: true
+
+    # Wheel odometry: use forward velocity (vx) ONLY.
+    # Yaw rate is intentionally dropped here -- the IMU gyro (imu0 below) is a
+    # far better yaw-rate source than wheel-derived yaw, which is corrupted by
+    # slip during exactly the turns that smear A1 scans. Position fields are
+    # ignored (the driver marks them untrusted).
+    # Order: [x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az]
+    odom0: odom
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  false, false,
+                   false, false, false,
+                   false, false, false]
+    odom0_differential: false
+    odom0_relative: false
+
+    # IMU: use yaw rate (vyaw) ONLY.
+    # Forward acceleration (ax) is intentionally dropped -- on a cheap IMU on a
+    # vibrating mount, fusing ax integrates noise into the velocity estimate.
+    # Wheel vx above is the cleaner velocity source.
+    imu0: imu
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: true

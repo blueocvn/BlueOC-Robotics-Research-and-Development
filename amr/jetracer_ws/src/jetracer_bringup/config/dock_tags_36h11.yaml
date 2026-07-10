@@ -1,0 +1,22 @@
+/**:
+    ros__parameters:
+        image_transport: raw    # image format
+        family: 36h11           # tag family name
+        size: 0.103             # default tag edge size in meter
+        max_hamming: 0          # maximum allowed hamming distance (corrected bits)
+
+        detector:
+            threads: 1          # number of threads
+            decimate: 2.0       # decimate resolution for quad detection
+            blur: 0.0           # sigma of Gaussian blur for quad detection
+            refine: true        # snap to strong gradients (bool in this build)
+            sharpening: 0.25    # sharpening of decoded images
+            debug: false        # write additional debugging images (bool)
+
+        # Dock markers for opennav_docking: ids 0/1/2 publish TF frames
+        # dock_0/dock_1/dock_2, which dock_pose_publisher republishes as
+        # /detected_dock_pose. Set `sizes` to the real printed edge length.
+        tag:
+            ids: [0, 1, 2]                      # dock tag IDs
+            frames: [dock_0, dock_1, dock_2]    # TF frame per tag
+            sizes: [0.103, 0.103, 0.103]        # tag edge size in meter

@@ -1,0 +1,32 @@
+# IMX219-160 calibration -- SPEC-INFERRED (rough, NOT measured).
+# Loaded by gscam2 via camera_info_url in hardware.launch.py. Switch between this
+# and imx219_measured.yaml by changing that one line.
+#
+# For the 640x360 pipeline output, assuming the IMX219-160's wide lens gives
+# ~135 deg horizontal FOV:
+#   * fx = fy = (width/2) / tan(HFOV/2) = 320 / tan(67.5deg) ~= 133 px
+#   * principal point assumed at image center: cx = 320.0, cy = 180.0
+#   * zero distortion (plumb_bob all zeros), identity rectification.
+# WARNING: plumb_bob cannot model this lens's heavy barrel distortion, so
+# rectified images stay visibly distorted and AprilTag pose accuracy is degraded,
+# especially toward frame edges. Use imx219_measured.yaml for accurate docking.
+image_width: 640
+image_height: 360
+camera_name: imx219
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [133.0, 0.0, 320.0, 0.0, 133.0, 180.0, 0.0, 0.0, 1.0]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.0, 0.0, 0.0, 0.0, 0.0]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [133.0, 0.0, 320.0, 0.0, 0.0, 133.0, 180.0, 0.0, 0.0, 0.0, 1.0, 0.0]

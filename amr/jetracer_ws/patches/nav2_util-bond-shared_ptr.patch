@@ -1,0 +1,22 @@
+--- a/nav2_util/include/nav2_util/lifecycle_node.hpp
++++ b/nav2_util/include/nav2_util/lifecycle_node.hpp
+@@ -184,7 +184,7 @@
+   void printLifecycleNodeNotification();
+
+   // Connection to tell that server is still up
+-  std::unique_ptr<bond::Bond> bond_{nullptr};
++  std::shared_ptr<bond::Bond> bond_{nullptr};
+ };
+
+ }  // namespace nav2_util
+--- a/nav2_util/src/lifecycle_node.cpp
++++ b/nav2_util/src/lifecycle_node.cpp
+@@ -54,7 +54,7 @@
+ {
+   RCLCPP_INFO(get_logger(), "Creating bond (%s) to lifecycle manager.", this->get_name());
+
+-  bond_ = std::make_unique<bond::Bond>(
++  bond_ = std::make_shared<bond::Bond>(
+     std::string("bond"),
+     this->get_name(),
+     shared_from_this());

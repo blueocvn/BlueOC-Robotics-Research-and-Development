@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Start RPLidar A1 on ttyACM1
+
+source /opt/ros/humble/setup.bash
+
+ros2 run rplidar_ros rplidar_composition --ros-args \
+    -p serial_port:=/dev/ttyACM1 \
+    -p serial_baudrate:=115200 \
+    -p frame_id:=laser \
+    -p angle_compensate:=true \
+    -p scan_mode:=Standard
+#!/usr/bin/env bash
+# Static TF publisher: base_footprint -> laser_frame
+# Waveshare JetRacer A1 lidar mount
+#
+# Translation (meters):
+#   x=0.0   lidar centered front-back
+#   y=
+source /opt/ros/humble/setup.bash
+
+ros2 run tf2_ros static_transform_publisher \
+    --x 0.0 \
+    --y 0.0 \
+    --z 0.18 \
+    --roll 0.0 \
+    --pitch 0.0 \
+    --yaw 3.14159 \
+    --frame-id base_footprint \
+    --child-frame-id laser_frame
