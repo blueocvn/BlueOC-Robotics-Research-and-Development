@@ -1,178 +1,90 @@
 # Getting Started
 
-Setup guides for the individual workspaces in this repo. Each workspace builds
-and runs on its own; they communicate only over the ROS 2 graph (shared DDS
-domain), not a shared build space.
+Welcome to the **Robot Fulfillment** system — a web orchestrator that dispatches
+a mobile robot (AMR) and a robot arm (RA) to fulfil drink orders, all runnable
+against NVIDIA Isaac Sim with no physical hardware.
+
+This page is the map. Pick the workspace you want to set up, and skim the
+**Concepts** section first if the terms are new — each links to the canonical
+docs so you can read up before touching the code.
 
 ---
 
-## Robotic Arm (`ra_ws`) — SO-ARM 101 Isaac Sim Refill Demo
+## Setup guides
 
-A 5-DOF SO-ARM 101 grasps a green-interior mug in NVIDIA Isaac Sim, visually
-servos onto it with an eye-in-hand camera, carries it to an AprilTag-marked
-dispenser to "fill", and places it in a pink tray. Perception, MoveIt 2 / MoveIt
-Task Constructor (MTC), and a visual-servo loop run on the ROS 2 side; Isaac Sim
-provides the physics, the robot, and the cameras.
+Each workspace builds and runs on its own; they communicate only over the ROS 2
+graph (a shared DDS domain), not a shared build space. **Use the same
+`ROS_DOMAIN_ID` across all three** so they can see each other.
 
-This section assumes you already have **Isaac Sim installed** and starts there.
-
-> **⚠️ ROS distro:** `ra_ws` targets **ROS 2 Jazzy (Ubuntu 24.04)** — *not* the
-> Humble stack the rest of the repo (`jetracer_ws`, `orchestrator_ws`) runs in.
-> Build and run `ra_ws` against a native Jazzy install, **not** inside the
-> `Dockerfile.dev` Humble container. The workspaces still interoperate over DDS
-> (use the same `ROS_DOMAIN_ID`).
-
-### 1. Prerequisites
-
-| Component | Version / notes |
-|---|---|
-| OS | Ubuntu 24.04 |
-| ROS 2 | **Jazzy** (`ros-jazzy-desktop`) |
-| Isaac Sim | Any recent release with the ROS 2 Bridge extension enabled |
-| Build tools | `colcon`, `rosdep`, `git` |
-| Python (perception) | numpy, opencv-python, ultralytics, scipy |
-
-> Isaac Sim's ROS 2 Bridge must be configured for Jazzy (set the bridge to use
-> your system ROS, or source your ROS 2 install before launching Isaac).
-
-### 2. Workspace layout
-
-Only these four packages are part of the arm project — everything else is a
-standard upstream dependency you install separately (see §3):
-
-| Package | What it is |
-|---|---|
-| `ra_ws/src/so_arm_description` | SO-ARM 101 URDF + meshes |
-| `ra_ws/src/so_arm_moveit_config` | MoveIt 2 config (SRDF, kinematics, OMPL, controllers, `ros2_control`) |
-| `ra_ws/src/so_arm_perception` | Cup + tray + AprilTag perception nodes (YOLO / HSV / OpenCV) |
-| `ra_ws/src/mtc_tutorial` | `mtc_node` — the grasp → servo → fill → place pipeline, plus launch files |
-
-The Isaac Sim scene (robot, table, mug, tray, dispenser, cameras) lives under
-the repo's `simulation/` folder — open it in Isaac Sim before running.
-
-### 3. Install dependencies
-
-#### 3.1 ROS 2 Jazzy + MoveIt 2
-```bash
-sudo apt update
-sudo apt install ros-jazzy-desktop ros-jazzy-moveit \
-     ros-jazzy-topic-based-ros2-control \
-     ros-jazzy-joint-trajectory-controller \
-     ros-jazzy-position-controllers \
-     ros-jazzy-joint-state-broadcaster \
-     python3-colcon-common-extensions python3-rosdep
-```
-
-#### 3.2 MoveIt Task Constructor (MTC)
-MTC drives the pick pipeline. If a Jazzy binary is available:
-```bash
-sudo apt install ros-jazzy-moveit-task-constructor-core
-```
-Otherwise clone it into `ra_ws/src/` and let `colcon` build it:
-```bash
-cd ra_ws/src && git clone -b jazzy https://github.com/moveit/moveit_task_constructor.git
-```
-
-#### 3.3 Perception Python packages
-```bash
-python3 -m pip install "numpy>=1.24" "opencv-python>=4.8" "ultralytics>=8.3" "scipy>=1.11"
-```
-`cv_bridge` comes from apt: `sudo apt install ros-jazzy-cv-bridge`.
-The YOLO weights (`yolo11n.pt`) auto-download on first run; no manual step needed.
-
-#### 3.4 Resolve the rest with rosdep
-```bash
-cd ra_ws
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-### 4. Build the workspace
-
-```bash
-cd ra_ws
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install
-source install/setup.bash
-```
-
-### 5. Isaac Sim setup (the ROS contract)
-
-The ROS side talks to Isaac Sim through **`topic_based_ros2_control`**. Open the
-scene and make sure its ROS 2 action graph publishes/subscribes these topics:
-
-| Direction | Topic | Type | Notes |
+| Workspace | What it is | ROS distro | Guide |
 |---|---|---|---|
-| Isaac → ROS | `/isaac_joint_states` | `sensor_msgs/JointState` | all 6 joints: `Rotation, Pitch, Elbow, Wrist_Pitch, Wrist_Roll, Jaw` |
-| ROS → Isaac | `/isaac_joint_commands` | `sensor_msgs/JointState` | position commands; drive the joints to these |
-| Isaac → ROS | `/clock` | `rosgraph_msgs/Clock` | everything runs with `use_sim_time:=true` |
-| Isaac → ROS | top-cam RGB + `camera_info` | `sensor_msgs/Image`, `CameraInfo` | overhead camera (namespace `top_cam`) |
-| Isaac → ROS | arm-cam RGB + depth + `camera_info` | `sensor_msgs/Image`, `CameraInfo` | eye-in-hand camera (namespace `arm_cam`) |
+| `ra_ws` | SO-ARM 101 robot arm — perception, MoveIt 2 / MTC, visual servo, grasp → fill → place | **Jazzy** (native) | **[Robotic Arm setup →](ra_setup.md)** |
+| `jetracer_ws` | JetRacer AMR — SLAM, Nav2, Ackermann drive | **Humble** (Docker) | **[AMR setup →](amr_setup.md)** |
+| `orchestrator_ws` | `robot_web_bridge` — FastAPI + HTMX web UI + dispatcher | Humble | see the package README |
 
-The camera namespaces are parameters of the perception node
-(`camera_eth_ns` = `top_cam`, `camera_eih_ns` = `arm_cam`) — match Isaac's camera
-topics to these, or override the params.
+> **⚠️ Two ROS distros on purpose.** `ra_ws` runs on **Jazzy (Ubuntu 24.04)**
+> natively; `jetracer_ws` / `orchestrator_ws` run on **Humble** inside
+> `Dockerfile.dev`. They interoperate over DDS — do **not** try to build `ra_ws`
+> inside the Humble container.
 
-**Steps:**
-1. Open the arm scene (under `simulation/`) in Isaac Sim.
-2. Confirm the ROS 2 Bridge extension is enabled and set to ROS 2 Jazzy.
-3. Press **Play** (physics + camera render products must be running, or
-   `/isaac_joint_states` and the camera topics stay silent).
-4. In a sourced terminal, verify the contract:
-   ```bash
-   ros2 topic hz /isaac_joint_states
-   ros2 topic hz /clock
-   ros2 topic list | grep -E "top_cam|arm_cam"
-   ```
+---
 
-### 6. Run the pipeline
+## Concepts & topics for new learners
 
-One command brings up MoveIt (`move_group` + controllers + RViz), perception, and
-`mtc_node`, staggered so each layer's dependencies are up first:
+New to this stack? These are the ideas the code is built on. Read the linked
+docs for the ones you're unfamiliar with before diving in.
 
-```bash
-source install/setup.bash
-ros2 launch mtc_tutorial bringup.launch.py
-```
+### Shared foundations (both robots)
 
-What happens:
-1. `move_group`, `ros2_control`, and the `arm_group` / `hand_group` controllers start.
-2. Perception starts (YOLO cup detector, pink-tray detector, AprilTag detector).
-3. `mtc_node` waits for `/detected_object/position`, then per cup:
-   gross move → visual servo onto the mug → close claw → carry to the AprilTag
-   dispenser → lean/press to "fill" → place in the tray.
-
-The **number of cups** is not configured — it's however many the **top cam**
-detects at start (if none, it defaults to one), and they're spread evenly across
-the tray (a single cup is centred).
-
-### 7. Key configuration (launch args)
-
-All are args to `pick_place_demo.launch.py` (forward them through `bringup`):
-
-| Arg | Default | Purpose |
+| Concept | What it is here | Read up |
 |---|---|---|
-| `servo_image_mode` | `true` | image-based (IBVS) arm-cam servo |
-| `grasp_yaw_bias` | `-0.5` | approach angle so the mug lands in the single-jaw gap |
-| `servo_grasp_z` | `0.05986` | side-grasp height (mug mid-height) |
-| `dispenser_standoff` | `0.10` | hold-back from the tag before pressing |
-| `dispenser_fill_depth` | `-0.08` | how far the cup ends vs the tag (negative = stops short) |
+| **ROS 2** | The middleware everything runs on — nodes, topics, services, actions | [docs.ros.org](https://docs.ros.org/en/humble/index.html) |
+| **DDS / `ROS_DOMAIN_ID`** | How the three workspaces discover and talk to each other over the network | [ROS 2 DDS & domain IDs](https://docs.ros.org/en/humble/Concepts/Intermediate/About-Domain-ID.html) |
+| **colcon / rosdep** | Build the workspaces; resolve system dependencies | [colcon](https://colcon.readthedocs.io/) · [rosdep](https://docs.ros.org/en/humble/Tutorials/Intermediate/Rosdep.html) |
+| **TF2** | Coordinate-frame tree (world → camera → gripper, etc.) | [tf2](https://docs.ros.org/en/humble/Concepts/Intermediate/About-Tf2.html) |
+| **NVIDIA Isaac Sim** | The simulator providing physics, robots, sensors, and the ROS 2 Bridge | [Isaac Sim docs](https://docs.isaacsim.omniverse.nvidia.com/) |
+| **`use_sim_time` / `/clock`** | Every node runs on simulator time; `/clock` must keep flowing | [Using sim time](https://docs.ros.org/en/humble/Tutorials/Advanced/Simulators/Webots/Setting-Up-Simulation-Webots-Basic.html) |
 
-Example: `ros2 launch mtc_tutorial bringup.launch.py servo_grasp_z:=0.05`.
+### Robot arm (`ra_ws`) concepts
 
-### 8. Troubleshooting
+| Concept | What it is here | Read up |
+|---|---|---|
+| **MoveIt 2** | Motion-planning framework — `move_group`, kinematics, collision checking | [moveit.ai](https://moveit.picknik.ai/main/index.html) |
+| **MoveIt Task Constructor (MTC)** | Stages the pick → lift → place task; the backbone of `mtc_node` | [MTC docs](https://moveit.picknik.ai/main/doc/examples/moveit_task_constructor/moveit_task_constructor_tutorial.html) |
+| **OMPL / RRTConnect** | The sampling motion planner used for gross moves | [OMPL](https://ompl.kavrakilab.org/) |
+| **Inverse kinematics (position-only, 5-DOF)** | Solving joint angles for a target; the arm is 5-DOF so orientation is only partly controllable | [MoveIt IK](https://moveit.picknik.ai/main/doc/examples/kinematics_configuration/kinematics_configuration_tutorial.html) |
+| **`ros2_control` / `topic_based_ros2_control`** | The controller layer; the topic-based variant bridges to Isaac Sim | [ros2_control](https://control.ros.org/) |
+| **Visual servoing (IBVS / PBVS)** | Closing the loop on camera feedback to home onto the mug (custom loop, *not* `moveit_servo`) | [Visual servo overview](https://visp.inria.fr/visual-servoing/) |
+| **YOLO (YOLO11n)** | Neural object detector used to find the mug | [Ultralytics YOLO](https://docs.ultralytics.com/) |
+| **AprilTag** | Fiducial marker on the dispenser for sub-mm pose | [AprilTag](https://april.eecs.umich.edu/software/apriltag) |
+| **HSV segmentation + ray-plane unprojection** | Color-threshold the mug/tray, then project the pixel onto a known ground plane to get a world coordinate | [OpenCV color spaces](https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html) |
 
-| Symptom | Likely cause / fix |
-|---|---|
-| Arm never moves | Isaac not in **Play**, or Isaac isn't subscribed to `/isaac_joint_commands`. Check `ros2 topic echo /isaac_joint_commands`. |
-| `mtc_node` blocks on "waiting for /detected_object/position" | Perception isn't publishing — check camera topics are streaming and match the `camera_*_ns` params. |
-| Cameras silent | Isaac render products / camera OmniGraph not active while playing. |
-| Planning fails "Start state out of bounds" | A joint settled a hair past a URDF limit; the node re-seats before release, but check `joint_limits.yaml`. |
-| Everything is slow / time jumps | `/clock` not published, or a node started without `use_sim_time:=true`. |
+→ Full walkthrough: **[Robotic Arm setup](ra_setup.md)**
 
-### 9. Notes for maintainers
+### AMR (`jetracer_ws`) concepts
 
-- The whole arm stack runs on **sim time** (`use_sim_time:=true`); keep `/clock` flowing.
-- The gripper opens via the `hand_group_controller/gripper_cmd` GripperCommand
-  action; the arm is commanded on `/arm_group_controller/joint_trajectory`.
-- Perception's overhead camera also publishes the static `world → top_sim_camera`
-  TF used for ray-plane unprojection (in `perception.launch.py`).
+| Concept | What it is here | Read up |
+|---|---|---|
+| **SLAM (`slam_toolbox`)** | Build a map of the space while localizing in it | [slam_toolbox](https://github.com/SteveMacenski/slam_toolbox) |
+| **Nav2** | The navigation stack — planners, controllers, behavior trees, costmaps | [Nav2 docs](https://docs.nav2.org/) |
+| **AMCL** | Particle-filter localization against a saved map | [Nav2 AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) |
+| **Costmaps** | Occupancy grids Nav2 plans and avoids obstacles on | [Nav2 costmaps](https://docs.nav2.org/configuration/packages/configuring-costmaps.html) |
+| **Behavior Trees** | How Nav2 sequences navigation behaviors | [Nav2 BT](https://docs.nav2.org/behavior_trees/index.html) |
+| **`NavigateToPose` action** | The action a goal sender calls to drive to a pose | [Nav2 actions](https://docs.nav2.org/commander_api/index.html) |
+| **Odometry (`/chassis/odom`)** | The base's estimated motion, fused for localization | [nav_msgs/Odometry](https://docs.ros.org/en/humble/p/nav_msgs/) |
+| **Ackermann steering** | Car-like drive (steer angle + drive), unlike a differential base | [Ackermann geometry](https://en.wikipedia.org/wiki/Ackermann_steering_geometry) |
+
+→ Full walkthrough: **[AMR setup](amr_setup.md)**
+
+---
+
+## Which do I set up first?
+
+- Just want to see the **arm grasp cups**? → [ra_setup.md](ra_setup.md) (self-contained, needs only Isaac Sim + Jazzy).
+- Want the **AMR to map and navigate**? → [amr_setup.md](amr_setup.md).
+- Want the **web-order → robot** end-to-end flow? Set up `orchestrator_ws` plus at least the AMR, and keep a common `ROS_DOMAIN_ID`.
+
+> **State of the system:** both robots run in **simulation**; there is no on-device
+> firmware yet. The orchestrator ↔ AMR docking seam and the orchestrator ↔ RA
+> integration are still open work — the setup guides flag exactly what's built vs.
+> planned.
