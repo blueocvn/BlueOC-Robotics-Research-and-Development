@@ -1,0 +1,94 @@
+/* =============================================================
+   Robot Fulfillment docs — color modes
+   Light  → robot_arm_mt.html   (clean white surfaces, #1868B0 blue)
+   Dark   → jetracer-mt.html     (deep navy #0F1419, #4FE0C8 cyan)
+   Colors are applied by retinting Material's built-in
+   "default" (light) and "slate" (dark) schemes.
+   ============================================================= */
+
+/* ----------------------------- LIGHT ----------------------------- */
+[data-md-color-scheme="default"] {
+  /* surfaces / text */
+  --md-default-bg-color:             #ffffff;
+  --md-default-fg-color:             #14181f;
+  --md-default-fg-color--light:      #57616f;
+  --md-default-fg-color--lighter:    #6b7684;
+  --md-default-fg-color--lightest:   #e6e9ed;
+
+  /* brand / header */
+  --md-primary-fg-color:             #1868b0;
+  --md-primary-fg-color--light:      #3a82c4;
+  --md-primary-fg-color--dark:       #12508a;
+  --md-primary-bg-color:             #ffffff;
+  --md-primary-bg-color--light:      rgba(255, 255, 255, 0.7);
+
+  /* accent (hover / active / selection) */
+  --md-accent-fg-color:              #147a47;
+  --md-accent-fg-color--transparent: rgba(20, 122, 71, 0.10);
+
+  /* typography + links */
+  --md-typeset-color:                #14181f;
+  --md-typeset-a-color:              #1868b0;
+
+  /* inline + block code */
+  --md-code-bg-color:                #f4f6f8;
+  --md-code-fg-color:                #14181f;
+
+  /* footer */
+  --md-footer-bg-color:              #f0f2f5;
+  --md-footer-bg-color--dark:        #e6e9ed;
+  --md-footer-fg-color:              #14181f;
+  --md-footer-fg-color--light:       #57616f;
+}
+
+/* faint dotted grid behind content, like the reference pages */
+[data-md-color-scheme="default"] .md-main {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(20, 24, 31, 0.04) 1px, transparent 0);
+  background-size: 28px 28px;
+}
+
+/* ------------------------------ DARK ----------------------------- */
+[data-md-color-scheme="slate"] {
+  color-scheme: dark;
+
+  /* surfaces / text */
+  --md-default-bg-color:             #0f1419;
+  --md-default-fg-color:             #e7edf2;
+  --md-default-fg-color--light:      #b4c0cc;
+  --md-default-fg-color--lighter:    #7c8b99;
+  --md-default-fg-color--lightest:   #2a3540;
+
+  /* header stays dark navy; cyan is the accent, not the bar */
+  --md-primary-fg-color:             #1a222a;
+  --md-primary-fg-color--light:      #212b35;
+  --md-primary-fg-color--dark:       #0d1116;
+  --md-primary-bg-color:             #e7edf2;
+  --md-primary-bg-color--light:      rgba(231, 237, 242, 0.7);
+
+  --md-accent-fg-color:              #4fe0c8;
+  --md-accent-fg-color--transparent: rgba(79, 224, 200, 0.14);
+
+  --md-typeset-color:                #e7edf2;
+  --md-typeset-a-color:              #4fe0c8;
+
+  --md-code-bg-color:                #0d1116;
+  --md-code-fg-color:                #d7e3ea;
+
+  --md-footer-bg-color:              #1a222a;
+  --md-footer-bg-color--dark:        #0d1116;
+  --md-footer-fg-color:              #e7edf2;
+  --md-footer-fg-color--light:       #7c8b99;
+}
+
+/* cards (admonitions / collapsibles) lift off the void like the panels */
+[data-md-color-scheme="slate"] .md-typeset .admonition,
+[data-md-color-scheme="slate"] .md-typeset details {
+  background-color: #1a222a;
+  border-color: #2a3540;
+}
+
+/* code blocks get a hairline border so they read as panels in both modes */
+[data-md-color-scheme="slate"] .md-typeset pre > code {
+  border: 1px solid #2a3540;
+}
