@@ -1,7 +1,6 @@
 import os
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, RegisterEventHandler
-from launch.event_handlers import OnProcessStart
+from launch.actions import ExecuteProcess
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from moveit_configs_utils import MoveItConfigsBuilder
@@ -90,32 +89,6 @@ def generate_launch_description():
         output="both",
     )
 
-    servo_yaml_path = os.path.join(
-        get_package_share_directory("so_arm_moveit_config"),
-        "config", "servo.yaml"
-    )
-
-    servo_node = Node(
-        package="moveit_servo",
-        executable="servo_node",
-        parameters=[
-            moveit_config.to_dict(),
-            servo_yaml_path,
-            {"use_sim_time": True},
-        ],
-        output="screen",
-    )
-
-    start_servo = ExecuteProcess(
-        cmd=['ros2', 'service', 'call', '/servo_node/start_servo', 'std_srvs/srv/Trigger', '{}'],
-        output='screen'
-    )
-
-    delayed_servo = TimerAction(
-        period=4.0,                              # after controllers are up
-        actions=[servo_node]
-    )
-
     # Load controllers
     load_controllers = [
         TimerAction(
@@ -148,13 +121,6 @@ def generate_launch_description():
             robot_state_publisher,
             run_move_group_node,
             ros2_control_node,
-            servo_node,
-            # RegisterEventHandler(
-            #     event_handler=OnProcessStart(
-            #         target_action=servo_node,
-            #         on_start=[start_servo],
-            #     )
-            # ),
         ]
         + load_controllers
     )

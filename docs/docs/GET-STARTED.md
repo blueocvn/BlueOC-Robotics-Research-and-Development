@@ -27,6 +27,12 @@ graph (a shared DDS domain), not a shared build space. **Use the same
 > `Dockerfile.dev`. They interoperate over DDS — do **not** try to build `ra_ws`
 > inside the Humble container.
 
+> **▶ Isaac Sim must be playing before you launch either robot.** Both the arm and
+> the AMR run entirely against Isaac Sim — open the relevant scene and press
+> **Play** *first*, or the ROS nodes stall waiting on `/clock` and the sim's
+> topics (joint states, cameras, odom, lidar). Each setup guide repeats this at
+> its run step.
+
 ---
 
 ## Concepts & topics for new learners
@@ -54,7 +60,7 @@ docs for the ones you're unfamiliar with before diving in.
 | **OMPL / RRTConnect** | The sampling motion planner used for gross moves | [OMPL](https://ompl.kavrakilab.org/) |
 | **Inverse kinematics (position-only, 5-DOF)** | Solving joint angles for a target; the arm is 5-DOF so orientation is only partly controllable | [MoveIt IK](https://moveit.picknik.ai/main/doc/examples/kinematics_configuration/kinematics_configuration_tutorial.html) |
 | **`ros2_control` / `topic_based_ros2_control`** | The controller layer; the topic-based variant bridges to Isaac Sim | [ros2_control](https://control.ros.org/) |
-| **Visual servoing (IBVS / PBVS)** | Closing the loop on camera feedback to home onto the mug (custom loop, *not* `moveit_servo`) | [Visual servo overview](https://visp.inria.fr/visual-servoing/) |
+| **Visual servoing (IBVS / PBVS)** | Closing the loop on camera feedback to home onto the mug (custom loop, *not* `moveit_servo`) | [Visual servo overview](https://visp.inria.fr/visual-servoing/) · [XLeRobot SO-101 servoing](https://xlerobot.readthedocs.io/en/latest/software/getting_started/SO101.html) |
 | **YOLO (YOLO11n)** | Neural object detector used to find the mug | [Ultralytics YOLO](https://docs.ultralytics.com/) |
 | **AprilTag** | Fiducial marker on the dispenser for sub-mm pose | [AprilTag](https://april.eecs.umich.edu/software/apriltag) |
 | **HSV segmentation + ray-plane unprojection** | Color-threshold the mug/tray, then project the pixel onto a known ground plane to get a world coordinate | [OpenCV color spaces](https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html) |

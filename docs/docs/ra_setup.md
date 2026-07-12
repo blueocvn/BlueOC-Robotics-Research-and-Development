@@ -67,10 +67,14 @@ cd ra_ws/src && git clone -b jazzy https://github.com/moveit/moveit_task_constru
 
 #### 3.3 Perception Python packages
 ```bash
-python3 -m pip install "numpy>=1.24" "opencv-python>=4.8" "ultralytics>=8.3" "scipy>=1.11"
+python3 -m pip install "numpy>=1.24" "opencv-python>=4.8" "ultralytics>=8.3" \
+     "scipy>=1.11" "pupil-apriltags>=1.0"
 ```
 `cv_bridge` comes from apt: `sudo apt install ros-jazzy-cv-bridge`.
 The YOLO weights (`yolo11n.pt`) auto-download on first run; no manual step needed.
+`pupil-apriltags` provides the AprilTag detector used by `apriltag_node` to
+localize the dispenser marker — it is required (the perception launch always
+starts that node).
 
 #### 3.4 Resolve the rest with rosdep
 ```bash
@@ -117,6 +121,12 @@ topics to these, or override the params.
    ```
 
 ### 6. Run the pipeline
+
+> **⚠️ Isaac Sim must be running first.** Open the arm scene and press **Play**
+> (see §5) *before* the command below. `mtc_node` blocks on
+> `/detected_object/position`, and `move_group` + the controllers need
+> `/isaac_joint_states` and `/clock` — nothing moves until Isaac is playing and
+> publishing those topics.
 
 One command brings up MoveIt (`move_group` + controllers + RViz), perception, and
 `mtc_node`, staggered so each layer's dependencies are up first:

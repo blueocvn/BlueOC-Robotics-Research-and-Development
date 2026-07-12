@@ -102,6 +102,11 @@ ros2 topic echo /front_3d_lidar/lidar_points --once
 
 ### 5. Map the space (SLAM)
 
+> **⚠️ Isaac Sim must be running first.** Open the AMR scene and press **Play**
+> (see §4) *before* launching SLAM or Nav2. The nodes need `/clock`,
+> `/chassis/odom`, and the lidar stream — they stall (or SLAM never builds a map)
+> until Isaac is playing and publishing those topics.
+
 `slam_custom` runs `slam_toolbox` online-async with a preconfigured rviz. It is
 sim-time aware and waits `startup_delay` seconds for the clock to settle.
 
