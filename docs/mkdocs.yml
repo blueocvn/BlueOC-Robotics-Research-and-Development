@@ -12,7 +12,8 @@ nav:
               - Visual Servoing: ra_visual_servoing.md
       - JetRacer (AMR):
           - Core Concepts: amr_concepts.md
-          - Setup Guide: amr_setup.md
+          - Setup Guide:
+              - Jetracer: amr_jetracer_setup.md
           - Use Cases:
               - Navigate & Deliver: amr_pick_and_place.md
   - Robotic Solutions:
