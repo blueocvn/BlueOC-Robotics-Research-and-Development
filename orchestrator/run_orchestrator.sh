@@ -35,6 +35,66 @@ IMAGE="${IMAGE:-robot-orchestrator:humble}"
 CONTAINER_NAME="${CONTAINER_NAME:-robot_orchestrator}"
 ROBOT_WEB_BRIDGE_PORT="${ROBOT_WEB_BRIDGE_PORT:-8088}"
 
+# ---------------------------------------------------------------------------
+# Docker invocation — use sudo only if the daemon isn't reachable as the
+# current user (rootless / docker-group setups don't need it).
+# ---------------------------------------------------------------------------
+DOCKER="docker"
+if ! docker info >/dev/null 2>&1; then
+    DOCKER="sudo -E docker"
+fi
+
+# ---------------------------------------------------------------------------
+# The image is built locally from Dockerfile.orchestrator (never pulled from a
+# registry). Build it automatically the first time if it's missing. This runs
+# BEFORE the DDS validation below, since building the image is independent of
+# network.env — a fresh install (no network.env yet) must still get the image.
+# ---------------------------------------------------------------------------
+if ! $DOCKER image inspect "$IMAGE" >/dev/null 2>&1; then
+    echo "==> Image '$IMAGE' not found locally — building it now..."
+    $DOCKER build -f "$REPO_ROOT/Dockerfile.orchestrator" -t "$IMAGE" "$REPO_ROOT"
+    echo ""
+fi
+
+# ---------------------------------------------------------------------------
+# Validate the DDS settings before we bake them into the CycloneDDS config.
+# A malformed IP or a network interface that doesn't exist on this host makes
+# CycloneDDS fail to start, surfacing only as the cryptic ROS error
+# "rcl node's rmw handle is invalid" once nodes try to come up. Catch it here
+# with a clear message instead — especially important on a fresh install where
+# network.env was just copied from the example.
+# ---------------------------------------------------------------------------
+is_ipv4() {
+    # Strict dotted-quad check: four 0-255 octets.
+    [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
+    local IFS=. o
+    for o in $1; do (( o <= 255 )) || return 1; done
+    return 0
+}
+
+for var in WORKSTATION_IP JETRACER_IP; do
+    val="${!var}"
+    if [[ "$val" == *XX* ]]; then
+        echo "ERROR: $var is still a placeholder ('$val'). Edit $REPO_ROOT/network.env" >&2
+        echo "       and set the real LAN IP." >&2
+        exit 1
+    fi
+    if ! is_ipv4 "$val"; then
+        echo "ERROR: $var='$val' is not a valid IPv4 address (check $REPO_ROOT/network.env)." >&2
+        echo "       CycloneDDS would reject it and every ROS node would fail to start." >&2
+        exit 1
+    fi
+done
+
+if ! ip -o link show "$DDS_INTERFACE" >/dev/null 2>&1; then
+    echo "ERROR: DDS_INTERFACE='$DDS_INTERFACE' does not exist on this host." >&2
+    echo "       Available interfaces:" >&2
+    ip -o -4 addr show | awk '{printf "         %-12s %s\n", $2, $4}' >&2
+    echo "       Set DDS_INTERFACE in $REPO_ROOT/network.env to the one carrying" >&2
+    echo "       WORKSTATION_IP ($WORKSTATION_IP)." >&2
+    exit 1
+fi
+
 echo "==> Starting lean orchestrator container"
 echo "    ROS_DOMAIN_ID = $ROS_DOMAIN_ID"
 echo "    Image         = $IMAGE"
@@ -82,7 +142,7 @@ XMLEOF
 # workspace like jetracer_ws's Isaac-managed one), so build artifacts
 # (build/install/log) land back in orchestrator_ws/ on the host (gitignored).
 # ---------------------------------------------------------------------------
-exec sudo -E docker run -it --rm \
+exec $DOCKER run -it --rm \
     --name "$CONTAINER_NAME" \
     --network host \
     -v "$REPO_ROOT/orchestrator_ws:/ros2_ws" \
