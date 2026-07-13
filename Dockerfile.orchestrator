@@ -1,4 +1,7 @@
-FROM osrf/ros:humble-ros-base
+# Official ROS Humble ros-base (Ubuntu 22.04). Equivalent to
+# osrf/ros:humble-ros-base but on Docker Hub's library/ros namespace, which is
+# more reliably available / commonly pre-cached.
+FROM ros:humble
 
 # Lean image for orchestrator_ws (robot_web_bridge) ONLY -- no SLAM/Nav2, no
 # GUI tools (rviz2/gazebo pulled in by desktop-full), no Isaac Sim tooling.

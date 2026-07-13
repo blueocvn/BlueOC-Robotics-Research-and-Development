@@ -38,6 +38,10 @@ __pycache__/
 # OS junk
 .DS_Store
 
+# MkDocs build output and local venv
+docs/site/
+docs/.venv/
+
 # amr/jetracer_ws third-party ROS packages restored via vcstool.
 # Pinned in amr/jetracer_ws/thirdparty.repos — do not commit their source.
 # Reproduce: cd amr/jetracer_ws && vcs import src < thirdparty.repos
