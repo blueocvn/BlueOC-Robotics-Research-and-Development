@@ -278,3 +278,36 @@
   -webkit-mask-image: var(--md-admonition-icon--package);
           mask-image: var(--md-admonition-icon--package);
 }
+
+/* ---- Even-width tables --------------------------------------------------
+   Wrap a table in <div class="table-even" markdown> for prose-heavy 2-column
+   tables (e.g. troubleshooting), where the default content-based sizing pushes
+   the divider off-centre.
+
+   NOTE: the "tables as cards" rule above sets `white-space: nowrap` on the
+   first column — great for short param names, but it forces a long sentence
+   onto one line and blows the column out. This block undoes that.
+   ------------------------------------------------------------------------ */
+.md-typeset .table-even table:not([class]) {
+  table-layout: fixed;   /* columns sized by the widths below, not by content */
+  width: 100%;
+}
+
+/* 40 / 60 split — symptom left, longer explanation right */
+.md-typeset .table-even table:not([class]) th:first-child,
+.md-typeset .table-even table:not([class]) td:first-child {
+  width: 40%;
+}
+
+/* the important override: let the first column WRAP */
+.md-typeset .table-even table:not([class]) td:first-child {
+  white-space: normal;
+}
+
+/* let long topic names / code pills break instead of overflowing */
+.md-typeset .table-even table:not([class]) th,
+.md-typeset .table-even table:not([class]) td,
+.md-typeset .table-even table:not([class]) code {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}

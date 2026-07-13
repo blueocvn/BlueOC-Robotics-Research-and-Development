@@ -1,4 +1,4 @@
-# JetRacer (AMR) — Core Concepts
+# JetRacer (AMR) — Overview
 
 A car-like (Ackermann) autonomous mobile robot that maps a space, localizes, and
 navigates between docks to fulfil orders — locate a person, drive from the water

@@ -8,6 +8,18 @@ provides the physics, the robot, and the cameras.
 
 This guide assumes you already have **Isaac Sim installed** and starts there.
 
+!!! tip "Don't have Isaac Sim yet? Start with NVIDIA's official guides"
+    - **[Workstation Installation](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_workstation.html)**
+      — download, install, and launch Isaac Sim on Linux (includes the
+      compatibility checker for GPU/driver requirements).
+    - **[ROS 2 Installation](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_ros.html)**
+      — enable the ROS 2 Bridge extension and point it at your ROS install.
+
+    !!! warning "Source ROS 2 *before* launching Isaac Sim"
+        The bridge loads the ROS 2 libraries from your **sourced** environment.
+        Run `source /opt/ros/jazzy/setup.bash` in the terminal you launch Isaac
+        from, or the bridge will pick up the wrong distro (or none at all).
+
 > **⚠️ ROS distro:** `ra_ws` targets **ROS 2 Jazzy (Ubuntu 24.04)** — *not* the
 > Humble stack the rest of the repo (`jetracer_ws`, `orchestrator_ws`) runs in.
 > Build and run `ra_ws` against a native Jazzy install, **not** inside the
@@ -20,7 +32,7 @@ This guide assumes you already have **Isaac Sim installed** and starts there.
 |---|---|
 | OS | Ubuntu 24.04 |
 | ROS 2 | **Jazzy** (`ros-jazzy-desktop`) |
-| Isaac Sim | Any recent release with the ROS 2 Bridge extension enabled |
+| Isaac Sim | Any recent release with the ROS 2 Bridge extension enabled — [install guide](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_workstation.html) · [ROS 2 setup](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_ros.html) |
 | Build tools | `colcon`, `rosdep`, `git` |
 | Python (perception) | numpy, opencv-python, ultralytics, scipy |
 
@@ -163,13 +175,17 @@ Example: `ros2 launch mtc_tutorial bringup.launch.py servo_grasp_z:=0.05`.
 
 ### 8. Troubleshooting
 
+<div class="table-even" markdown>
+
 | Symptom | Likely cause / fix |
 |---|---|
 | Arm never moves | Isaac not in **Play**, or Isaac isn't subscribed to `/isaac_joint_commands`. Check `ros2 topic echo /isaac_joint_commands`. |
-| `mtc_node` blocks on "waiting for /detected_object/position" | Perception isn't publishing — check camera topics are streaming and match the `camera_*_ns` params. |
+| `mtc_node` hangs at startup | It's blocked waiting for `/detected_object/position` — perception isn't publishing. Check the camera topics are streaming and match the `camera_*_ns` params. |
 | Cameras silent | Isaac render products / camera OmniGraph not active while playing. |
 | Planning fails "Start state out of bounds" | A joint settled a hair past a URDF limit; the node re-seats before release, but check `joint_limits.yaml`. |
 | Everything is slow / time jumps | `/clock` not published, or a node started without `use_sim_time:=true`. |
+
+</div>
 
 ### 9. Notes for maintainers
 

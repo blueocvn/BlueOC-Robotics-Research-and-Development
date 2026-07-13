@@ -5,15 +5,14 @@ nav:
   - Get Started: GET-STARTED.md
   - Robots:
       - Robot Arm (RA):
-          - Core Concepts: ra_concepts.md
+          - Overview: ra_concepts.md
           - Setup Guide: ra_setup.md
           - Use Cases:
               - Pick and Place: ra_pick_and_place.md
               - Visual Servoing: ra_visual_servoing.md
       - JetRacer (AMR):
-          - Core Concepts: amr_concepts.md
-          - Setup Guide:
-              - Jetracer: amr_jetracer_setup.md
+          - Overview: amr_concepts.md
+          - Setup Guide: amr_setup.md
           - Use Cases:
               - Navigate & Deliver: amr_pick_and_place.md
   - Robotic Solutions:

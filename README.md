@@ -2,6 +2,39 @@
 
 ROS 2 workstation packages for the JetRacer (AMR) + robot-arm fulfillment system.
 
+## Documentation
+
+Full setup guides, concepts, and use cases live in [`docs/`](docs/) as a
+[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) site. Preview it
+locally with [uv](https://docs.astral.sh/uv/) — no `pip` or `venv` step needed:
+
+```bash
+# one-time: install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+cd docs
+uv sync                 # creates .venv and installs the locked deps
+uv run mkdocs serve     # → http://127.0.0.1:8000 (live-reloads on save)
+```
+
+Build the static site instead of serving it:
+
+```bash
+cd docs
+uv run mkdocs build     # outputs to docs/site/
+```
+
+| Section | What's in it |
+|---|---|
+| **Get Started** | Which workspace to set up first; shared concepts (ROS 2, DDS, Isaac Sim) |
+| **Robot Arm (RA)** | Overview, setup guide, pick-and-place + visual-servoing use cases |
+| **JetRacer (AMR)** | Overview, setup guide, navigate-and-deliver use case |
+| **Robotic Solutions** | The combined RA + AMR pick-and-deliver flow, orchestrator |
+| **Reference** | Calibration, third-party setup |
+
+See [`docs/README.md`](docs/README.md) for how to add a page, change the theme,
+or deploy to GitHub Pages.
+
 ## Architecture
 
 ```mermaid

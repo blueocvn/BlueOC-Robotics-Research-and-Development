@@ -1,10 +1,18 @@
-# Robot Arm — Core Concepts
+# Robot Arm — Overview
 
 A 5-DOF **SO-ARM 101** with a 1-DOF gripper, driven by **ROS 2 + MoveIt 2**,
 that picks up an empty cup, fills it at a water dispenser, and places it on a
 tray for an AMR (JetRacer) to carry away.
 
-`5-DOF + gripper` · `ROS 2 Jazzy` · `MoveIt 2 + MTC` · `Isaac Sim` · `Jetson-class compute`
+`5-DOF + gripper` · `ROS 2 Jazzy` · `MoveIt 2 + MTC` · `Isaac Sim` · `Workstation-driven`
+
+## Objectives
+
+- Accurately detect and locate empty cups on the table from the overhead camera.
+- Grasp each cup reliably despite a 5-DOF arm and a single-jaw gripper.
+- Autonomously transport the cup to the water dispenser and fill it.
+- Place the filled cup into an assigned tray slot for the AMR (JetRacer) to collect.
+- Repeat across multiple cups without re-grabbing a cup that was already placed.
 
 ## Joints
 
@@ -24,19 +32,38 @@ The arm exposes six joints; all six stream on `/isaac_joint_states`.
 | Layer | Choice | Purpose |
 |-------|--------|---------|
 | Communication & Control | ROS 2 + MoveIt 2 | Motion planning, arm control, perception for grasp/place |
-| Simulation | Isaac Sim / Isaac Lab | Development, training, sim-to-real validation |
+| Simulation | Isaac Sim | Development and sim-to-real validation |
 | Development OS | Ubuntu 24.04 + ROS 2 Jazzy | Native development environment |
 | Build System | colcon, rosdep | Build and dependency management |
-| Compute | Jetson Nano / Jetson-class | Edge AI processing for control and perception |
+| Compute | **x86 workstation + NVIDIA GPU** | Runs the *entire* stack — the arm itself has no onboard compute |
 
 ### Hardware specifications
 
+!!! info "The arm has no onboard compute"
+    The SO-ARM 101 is a **USB peripheral**, not a compute node. Its servos are
+    position-commanded over a serial bus from a **host workstation**, which does
+    all the planning, perception, and control:
+
+    ```
+    6× Feetech STS3215 servos → BusLinker V3.0 → USB-serial → HOST WORKSTATION
+    ```
+
+    Unlike the JetRacer (AMR), which carries a Jetson on board, the arm has no
+    edge compute of its own.
+
 | Hardware | Spec | Notes |
 |----------|------|-------|
-| Robotic Arm | SO-ARM 101 (5-DOF) | Main manipulator |
-| Gripper | 1-DOF (Jaw) | Cup grasping mechanism |
-| Compute | Jetson Nano / Jetson-class | Edge AI processing |
-| RAM | 4 GB (Jetson Nano Legacy) | Sufficient for ROS 2 + perception |
+| Robotic Arm | SO-ARM 101 — 5-DOF + 1-DOF jaw | Main manipulator |
+| Gripper | 1-DOF Jaw — one moving, one **fixed** jaw | Cup is pinned against the fixed jaw, hence the angled approach (`grasp_yaw_bias`) |
+| Servos | 6 × Feetech STS3215 bus servos | Magnetic encoders; position-commanded over a serial bus |
+| Arm interface | BusLinker V3.0 → USB-serial | **No onboard compute** — the arm is a USB peripheral |
+| Cameras | 2 × USB — `top_cam` (overhead), `arm_cam` (eye-in-hand) | Feed the perception + visual-servo loops |
+| **Host compute** | **x86 workstation, Ubuntu 24.04, NVIDIA GPU** | Required for Isaac Sim and YOLO inference; runs ROS 2 + MoveIt + perception |
+
+!!! warning "Simulation only, today"
+    No hardware driver exists yet — the arm runs entirely in **Isaac Sim** via
+    `topic_based_ros2_control`. Driving the real servos over the BusLinker is
+    future work (see the [Roadmap](#roadmap)).
 
 ## Packages & Modules
 
@@ -91,6 +118,14 @@ Camera namespaces are perception-node parameters (`camera_eth_ns` = `top_cam`,
 params.
 
 ## Roadmap
+
+**Phase 0 — Simulation** (5/5) ✅
+
+- [x] Isaac Sim scene — arm, table, cups, dispenser, tray, overhead + eye-in-hand cameras
+- [x] Perception in sim — YOLO cup detection, AprilTag dispenser, pink-tray detection
+- [x] Grasp strategy — level side-grasp, position-only IK, IBVS visual servoing
+- [x] **End-to-end cup refill simulated — detect → grasp → fill → place**
+- [x] Multi-cup loop with even tray-slot assignment
 
 **Phase 1 — Foundation & Setup** (2/5)
 
