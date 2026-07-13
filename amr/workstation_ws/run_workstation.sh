@@ -15,7 +15,9 @@ set -euo pipefail
 # Config — real network values live in <repo>/network.env (gitignored).
 # Copy network.env.example to network.env and fill it in.
 # ---------------------------------------------------------------------------
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Repo root is two levels up (amr/workstation_ws/ -> repo root), where
+# network.env and Dockerfile.dev live.
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 if [ -f "$REPO_ROOT/network.env" ]; then
     # shellcheck disable=SC1091
     source "$REPO_ROOT/network.env"
@@ -112,9 +114,26 @@ if [ -f "$FASTDDS_TEMPLATE" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Docker invocation — use sudo only if the daemon isn't reachable as the
+# current user (rootless / docker-group setups don't need it).
+# ---------------------------------------------------------------------------
+DOCKER="docker"
+if ! docker info >/dev/null 2>&1; then
+    DOCKER="sudo -E docker"
+fi
+
+# The image is built locally from Dockerfile.dev (never pulled from a registry).
+# Build it automatically the first time if it's missing.
+if ! $DOCKER image inspect "$IMAGE" >/dev/null 2>&1; then
+    echo "==> Image '$IMAGE' not found locally — building from Dockerfile.dev (this is large, be patient)..."
+    $DOCKER build -f "$REPO_ROOT/Dockerfile.dev" -t "$IMAGE" "$REPO_ROOT"
+    echo ""
+fi
+
+# ---------------------------------------------------------------------------
 # Launch
 # ---------------------------------------------------------------------------
-exec sudo -E docker run -it --rm \
+exec $DOCKER run -it --rm \
     --name "$CONTAINER_NAME" \
     --network host \
     --ipc host \
