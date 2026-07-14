@@ -1,0 +1,9 @@
+# Admin map: world bounds shown by the /admin editor + operator-drawn
+# rectangular keep-out obstacles (x/y = centre, w/h in metres, world frame).
+# Maintained by the /admin map editor.
+bounds:
+  x_min: -8.31
+  x_max: 10.84
+  y_min: -4.29
+  y_max: 8.51
+obstacles: []

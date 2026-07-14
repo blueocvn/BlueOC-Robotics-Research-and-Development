@@ -2,7 +2,7 @@
 
 Runs a ROS 2 node on a daemon thread (SingleThreadedExecutor.spin()). Web
 handlers / the dispatcher call the thread-safe ``publish_*`` methods; the node
-keeps a thread-safe cache of the latest ``/docking_state`` and ``/chassis/odom``.
+keeps a thread-safe cache of the latest ``/docking_state`` and robot pose.
 
 rclpy + the message packages are only importable when ROS 2 is sourced, so the
 imports are guarded: if they fail (e.g. local dev in a plain venv), ``RCLPY_OK``
@@ -20,7 +20,7 @@ try:
     import rclpy
     from rclpy.executors import SingleThreadedExecutor
     from rclpy.node import Node
-    from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+    from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
     from std_msgs.msg import Bool, String
     from geometry_msgs.msg import Twist, PoseWithCovarianceStamped
     from nav_msgs.msg import Odometry
@@ -36,12 +36,22 @@ try:
         depth=10,
     )
 
+    # Latched (transient-local) so a nav node that starts *after* the operator
+    # saved the map still receives the current obstacle set.
+    _LATCHED_QOS = QoSProfile(
+        reliability=ReliabilityPolicy.RELIABLE,
+        history=HistoryPolicy.KEEP_LAST,
+        depth=1,
+        durability=DurabilityPolicy.TRANSIENT_LOCAL,
+    )
+
     class RobotBridgeNode(Node):  # type: ignore[misc]
         def __init__(self) -> None:
             super().__init__("robot_web_bridge")
             self._lock = threading.Lock()
             self._docking_state: Optional[str] = None
             self._odom: Optional[tuple[float, float, float]] = None  # x, y, yaw
+            self._odom_source: Optional[str] = None
 
             # Publishers — the robot's command interface.
             self._pub_dock = self.create_publisher(String, "/dock_robot", 10)
@@ -50,13 +60,26 @@ try:
             self._pub_initialpose = self.create_publisher(
                 PoseWithCovarianceStamped, "/initialpose", 10
             )
+            # Admin map editor → robot: JSON list of keep-out rectangles.
+            self._pub_obstacles = self.create_publisher(
+                String, "/virtual_obstacles", _LATCHED_QOS
+            )
+            # Admin map editor → robot: JSON dock registry with pose_x/pose_y/yaw.
+            self._pub_docks = self.create_publisher(
+                String, "/dock_registry", _LATCHED_QOS
+            )
 
             # Subscribers — live feedback.
             self.create_subscription(
                 String, "/docking_state", self._on_docking_state, _SENSOR_QOS
             )
+            # Prefer EKF-filtered odometry for map pose. Raw chassis odom remains
+            # as fallback when /odometry/filtered is unavailable.
             self.create_subscription(
-                Odometry, "/chassis/odom", self._on_odom, _SENSOR_QOS
+                Odometry, "/odometry/filtered", self._on_odom_filtered, _SENSOR_QOS
+            )
+            self.create_subscription(
+                Odometry, "/chassis/odom", self._on_odom_raw, _SENSOR_QOS
             )
             self.get_logger().info("robot_web_bridge node up: pubs+subs registered")
 
@@ -65,15 +88,27 @@ try:
             with self._lock:
                 self._docking_state = msg.data
 
-        def _on_odom(self, msg: "Odometry") -> None:
+        @staticmethod
+        def _odom_tuple(msg: "Odometry") -> tuple[float, float, float]:
             p = msg.pose.pose.position
             q = msg.pose.pose.orientation
             yaw = math.atan2(
                 2.0 * (q.w * q.z + q.x * q.y),
                 1.0 - 2.0 * (q.y * q.y + q.z * q.z),
             )
+            return (p.x, p.y, yaw)
+
+        def _on_odom_filtered(self, msg: "Odometry") -> None:
             with self._lock:
-                self._odom = (p.x, p.y, yaw)
+                self._odom = self._odom_tuple(msg)
+                self._odom_source = "filtered"
+
+        def _on_odom_raw(self, msg: "Odometry") -> None:
+            # Only use raw odom if filtered odom has not been seen yet.
+            with self._lock:
+                if self._odom_source != "filtered":
+                    self._odom = self._odom_tuple(msg)
+                    self._odom_source = "raw"
 
         # ── publishers (thread-safe; rclpy publish is itself safe) ────────────
         def publish_dock(self, dock_id: str) -> None:
@@ -98,10 +133,20 @@ try:
             msg.pose.pose.orientation.w = math.cos(float(yaw) / 2.0)
             self._pub_initialpose.publish(msg)
 
+        def publish_obstacles(self, payload: str) -> None:
+            self._pub_obstacles.publish(String(data=payload))
+
+        def publish_docks(self, payload: str) -> None:
+            self._pub_docks.publish(String(data=payload))
+
         # ── snapshot ──────────────────────────────────────────────────────────
         def get_state(self) -> dict:
             with self._lock:
-                return {"docking_state": self._docking_state, "odom": self._odom}
+                return {
+                    "docking_state": self._docking_state,
+                    "odom": self._odom,
+                    "odom_source": self._odom_source,
+                }
 
 except Exception as exc:  # pragma: no cover - depends on ROS being sourced
     RCLPY_OK = False

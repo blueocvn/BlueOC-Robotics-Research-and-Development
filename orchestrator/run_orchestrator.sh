@@ -2,7 +2,7 @@
 #
 # run_orchestrator.sh
 # Launch the LEAN orchestrator-only Docker container (../Dockerfile.orchestrator)
-# -- just orchestrator_ws, no SLAM/Nav2/Isaac Sim, no GUI. For running/deploying
+# -- just orchestrator/, no SLAM/Nav2/Isaac Sim, no GUI. For running/deploying
 # robot_web_bridge standalone, pointed at a robot (real or simulated) elsewhere
 # on the same DDS domain. For local dev alongside jetracer_ws, use
 # jetracer_ws/run_workstation.sh + docker exec instead (see repo README).
@@ -138,14 +138,14 @@ cat > "$CYCLONE_XML" << XMLEOF
 XMLEOF
 
 # ---------------------------------------------------------------------------
-# Launch — mounts orchestrator_ws itself (this repo's source, not an external
+# Launch — mounts orchestrator/ itself (this repo's source, not an external
 # workspace like jetracer_ws's Isaac-managed one), so build artifacts
-# (build/install/log) land back in orchestrator_ws/ on the host (gitignored).
+# (build/install/log) land back in orchestrator/ on the host (gitignored).
 # ---------------------------------------------------------------------------
 exec $DOCKER run -it --rm \
     --name "$CONTAINER_NAME" \
     --network host \
-    -v "$REPO_ROOT/orchestrator_ws:/ros2_ws" \
+    -v "$REPO_ROOT/orchestrator:/ros2_ws" \
     -e ROS_DOMAIN_ID="$ROS_DOMAIN_ID" \
     -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
     -e CYCLONEDDS_URI="file://$CYCLONE_XML" \

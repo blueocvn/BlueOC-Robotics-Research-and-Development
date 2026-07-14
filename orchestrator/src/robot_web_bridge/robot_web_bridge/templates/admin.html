@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>{% include "_admin_head.html" %}</head>
+{% from "_robot.html" import robot %}
+
+<body class="bg-blueoc-gradient min-h-full">
+  <div class="dot-grid fixed inset-0 pointer-events-none opacity-10"></div>
+
+  <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pb-12">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between flex-wrap gap-3 pt-6 pb-5">
+      <div class="flex items-center gap-2.5">
+        <img src="/static/blueoc_icon_white.png" alt="BlueOC" class="size-8 object-contain" />
+        <span class="font-bold text-[15px] text-white tracking-[-0.375px]">BlueOC</span>
+        <span class="font-mono text-[10px] uppercase tracking-[0.9px] text-white/80 bg-white/20 border border-white/25 rounded-full px-3 py-1">Operator Console</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/20 border border-white/25">
+          <span id="hdr-dot" class="relative flex size-2">
+            <span class="relative inline-flex size-2 rounded-full bg-slate-300"></span>
+          </span>
+          <span id="hdr-mode" class="font-mono text-[11px] text-white/80">connecting…</span>
+        </div>
+        <button id="btn-logout"
+                class="font-mono text-[11px] text-white/70 border border-white/25 rounded-full px-3 py-1.5 hover:bg-white/10 active:scale-[0.97] transition">
+          Log out
+        </button>
+      </div>
+    </header>
+
+    <div class="grid lg:grid-cols-3 gap-5 items-start">
+
+      <!-- ── Map editor ─────────────────────────────────────────────────── -->
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-[0px_20px_12.5px_rgba(0,0,0,0.1),0px_8px_5px_rgba(0,0,0,0.1)] p-5">
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+          <div>
+            <p class="font-mono text-[9px] uppercase tracking-[0.9px] text-blueoc-brand opacity-70">Map Editor</p>
+            <p class="font-semibold text-[14px] text-[#314158] mt-0.5">Docks, obstacles &amp; robot pose</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="dirty-dot" class="hidden font-mono text-[10px] uppercase tracking-[0.9px] text-amber-500 flex items-center gap-1.5">
+              <span class="inline-flex size-1.5 rounded-full bg-amber-400"></span>Unsaved
+            </span>
+            <button id="btn-export-slam"
+                    class="rounded-full bg-slate-100 text-[#314158] font-semibold text-[13px] px-4 py-2 border border-slate-200 active:scale-[0.97] transition-transform">
+              Export SLAM
+            </button>
+            <button id="btn-sync-robot"
+                    class="rounded-full bg-slate-100 text-[#314158] font-semibold text-[13px] px-4 py-2 border border-slate-200 active:scale-[0.97] transition-transform">
+              Sync Robot
+            </button>
+            <button id="btn-save"
+                    class="rounded-full bg-blueoc-brand text-white font-semibold text-[13px] px-5 py-2 shadow-[0px_4px_3px_rgba(0,0,0,0.1)] active:scale-[0.97] transition-transform">
+              Save Map
+            </button>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="flex items-center flex-wrap gap-1.5 mb-3" id="toolbar">
+          <button data-tool="select" class="tool-btn">Select / Move</button>
+          <button data-tool="dock" class="tool-btn">+ Dock</button>
+          <button data-tool="obstacle" class="tool-btn">+ Obstacle</button>
+          <button data-tool="pose" class="tool-btn">Robot Pose</button>
+        </div>
+
+        <!-- Canvas -->
+        <div class="relative rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+          <svg id="map" class="block w-full touch-none select-none">
+            <!-- g-view carries the interactive pan/zoom; g-world (inside) carries
+                 the display-leveling rotation, so everything under it stays in
+                 true SLAM/nav coordinates regardless of how the view is panned/zoomed. -->
+            <g id="g-view">
+              <g id="g-world">
+                <image id="g-map" preserveAspectRatio="none" style="image-rendering:auto"></image>
+                <g id="g-grid"></g>
+                <g id="g-items"></g>
+                <g id="g-live"></g>
+              </g>
+            </g>
+          </svg>
+          <!-- Pan/zoom controls -->
+          <div class="absolute bottom-2 right-2 flex flex-col gap-1">
+            <button id="btn-zoom-in" type="button" title="Zoom in"
+                    class="size-7 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[#314158] font-semibold hover:bg-slate-50 active:scale-95 transition">+</button>
+            <button id="btn-zoom-out" type="button" title="Zoom out"
+                    class="size-7 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[#314158] font-semibold hover:bg-slate-50 active:scale-95 transition">−</button>
+            <button id="btn-zoom-reset" type="button" title="Reset view"
+                    class="size-7 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[#314158] hover:bg-slate-50 active:scale-95 transition">
+              <svg class="size-3.5" fill="none" viewBox="0 0 20 20"><path d="M4 4h5M4 4v5M4 4l5 5M16 4h-5M16 4v5M16 4l-5 5M4 16h5M4 16v-5M4 16l5-5M16 16h-5M16 16v-5M16 16l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p id="map-hint" class="font-mono text-[10px] text-[#90a1b9] mt-2 leading-relaxed"></p>
+
+        <!-- Selection properties -->
+        <div id="props" class="hidden mt-3 rounded-xl bg-slate-50 border border-slate-200 p-3"></div>
+
+        <!-- World bounds -->
+        <div class="mt-3 flex items-center flex-wrap gap-2">
+          <span class="font-mono text-[9px] uppercase tracking-[0.9px] text-[#90a1b9]">World bounds (m)</span>
+          <input id="b-xmin" type="number" step="0.5" class="bounds-input" title="x min" />
+          <input id="b-xmax" type="number" step="0.5" class="bounds-input" title="x max" />
+          <input id="b-ymin" type="number" step="0.5" class="bounds-input" title="y min" />
+          <input id="b-ymax" type="number" step="0.5" class="bounds-input" title="y max" />
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-3 flex items-center flex-wrap gap-4">
+          <span class="legend"><span class="size-2.5 rounded-full bg-blueoc-green inline-block"></span>Home / station</span>
+          <span class="legend"><span class="size-2.5 rounded-full bg-blueoc-brand inline-block"></span>Dock / table</span>
+          <span class="legend"><span class="size-2.5 rounded-[3px] bg-rose-400/40 border border-rose-400 inline-block"></span>Obstacle</span>
+          <span class="legend"><span class="size-2.5 rounded-full bg-blueoc-dark inline-block"></span>Robot (live)</span>
+          <span class="legend"><span class="size-2.5 rounded-[2px] bg-slate-400 inline-block"></span>SLAM walls</span>
+        </div>
+      </div>
+
+      <!-- ── Right column ───────────────────────────────────────────────── -->
+      <div class="flex flex-col gap-5">
+
+        <!-- Robot status -->
+        <div class="bg-white rounded-2xl shadow-[0px_20px_12.5px_rgba(0,0,0,0.1),0px_8px_5px_rgba(0,0,0,0.1)] p-5">
+          <div class="flex items-center gap-3 mb-3">
+            {{ robot("#1a56db", 56) }}
+            <div>
+              <p class="font-mono text-[9px] uppercase tracking-[0.9px] text-blueoc-brand opacity-70">Robot Status</p>
+              <p id="st-phase" class="font-semibold text-[14px] text-[#314158] capitalize mt-0.5">—</p>
+              <p class="font-mono text-[11px] text-[#90a1b9] mt-0.5">Jetracer · Office 2</p>
+            </div>
+          </div>
+          <dl class="text-[12px] divide-y divide-slate-100">
+            <div class="status-row"><dt>Active order</dt><dd id="st-order">—</dd></div>
+            <div class="status-row"><dt>Target dock</dt><dd id="st-target">—</dd></div>
+            <div class="status-row"><dt>Last at</dt><dd id="st-at">—</dd></div>
+            <div class="status-row"><dt>Carrying</dt><dd id="st-carrying">—</dd></div>
+            <div class="status-row"><dt>Docking state</dt><dd id="st-dockstate">—</dd></div>
+            <div class="status-row"><dt>Odometry</dt><dd id="st-odom">—</dd></div>
+          </dl>
+        </div>
+
+        <!-- Manual controls -->
+        <div class="bg-white rounded-2xl shadow-[0px_20px_12.5px_rgba(0,0,0,0.1),0px_8px_5px_rgba(0,0,0,0.1)] p-5">
+          <p class="font-mono text-[9px] uppercase tracking-[0.9px] text-blueoc-brand opacity-70 mb-3">Manual Controls</p>
+
+          <!-- Teleop pad (hold to drive) -->
+          <div class="grid grid-cols-3 gap-1.5 w-[168px] mx-auto mb-4">
+            <div></div>
+            <button class="tele-btn" data-lin="0.25" data-ang="0">▲</button>
+            <div></div>
+            <button class="tele-btn" data-lin="0" data-ang="0.8">◀</button>
+            <button class="tele-btn opacity-40 pointer-events-none">●</button>
+            <button class="tele-btn" data-lin="0" data-ang="-0.8">▶</button>
+            <div></div>
+            <button class="tele-btn" data-lin="-0.25" data-ang="0">▼</button>
+            <div></div>
+          </div>
+          <p class="font-mono text-[10px] text-[#90a1b9] text-center mb-4">hold to drive · release to stop</p>
+
+          <!-- Manual dock -->
+          <div class="flex gap-2 mb-2">
+            <select id="dock-select"
+                    class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12px] text-[#314158] focus:outline-none focus:border-blueoc-main"></select>
+            <button id="btn-dock"
+                    class="rounded-full bg-blueoc-brand text-white font-semibold text-[12px] px-4 active:scale-[0.97] transition-transform">Dock</button>
+          </div>
+          <button id="btn-setpose"
+                  class="w-full rounded-full bg-slate-100 text-[#314158] font-semibold text-[12px] py-2.5 mb-3 active:scale-[0.98] transition-transform">
+            Reset pose to selected dock
+          </button>
+
+          <button id="btn-abort"
+                  class="w-full rounded-full bg-rose-500 text-white font-semibold text-[14px] py-3 shadow-[0px_4px_3px_rgba(0,0,0,0.1)] active:scale-[0.98] transition-transform">
+            ■ Emergency Stop
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Orders ───────────────────────────────────────────────────────── -->
+    <div class="bg-white rounded-2xl shadow-[0px_20px_12.5px_rgba(0,0,0,0.1),0px_8px_5px_rgba(0,0,0,0.1)] p-5 mt-5">
+      <p class="font-mono text-[9px] uppercase tracking-[0.9px] text-blueoc-brand opacity-70 mb-3">Orders</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[560px]">
+          <thead>
+            <tr class="font-mono text-[10px] uppercase tracking-[0.9px] text-[#90a1b9]">
+              <th class="pb-2 pr-3 font-medium">#</th>
+              <th class="pb-2 pr-3 font-medium">Type</th>
+              <th class="pb-2 pr-3 font-medium">Dock</th>
+              <th class="pb-2 pr-3 font-medium">Status</th>
+              <th class="pb-2 pr-3 font-medium">ETA</th>
+              <th class="pb-2 text-right font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body">
+            <tr><td colspan="6" class="py-6 text-center font-mono text-[12px] text-[#90a1b9]">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="font-mono text-[10px] text-white/40 text-center mt-8">Powered by BlueOC Robotics</p>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"
+       class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 rounded-full bg-[#0f172a] text-white font-mono text-[12px] px-5 py-2.5 shadow-lg"></div>
+
+  <style>
+    .tool-btn {
+      border-radius: 9999px; padding: 6px 14px; font-size: 12px; font-weight: 600;
+      background: #f1f5f9; color: #475569; transition: all .12s ease;
+    }
+    .tool-btn.active { background: #1a56db; color: white; }
+    .tele-btn {
+      border-radius: 12px; background: #f1f5f9; color: #1a56db; font-size: 14px;
+      padding: 12px 0; font-weight: 700; user-select: none; touch-action: none;
+    }
+    .tele-btn:active { background: #1a56db; color: white; }
+    .bounds-input {
+      width: 64px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc;
+      padding: 4px 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #314158;
+    }
+    .status-row { display: flex; justify-content: space-between; padding: 7px 0; }
+    .status-row dt { color: #90a1b9; }
+    .status-row dd { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #314158; }
+    .legend { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #90a1b9; }
+    .prop-field label { display:block; font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.9px; color:#90a1b9; margin-bottom:3px; }
+    .prop-field input { width:100%; border-radius:10px; border:1px solid #e2e8f0; background:white; padding:6px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#314158; }
+    .prop-field input:disabled { opacity:.5; }
+  </style>
+
+  <script id="boot-data" type="application/json">{{ boot | tojson }}</script>
+  <script>
+  'use strict';
+
+  // ── state ──────────────────────────────────────────────────────────────────
+  const BOOT = JSON.parse(document.getElementById('boot-data').textContent);
+  const HOME = BOOT.home_dock;
+  const M = { bounds: BOOT.bounds, docks: BOOT.docks, obstacles: BOOT.obstacles };
+  const SLAM = BOOT.slam || null;    // { image, bounds, rotation_deg } or null
+  const ROT = SLAM ? (SLAM.rotation_deg || 0) : 0;   // display-only leveling angle
+  const S = 60;                      // px per metre
+  let tool = 'select', sel = null, drag = null, dirty = false;
+  let live = { odom: null, snap: null };
+  let view = { scale: 1, x: 0, y: 0 };  // pan/zoom of g-view, in viewBox units
+  let pan = null;                       // { x, y } last root-space point while panning
+
+  const $ = (id) => document.getElementById(id);
+  const svg = $('map');
+  const gview = $('g-view');
+  const gworld = $('g-world');
+  const esc = (s) => String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const deg = (rad) => Math.round(rad * 180 / Math.PI);
+  const rad = (d) => d * Math.PI / 180;
+
+  // world ↔ screen (ROS: x right, y up → SVG y flipped)
+  const px = (x) => (x - M.bounds.x_min) * S;
+  const py = (y) => (M.bounds.y_max - y) * S;
+  const mapW = () => (M.bounds.x_max - M.bounds.x_min) * S;
+  const mapH = () => (M.bounds.y_max - M.bounds.y_min) * S;
+
+  function evtPoint(e) {
+    // Map through g-world's CTM (composes the svg viewBox + g-view pan/zoom +
+    // g-world's display rotation) so tools work the same at any zoom level.
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(gworld.getScreenCTM().inverse());
+    return { x: p.x / S + M.bounds.x_min, y: M.bounds.y_max - p.y / S };
+  }
+  const clampX = (x) => Math.min(M.bounds.x_max, Math.max(M.bounds.x_min, x));
+  const clampY = (y) => Math.min(M.bounds.y_max, Math.max(M.bounds.y_min, y));
+
+  // ── pan / zoom ─────────────────────────────────────────────────────────────
+  // g-view sits between the svg's (fixed) viewBox and g-world, so panning/
+  // zooming it never disturbs the world-coordinate math the tools rely on.
+  const ZOOM_MIN = 0.4, ZOOM_MAX = 8;
+
+  function applyView() {
+    gview.setAttribute('transform', `translate(${view.x} ${view.y}) scale(${view.scale})`);
+  }
+
+  // Point in the svg root's own coordinate space (i.e. before g-view's
+  // transform is applied) — the stable frame pan/zoom math is done in.
+  function rootPoint(e) {
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+    return { x: p.x, y: p.y };
+  }
+
+  function zoomAt(root, factor) {
+    const newScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, view.scale * factor));
+    const k = newScale / view.scale;
+    view.x = root.x - (root.x - view.x) * k;
+    view.y = root.y - (root.y - view.y) * k;
+    view.scale = newScale;
+    applyView();
+  }
+
+  function resetView() {
+    view = { scale: 1, x: 0, y: 0 };
+    applyView();
+  }
+
+  // ── drawing ────────────────────────────────────────────────────────────────
+  // Axis-aligned bounding box of the map rect after the g-world rotation, so the
+  // rotated picture never clips against the viewBox.
+  function rotatedBBox() {
+    const w = mapW(), h = mapH(), cx = w / 2, cy = h / 2;
+    const t = ROT * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+    const xs = [], ys = [];
+    for (const [x, y] of [[0, 0], [w, 0], [0, h], [w, h]]) {
+      const dx = x - cx, dy = y - cy;
+      xs.push(cx + dx * c - dy * s); ys.push(cy + dx * s + dy * c);
+    }
+    return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys), cx, cy };
+  }
+
+  function resize() {
+    const bb = rotatedBBox();
+    const W = bb.maxX - bb.minX, H = bb.maxY - bb.minY;
+    svg.setAttribute('viewBox', `${bb.minX} ${bb.minY} ${W} ${H}`);
+    svg.style.aspectRatio = `${W} / ${H}`;
+    gworld.setAttribute('transform', ROT ? `rotate(${ROT} ${bb.cx} ${bb.cy})` : '');
+    if (SLAM) {
+      const img = $('g-map'), b = SLAM.bounds;
+      img.setAttribute('href', SLAM.image);
+      img.setAttribute('x', px(b.x_min));
+      img.setAttribute('y', py(b.y_max));
+      img.setAttribute('width', (b.x_max - b.x_min) * S);
+      img.setAttribute('height', (b.y_max - b.y_min) * S);
+    }
+    drawGrid();
+  }
+
+  function drawGrid() {
+    const b = M.bounds;
+    const minor = SLAM ? '#cbd5e1' : '#e2e8f0', axisC = '#94a3b8';
+    const op = SLAM ? 0.5 : 1;
+    // Labels sit inside the rotated world, so counter-rotate each to stay upright.
+    const lbl = (X, Y, txt, anchor) =>
+      `<text x="${X}" y="${Y}" font-size="9" fill="#94a3b8" text-anchor="${anchor}"` +
+      ` font-family="JetBrains Mono,monospace" transform="rotate(${-ROT} ${X} ${Y})">${txt}</text>`;
+    let out = SLAM ? '' : `<rect x="0" y="0" width="${mapW()}" height="${mapH()}" fill="#f8fafc"/>`;
+    for (let x = Math.ceil(b.x_min); x <= Math.floor(b.x_max); x++) {
+      const X = px(x), axis = x === 0;
+      out += `<line x1="${X}" y1="0" x2="${X}" y2="${mapH()}" stroke="${axis ? axisC : minor}" stroke-width="${axis ? 1.5 : 1}" stroke-opacity="${axis ? 1 : op}"/>`;
+      out += lbl(X + 3, mapH() - 5, x, 'start');
+    }
+    for (let y = Math.ceil(b.y_min); y <= Math.floor(b.y_max); y++) {
+      const Y = py(y), axis = y === 0;
+      out += `<line x1="0" y1="${Y}" x2="${mapW()}" y2="${Y}" stroke="${axis ? axisC : minor}" stroke-width="${axis ? 1.5 : 1}" stroke-opacity="${axis ? 1 : op}"/>`;
+      out += lbl(4, Y - 3, y, 'start');
+    }
+    $('g-grid').innerHTML = out;
+  }
+
+  function dockSvg(id, d) {
+    const X = px(d.pose_x), Y = py(d.pose_y);
+    const home = id === HOME, color = home ? '#10b981' : '#1a56db';
+    const selected = sel && sel.kind === 'dock' && sel.id === id;
+    const yaw = d.yaw || 0;
+    return `<g transform="translate(${X},${Y})" data-kind="dock" data-id="${esc(id)}" style="cursor:pointer">
+      <circle r="15" fill="transparent"/>
+      ${selected ? `<circle r="17" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="3 3"/>` : ''}
+      <line x1="0" y1="0" x2="${Math.cos(yaw) * 20}" y2="${-Math.sin(yaw) * 20}" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+      <circle r="9" fill="${color}" stroke="white" stroke-width="2.5"/>
+      ${home ? '<circle r="3" fill="white"/>' : ''}
+      <text y="26" text-anchor="middle" font-size="10" font-family="JetBrains Mono,monospace" fill="#475569">${esc(d.label || id)}</text>
+    </g>`;
+  }
+
+  function obsSvg(o) {
+    const selected = sel && sel.kind === 'obs' && sel.id === o.id;
+    return `<g data-kind="obs" data-id="${esc(o.id)}" style="cursor:pointer">
+      <rect x="${px(o.x - o.w / 2)}" y="${py(o.y + o.h / 2)}" width="${o.w * S}" height="${o.h * S}" rx="4"
+            fill="rgba(244,63,94,0.16)" stroke="#f43f5e" stroke-width="${selected ? 2.5 : 1.5}"/>
+    </g>`;
+  }
+
+  function robotSvg() {
+    if (!live.odom) return '';
+    const [x, y, yaw] = live.odom;
+    return `<g transform="translate(${px(x)},${py(y)})" pointer-events="none">
+      <circle r="14" fill="#1a3a8f" opacity="0.12"/>
+      <line x1="0" y1="0" x2="${Math.cos(yaw) * 22}" y2="${-Math.sin(yaw) * 22}" stroke="#1a3a8f" stroke-width="2.5" stroke-linecap="round"/>
+      <circle r="8" fill="#1a3a8f" stroke="white" stroke-width="2.5"/>
+      <text y="-15" text-anchor="middle" font-size="9" font-weight="600" font-family="JetBrains Mono,monospace" fill="#1a3a8f">BOC-R3</text>
+    </g>`;
+  }
+
+  function draw() {
+    let items = M.obstacles.map(obsSvg).join('');
+    for (const [id, d] of Object.entries(M.docks)) items += dockSvg(id, d);
+    $('g-items').innerHTML = items;
+
+    let overlay = robotSvg();
+    if (drag && drag.kind === 'newobs') {
+      const x0 = Math.min(drag.x0, drag.x1), x1 = Math.max(drag.x0, drag.x1);
+      const y0 = Math.min(drag.y0, drag.y1), y1 = Math.max(drag.y0, drag.y1);
+      overlay += `<rect x="${px(x0)}" y="${py(y1)}" width="${(x1 - x0) * S}" height="${(y1 - y0) * S}" rx="4"
+                   fill="rgba(244,63,94,0.1)" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    }
+    if (drag && drag.kind === 'pose') {
+      const yaw = drag.has ? drag.yaw : 0;
+      overlay += `<g transform="translate(${px(drag.x)},${py(drag.y)})" pointer-events="none">
+        <line x1="0" y1="0" x2="${Math.cos(yaw) * 26}" y2="${-Math.sin(yaw) * 26}" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+        <circle r="8" fill="#f59e0b" stroke="white" stroke-width="2.5"/>
+      </g>`;
+    }
+    $('g-live').innerHTML = overlay;
+  }
+
+  function markDirty() {
+    dirty = true;
+    $('dirty-dot').classList.remove('hidden');
+  }
+
+  // ── tools & hints ──────────────────────────────────────────────────────────
+  const HINTS = {
+    select: 'Drag a dock or obstacle to move it, or drag empty space to pan. Scroll to zoom. Click a dock/obstacle to edit its properties below. Save to persist.',
+    dock: 'Click the map to place a new dock (navigation target). Switches back to Select after placing.',
+    obstacle: 'Click and drag on the map to draw a rectangular keep-out obstacle.',
+    pose: 'Click where the robot actually is, drag to set its heading, release to re-seed AMCL (/initialpose).',
+  };
+  function setTool(t) {
+    tool = t; drag = null;
+    document.querySelectorAll('#toolbar .tool-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.tool === t));
+    $('map-hint').textContent = HINTS[t];
+    svg.classList.toggle('cursor-grab', t === 'select');
+  }
+  document.querySelectorAll('#toolbar .tool-btn').forEach(b =>
+    b.addEventListener('click', () => setTool(b.dataset.tool)));
+
+  function nextId(prefix, taken) {
+    let n = 1;
+    while (taken.has(`${prefix}${n}`)) n++;
+    return `${prefix}${n}`;
+  }
+
+  // ── selection / properties panel ───────────────────────────────────────────
+  function selectedObs() { return M.obstacles.find(o => o.id === sel.id); }
+
+  function field(id, label, value, disabled = false) {
+    return `<div class="prop-field"><label for="${id}">${label}</label>
+      <input id="${id}" value="${esc(value)}" ${disabled ? 'disabled' : ''} /></div>`;
+  }
+
+  function updateProps() {
+    const panel = $('props');
+    if (!sel) { panel.classList.add('hidden'); panel.innerHTML = ''; return; }
+    panel.classList.remove('hidden');
+
+    if (sel.kind === 'dock') {
+      const d = M.docks[sel.id];
+      if (!d) { sel = null; return updateProps(); }
+      const isHome = sel.id === HOME;
+      panel.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-mono text-[9px] uppercase tracking-[0.9px] text-blueoc-brand opacity-70">
+            ${isHome ? 'Home dock / water station' : 'Dock'}</span>
+          <div class="flex items-center gap-3">
+            <button id="p-goto" class="font-mono text-[11px] text-blueoc-brand hover:underline">Go to dock</button>
+            ${isHome ? '' : '<button id="p-del" class="font-mono text-[11px] text-rose-500 hover:underline">Delete</button>'}
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          ${field('p-id', 'ID (QR)', sel.id, isHome)}
+          ${field('p-label', 'Label', d.label || '')}
+          ${field('p-x', 'X (m)', d.pose_x)}
+          ${field('p-y', 'Y (m)', d.pose_y)}
+          ${field('p-yaw', 'Yaw (°)', deg(d.yaw || 0))}
+        </div>`;
+      $('p-goto').addEventListener('click', async () => {
+        await api('/v1/admin/dock', { method: 'POST', body: new URLSearchParams({ dock_id: sel.id }) });
+        toast(`Docking → ${d.label || sel.id}`);
+      });
+      $('p-label').addEventListener('input', e => { d.label = e.target.value; markDirty(); draw(); });
+      $('p-x').addEventListener('change', e => { d.pose_x = r2(clampX(parseFloat(e.target.value) || 0)); e.target.value = d.pose_x; markDirty(); draw(); });
+      $('p-y').addEventListener('change', e => { d.pose_y = r2(clampY(parseFloat(e.target.value) || 0)); e.target.value = d.pose_y; markDirty(); draw(); });
+      $('p-yaw').addEventListener('change', e => { d.yaw = r2(rad(parseFloat(e.target.value) || 0)); markDirty(); draw(); });
+      if (!isHome) {
+        $('p-id').addEventListener('change', e => {
+          const nid = e.target.value.trim();
+          if (!/^[A-Za-z0-9_-]{1,32}$/.test(nid) || (nid !== sel.id && M.docks[nid])) {
+            e.target.value = sel.id; toast('Invalid or duplicate dock id', true); return;
+          }
+          if (nid === sel.id) return;
+          M.docks[nid] = M.docks[sel.id]; delete M.docks[sel.id]; sel.id = nid;
+          markDirty(); draw(); updateDockSelect();
+        });
+        $('p-del').addEventListener('click', () => {
+          delete M.docks[sel.id]; sel = null;
+          markDirty(); draw(); updateProps(); updateDockSelect();
+        });
+      }
+    } else {
+      const o = selectedObs();
+      if (!o) { sel = null; return updateProps(); }
+      panel.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-mono text-[9px] uppercase tracking-[0.9px] text-rose-500 opacity-80">Obstacle · ${esc(o.id)}</span>
+          <button id="p-del" class="font-mono text-[11px] text-rose-500 hover:underline">Delete</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          ${field('p-x', 'Centre X (m)', o.x)}
+          ${field('p-y', 'Centre Y (m)', o.y)}
+          ${field('p-w', 'Width (m)', o.w)}
+          ${field('p-h', 'Height (m)', o.h)}
+        </div>`;
+      const num = (id, fn) => $(id).addEventListener('change', e => {
+        fn(parseFloat(e.target.value) || 0); markDirty(); draw(); syncProps();
+      });
+      num('p-x', v => o.x = r2(clampX(v)));
+      num('p-y', v => o.y = r2(clampY(v)));
+      num('p-w', v => o.w = r2(Math.max(0.05, v)));
+      num('p-h', v => o.h = r2(Math.max(0.05, v)));
+      $('p-del').addEventListener('click', () => {
+        M.obstacles = M.obstacles.filter(x => x.id !== o.id); sel = null;
+        markDirty(); draw(); updateProps();
+      });
+    }
+  }
+
+  // refresh position inputs while dragging (without rebuilding the panel)
+  function syncProps() {
+    if (!sel || $('props').classList.contains('hidden')) return;
+    if (sel.kind === 'dock') {
+      const d = M.docks[sel.id]; if (!d) return;
+      if ($('p-x')) { $('p-x').value = d.pose_x; $('p-y').value = d.pose_y; }
+    } else {
+      const o = selectedObs(); if (!o) return;
+      if ($('p-x')) { $('p-x').value = o.x; $('p-y').value = o.y; $('p-w').value = o.w; $('p-h').value = o.h; }
+    }
+  }
+
+  // ── pointer interaction ────────────────────────────────────────────────────
+  svg.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    svg.setPointerCapture(e.pointerId);
+
+    // Middle-click drag pans regardless of the active tool.
+    if (e.button === 1) { pan = rootPoint(e); svg.classList.add('cursor-grabbing'); return; }
+
+    const p = evtPoint(e);
+    const hit = e.target.closest('[data-kind]');
+
+    if (tool === 'select') {
+      if (hit) {
+        sel = { kind: hit.dataset.kind, id: hit.dataset.id };
+        const pos = sel.kind === 'dock'
+          ? { x: M.docks[sel.id].pose_x, y: M.docks[sel.id].pose_y }
+          : { x: selectedObs().x, y: selectedObs().y };
+        drag = { kind: sel.kind, id: sel.id, dx: pos.x - p.x, dy: pos.y - p.y };
+      } else {
+        // Empty canvas: clear selection and drag-to-pan instead.
+        sel = null;
+        pan = rootPoint(e);
+        svg.classList.add('cursor-grabbing');
+      }
+      updateProps(); draw();
+    } else if (tool === 'dock') {
+      const id = nextId('dock', new Set(Object.keys(M.docks)));
+      M.docks[id] = { label: id, pose_x: r2(clampX(p.x)), pose_y: r2(clampY(p.y)), yaw: 0 };
+      sel = { kind: 'dock', id };
+      markDirty(); setTool('select'); updateProps(); updateDockSelect(); draw();
+    } else if (tool === 'obstacle') {
+      drag = { kind: 'newobs', x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+    } else if (tool === 'pose') {
+      drag = { kind: 'pose', x: clampX(p.x), y: clampY(p.y), yaw: 0, has: false };
+      draw();
+    }
+  });
+
+  svg.addEventListener('pointermove', (e) => {
+    if (pan) {
+      const r = rootPoint(e);
+      view.x += r.x - pan.x; view.y += r.y - pan.y;
+      pan = r;
+      applyView();
+      return;
+    }
+    if (!drag) return;
+    const p = evtPoint(e);
+    if (drag.kind === 'dock') {
+      const d = M.docks[drag.id];
+      d.pose_x = r2(clampX(p.x + drag.dx)); d.pose_y = r2(clampY(p.y + drag.dy));
+      markDirty(); syncProps();
+    } else if (drag.kind === 'obs') {
+      const o = M.obstacles.find(x => x.id === drag.id);
+      o.x = r2(clampX(p.x + drag.dx)); o.y = r2(clampY(p.y + drag.dy));
+      markDirty(); syncProps();
+    } else if (drag.kind === 'newobs') {
+      drag.x1 = clampX(p.x); drag.y1 = clampY(p.y);
+    } else if (drag.kind === 'pose') {
+      const dx = p.x - drag.x, dy = p.y - drag.y;
+      if (Math.hypot(dx, dy) > 0.05) { drag.yaw = Math.atan2(dy, dx); drag.has = true; }
+    }
+    draw();
+  });
+
+  svg.addEventListener('pointerup', () => {
+    if (pan) { pan = null; svg.classList.remove('cursor-grabbing'); return; }
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (d.kind === 'newobs') {
+      const x0 = Math.min(d.x0, d.x1), x1 = Math.max(d.x0, d.x1);
+      const y0 = Math.min(d.y0, d.y1), y1 = Math.max(d.y0, d.y1);
+      if (x1 - x0 >= 0.1 && y1 - y0 >= 0.1) {
+        const o = { id: nextId('obs', new Set(M.obstacles.map(x => x.id))),
+                    x: r2((x0 + x1) / 2), y: r2((y0 + y1) / 2), w: r2(x1 - x0), h: r2(y1 - y0) };
+        M.obstacles.push(o);
+        sel = { kind: 'obs', id: o.id };
+        markDirty(); setTool('select'); updateProps();
+      }
+    } else if (d.kind === 'pose') {
+      resetPose(d.x, d.y, d.has ? d.yaw : 0);
+    }
+    draw();
+  });
+
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomAt(rootPoint(e), e.deltaY < 0 ? 1.15 : 1 / 1.15);
+  }, { passive: false });
+
+  function zoomAtCenter(factor) {
+    const r = svg.getBoundingClientRect();
+    zoomAt(rootPoint({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }), factor);
+  }
+  $('btn-zoom-in').addEventListener('click', () => zoomAtCenter(1.3));
+  $('btn-zoom-out').addEventListener('click', () => zoomAtCenter(1 / 1.3));
+  $('btn-zoom-reset').addEventListener('click', resetView);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    if (/input|select|textarea/i.test(document.activeElement.tagName)) return;
+    if (!sel || (sel.kind === 'dock' && sel.id === HOME)) return;
+    if (sel.kind === 'dock') delete M.docks[sel.id];
+    else M.obstacles = M.obstacles.filter(o => o.id !== sel.id);
+    sel = null; markDirty(); draw(); updateProps(); updateDockSelect();
+  });
+
+  // ── bounds inputs ──────────────────────────────────────────────────────────
+  function fillBoundsInputs() {
+    $('b-xmin').value = M.bounds.x_min; $('b-xmax').value = M.bounds.x_max;
+    $('b-ymin').value = M.bounds.y_min; $('b-ymax').value = M.bounds.y_max;
+  }
+  [['b-xmin', 'x_min'], ['b-xmax', 'x_max'], ['b-ymin', 'y_min'], ['b-ymax', 'y_max']].forEach(([id, key]) => {
+    $(id).addEventListener('change', (e) => {
+      const v = parseFloat(e.target.value);
+      if (Number.isNaN(v)) { e.target.value = M.bounds[key]; return; }
+      M.bounds[key] = v;
+      if (M.bounds.x_max - M.bounds.x_min < 0.5 || M.bounds.y_max - M.bounds.y_min < 0.5) {
+        toast('Bounds must span at least 0.5 m', true);
+      }
+      markDirty(); resize(); draw();
+    });
+  });
+
+  // ── api helpers ────────────────────────────────────────────────────────────
+  function toast(msg, error = false) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.style.background = error ? '#e11d48' : '#0f172a';
+    t.classList.remove('hidden');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.add('hidden'), 2600);
+  }
+
+  async function api(url, opts = {}) {
+    const r = await fetch(url, opts);
+    if (r.status === 401) { location.reload(); throw new Error('session expired'); }
+    return r;
+  }
+
+  async function save() {
+    try {
+      const r = await api('/v1/admin/map', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(M),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        dirty = false; $('dirty-dot').classList.add('hidden');
+        toast(`Map saved · ${j.docks} docks · ${j.obstacles} obstacles`);
+      } else {
+        toast(j.error || 'Save failed', true);
+      }
+    } catch (e) { /* reload already handled */ }
+  }
+  $('btn-save').addEventListener('click', save);
+
+  async function syncRobotTopics() {
+    const btn = $('btn-sync-robot');
+    btn.disabled = true;
+    btn.classList.add('opacity-60', 'pointer-events-none');
+    const prev = btn.textContent;
+    btn.textContent = 'Syncing…';
+    try {
+      const r = await api('/v1/admin/sync_topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(M),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        toast(`Synced robot topics · ${j.docks} docks · ${j.obstacles} obstacles`);
+      } else {
+        toast(j.error || 'Robot sync failed', true);
+      }
+    } catch (e) {
+      toast('Robot sync failed', true);
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('opacity-60', 'pointer-events-none');
+      btn.textContent = prev;
+    }
+  }
+  $('btn-sync-robot').addEventListener('click', syncRobotTopics);
+
+  function defaultMapName() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `map_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  }
+
+  async function exportSlamMap() {
+    const btn = $('btn-export-slam');
+    const suggested = defaultMapName();
+    const chosen = prompt('Map name for Nav2 export (no extension):', suggested);
+    if (chosen === null) return;
+    const mapName = chosen.trim();
+
+    btn.disabled = true;
+    btn.classList.add('opacity-60', 'pointer-events-none');
+    const prev = btn.textContent;
+    btn.textContent = 'Exporting…';
+    try {
+      const r = await api('/v1/admin/slam/export', {
+        method: 'POST',
+        body: new URLSearchParams({ map_name: mapName }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        if (j.map_loaded) {
+          toast(`SLAM exported + activated: ${j.map_yaml}`);
+        } else {
+          const reason = j.load_message ? ` (${j.load_message})` : '';
+          toast(`SLAM exported, but not activated${reason}`, true);
+        }
+      } else {
+        toast(j.error || 'SLAM export failed', true);
+      }
+    } catch (e) {
+      toast('SLAM export failed', true);
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('opacity-60', 'pointer-events-none');
+      btn.textContent = prev;
+    }
+  }
+  $('btn-export-slam').addEventListener('click', exportSlamMap);
+  window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
+
+  async function resetPose(x, y, yaw) {
+    await api('/v1/admin/reset_pose', {
+      method: 'POST',
+      body: new URLSearchParams({ x: r2(x), y: r2(y), yaw: Math.round(yaw * 1000) / 1000 }),
+    });
+    toast(`Pose reset → (${r2(x)}, ${r2(y)}) @ ${deg(yaw)}°`);
+  }
+
+  // ── controls ───────────────────────────────────────────────────────────────
+  function updateDockSelect() {
+    const cur = $('dock-select').value;
+    $('dock-select').innerHTML = Object.entries(M.docks).map(([id, d]) =>
+      `<option value="${esc(id)}">${esc(d.label || id)} (${esc(id)})</option>`).join('');
+    if (M.docks[cur]) $('dock-select').value = cur;
+  }
+
+  $('btn-dock').addEventListener('click', async () => {
+    const id = $('dock-select').value;
+    await api('/v1/admin/dock', { method: 'POST', body: new URLSearchParams({ dock_id: id }) });
+    toast(`Docking → ${id}`);
+  });
+
+  $('btn-setpose').addEventListener('click', async () => {
+    const id = $('dock-select').value;
+    await api('/v1/admin/reset_pose', { method: 'POST', body: new URLSearchParams({ dock_id: id }) });
+    toast(`Pose reset to ${id}`);
+  });
+
+  $('btn-abort').addEventListener('click', async () => {
+    if (!confirm('Emergency stop: abort the active order and clear the queue?')) return;
+    const r = await api('/v1/admin/abort', { method: 'POST' });
+    const j = await r.json();
+    toast(`Stopped · aborted ${j.aborted ?? 'none'} · ${j.queued_cancelled} queued cancelled`);
+    poll();
+  });
+
+  $('btn-logout').addEventListener('click', async () => {
+    await fetch('/v1/admin/logout', { method: 'POST' });
+    location.reload();
+  });
+
+  // teleop: hold to drive, release to stop
+  let teleTimer = null;
+  function teleSend(lin, ang) {
+    fetch('/v1/admin/teleop', { method: 'POST', body: new URLSearchParams({ linear: lin, angular: ang }) });
+  }
+  document.querySelectorAll('.tele-btn[data-lin]').forEach(b => {
+    const start = (e) => {
+      e.preventDefault();
+      teleSend(b.dataset.lin, b.dataset.ang);
+      clearInterval(teleTimer);
+      teleTimer = setInterval(() => teleSend(b.dataset.lin, b.dataset.ang), 250);
+    };
+    const stop = () => {
+      if (!teleTimer) return;
+      clearInterval(teleTimer); teleTimer = null;
+      teleSend(0, 0);
+    };
+    b.addEventListener('pointerdown', start);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, stop));
+  });
+
+  // ── live polling ───────────────────────────────────────────────────────────
+  const STATUS_COLORS = {
+    queued: 'bg-amber-100 text-amber-600', preparing: 'bg-sky-100 text-sky-600',
+    on_the_way: 'bg-blue-100 text-blue-700', delivered: 'bg-emerald-100 text-emerald-600',
+    failed: 'bg-rose-100 text-rose-600', cancelled: 'bg-slate-100 text-slate-500',
+  };
+  const statusPill = (s) =>
+    `<span class="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.5px] ${STATUS_COLORS[s] || 'bg-slate-100 text-slate-500'}">${esc(s)}</span>`;
+  const dockLabel = (id) => (M.docks[id] && M.docks[id].label) || id;
+
+  function renderStatus(s) {
+    live.snap = s; live.odom = s.odom;
+    const busy = s.robot_busy;
+    $('hdr-mode').textContent = `${s.mode} · ${busy ? 'busy' : 'idle'}`;
+    $('hdr-dot').innerHTML = `
+      <span class="absolute inline-flex size-full rounded-full ${s.connected ? 'bg-blueoc-green' : 'bg-amber-400'} opacity-40 animate-ping-slow"></span>
+      <span class="relative inline-flex size-2 rounded-full ${s.connected ? 'bg-blueoc-green' : 'bg-amber-400'}"></span>`;
+    const r = s.robot || {};
+    $('st-phase').textContent = (r.phase || '—').replace(/_/g, ' ');
+    $('st-order').textContent = s.active_order ? `#${s.active_order} · ${r.order_type || ''}` : '—';
+    $('st-target').textContent = r.target_dock ? dockLabel(r.target_dock) : '—';
+    $('st-at').textContent = r.at ? dockLabel(r.at) : 'in transit';
+    $('st-carrying').textContent = r.carrying ? 'yes' : 'no';
+    $('st-dockstate').textContent = s.docking_state || '—';
+    $('st-odom').textContent = s.odom
+      ? `${r2(s.odom[0])}, ${r2(s.odom[1])} @ ${deg(s.odom[2])}°` : 'no odom';
+  }
+
+  window.orderAction = async (id, action) => {
+    await api(`/v1/admin/orders/${id}/${action}`, { method: 'POST' });
+    toast(`Order #${id} ${action === 'cancel' ? 'cancelled' : 'requeued'}`);
+    poll();
+  };
+
+  function renderOrders(orders) {
+    const TERMINAL = new Set(['delivered', 'failed', 'cancelled']);
+    $('orders-body').innerHTML = orders.length ? orders.map(o => `
+      <tr class="border-t border-slate-100">
+        <td class="py-2.5 pr-3 font-mono text-[12px] text-[#90a1b9]">#${o.id}</td>
+        <td class="py-2.5 pr-3 text-[13px] font-medium text-[#314158] capitalize">${esc(o.type)}</td>
+        <td class="py-2.5 pr-3 font-mono text-[12px] text-[#475569]">${esc(dockLabel(o.dock_id))}</td>
+        <td class="py-2.5 pr-3">${statusPill(o.status)}</td>
+        <td class="py-2.5 pr-3 font-mono text-[12px] text-[#90a1b9]">${esc(o.eta || '—')}</td>
+        <td class="py-2.5 text-right">
+          ${TERMINAL.has(o.status)
+            ? `<button onclick="orderAction(${o.id},'requeue')" class="font-mono text-[11px] text-blueoc-brand hover:underline">Requeue</button>`
+            : `<button onclick="orderAction(${o.id},'cancel')" class="font-mono text-[11px] text-rose-500 hover:underline">Cancel</button>`}
+        </td>
+      </tr>`).join('')
+      : '<tr><td colspan="6" class="py-6 text-center font-mono text-[12px] text-[#90a1b9]">No orders yet</td></tr>';
+  }
+
+  async function poll() {
+    try {
+      const s = await (await fetch('/state')).json();
+      renderStatus(s);
+      const ro = await api('/v1/admin/orders');
+      renderOrders((await ro.json()).orders);
+    } catch (e) { /* transient network error or reload in flight */ }
+    draw();
+  }
+
+  // ── boot ───────────────────────────────────────────────────────────────────
+  setTool('select');
+  applyView();
+  resize();
+  fillBoundsInputs();
+  updateDockSelect();
+  draw();
+  poll();
+  setInterval(poll, 2000);
+  </script>
+</body>
+</html>

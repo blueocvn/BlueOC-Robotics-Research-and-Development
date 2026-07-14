@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>{% include "_admin_head.html" %}</head>
+
+<body class="bg-blueoc-gradient min-h-full">
+  <div class="dot-grid fixed inset-0 pointer-events-none opacity-10"></div>
+
+  <div class="relative min-h-[100dvh] flex flex-col items-center justify-center px-6">
+    <div class="flex items-center gap-2 mb-6">
+      <img src="/static/blueoc_icon_white.png" alt="BlueOC" class="size-9 object-contain" />
+      <span class="font-bold text-[17px] text-white tracking-[-0.4px]">BlueOC</span>
+    </div>
+
+    <div class="w-full max-w-sm bg-white rounded-2xl shadow-[0px_20px_12.5px_rgba(0,0,0,0.1),0px_8px_5px_rgba(0,0,0,0.1)] p-6">
+      <p class="font-mono text-[9px] uppercase tracking-[0.9px] text-blueoc-brand opacity-70">Operator Console</p>
+      <h1 class="font-bold text-[22px] text-[#314158] tracking-[-0.5px] mt-1">Sign in</h1>
+      <p class="text-[13px] text-[#90a1b9] leading-snug mt-1">Enter the operator PIN to manage the robot, map and orders.</p>
+
+      <form id="login-form" class="mt-5 flex flex-col gap-3" autocomplete="off">
+        <input id="pin" name="pin" type="password" inputmode="numeric" placeholder="••••" autofocus
+               class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-[16px] tracking-[6px] text-[#314158] placeholder:tracking-[6px] focus:outline-none focus:border-blueoc-main focus:ring-2 focus:ring-blueoc-main/20" />
+        <p id="login-error" class="hidden font-mono text-[11px] text-rose-500">Wrong PIN — try again.</p>
+        <button type="submit"
+                class="w-full rounded-full bg-blueoc-brand text-white font-semibold text-[15px] py-3.5 shadow-[0px_10px_7.5px_rgba(0,0,0,0.1),0px_4px_3px_rgba(0,0,0,0.1)] active:scale-[0.98] transition-transform">
+          Unlock
+        </button>
+      </form>
+    </div>
+
+    <p class="font-mono text-[10px] text-white/40 text-center mt-6">Powered by BlueOC Robotics</p>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const r = await fetch('/v1/admin/login', { method: 'POST', body: new FormData(e.target) });
+      if (r.ok) { location.reload(); return; }
+      document.getElementById('login-error').classList.remove('hidden');
+      const pin = document.getElementById('pin');
+      pin.select(); pin.focus();
+    });
+  </script>
+</body>
+</html>

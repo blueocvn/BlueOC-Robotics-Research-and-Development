@@ -1,29 +1,25 @@
-# Dock registry — the set of valid QR targets. The QR at each table/dock deep-links
-# to  <base>/?dock=<dock_id>  and the user page shows `label`.
-# pose_x / pose_y / yaw are used later by the admin "reset pose" + dispatcher; the
-# user pages only need id + label for v1.
-#
-# dock0 is the WATER STATION / home base (ROBOT_WEB_BRIDGE_HOME_DOCK): the robot
-# starts and parks here and loads/refills water here. It is not a customer table,
-# so it's excluded from the QR-less default — those visitors map to the first table.
+# Dock registry — the set of valid QR targets. The QR at each table/dock
+# deep-links to <base>/?dock=<dock_id> and the user page shows `label`.
+# This file is maintained by the /admin map editor; hand edits are fine
+# but will be reformatted on the next admin save.
 docks:
   dock0:
-    label: "Water Station"
-    pose_x: 0.0
-    pose_y: 0.0
-    yaw: 0.0
+    label: Water Station
+    pose_x: 0.64
+    pose_y: -0.65
+    yaw: 1.57
   dock1:
-    label: "Table B-12"
-    pose_x: 1.5
-    pose_y: 0.0
+    label: Table B-12
+    pose_x: -6.56
+    pose_y: -2.19
     yaw: 0.0
   dock2:
-    label: "Table C-03"
-    pose_x: 3.0
-    pose_y: -1.5
+    label: Table C-03
+    pose_x: -2.9
+    pose_y: 4.49
+    yaw: -1.57
+  dock3:
+    label: dock3
+    pose_x: -6.52
+    pose_y: 2.89
     yaw: 0.0
-  kitchen:
-    label: "Kitchen"
-    pose_x: 3.0
-    pose_y: 2.0
-    yaw: 1.57

@@ -16,9 +16,13 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 [ -f "$REPO_ROOT/network.env" ] && source "$REPO_ROOT/network.env"
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
 
+# ROS's setup.bash isn't `set -u`-safe (references AMENT_TRACE_SETUP_FILES etc.
+# without a default), so disable nounset just for the sourcing.
+set +u
 source /opt/ros/humble/setup.bash
 # install/ exists after `colcon build`; ignore if running from source
 source "$(dirname "$0")/install/setup.bash" 2>/dev/null || true
+set -u
 
 export ROBOT_WEB_BRIDGE_PORT="${ROBOT_WEB_BRIDGE_PORT:-8088}"
 exec ros2 run robot_web_bridge server

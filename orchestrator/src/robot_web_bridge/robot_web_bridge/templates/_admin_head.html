@@ -1,0 +1,41 @@
+{# Shared <head> for the operator (/admin) pages — same brand stack as base.html. #}
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>BlueOC · Operator Console</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#1a3a8f" />
+<link rel="icon" type="image/png" href="/static/blueoc_icon_white.png" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          blueoc: { dark: '#1a3a8f', mid: '#1d4ed8', main: '#2563eb', brand: '#1a56db', green: '#10b981' },
+        },
+      },
+    },
+  };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  html, body { min-height: 100%; margin: 0; }
+  body { font-family: 'Inter', sans-serif; }
+  .bg-blueoc-gradient {
+    background: linear-gradient(139.159deg, #1a3a8f 8.49%, #1d4ed8 45.85%, #2563eb 91.51%);
+  }
+  .dot-grid {
+    background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  @keyframes ping-slow { 75%, 100% { transform: scale(2); opacity: 0; } }
+  .animate-ping-slow { animation: ping-slow 1.2s cubic-bezier(0,0,0.2,1) infinite; }
+</style>

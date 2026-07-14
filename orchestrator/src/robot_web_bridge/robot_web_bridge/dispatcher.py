@@ -31,6 +31,7 @@ via the ROBOT_WEB_BRIDGE_* env vars).
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import time
 from dataclasses import dataclass
@@ -107,6 +108,37 @@ def _phase(leg: Leg) -> str:
     return "delivering" if leg.carrying else "collecting"
 
 
+def _default_tag_frame(dock_id: str) -> str:
+    """dock0 -> dock_0, dock12 -> dock_12; otherwise replace dashes with underscores."""
+    if dock_id.startswith("dock") and dock_id[4:].isdigit():
+        return f"dock_{dock_id[4:]}"
+    return dock_id.replace("-", "_")
+
+
+def _dock_registry_payload(docks: dict[str, dict]) -> str:
+    """Build the full-snapshot /dock_registry JSON payload expected by jetracer_docker."""
+    def f_or_none(v):
+        if v is None:
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    items: list[dict] = []
+    for dock_id, raw in docks.items():
+        d = raw if isinstance(raw, dict) else {}
+        items.append({
+            "id": str(d.get("id") or dock_id),
+            "tag_frame": str(d.get("tag_frame") or _default_tag_frame(str(dock_id))),
+            "x": float(d.get("pose_x", d.get("x", 0.0))),
+            "y": float(d.get("pose_y", d.get("y", 0.0))),
+            "yaw": f_or_none(d.get("yaw", None)),
+            "staging_dist": f_or_none(d.get("staging_dist", d.get("staging_distance", None))),
+        })
+    return json.dumps({"docks": items})
+
+
 # ── backends ──────────────────────────────────────────────────────────────────
 class Backend(Protocol):
     """What the dispatcher + admin portal need from a robot backend.
@@ -123,6 +155,8 @@ class Backend(Protocol):
     def teleop(self, linear: float, angular: float) -> None: ...
     def reset_pose(self, x: float, y: float, yaw: float) -> None: ...
     def dock(self, dock_id: str) -> None: ...
+    def set_obstacles(self, obstacles: list[dict]) -> None: ...
+    def set_docks(self, docks: dict[str, dict]) -> None: ...
 
 
 class SimBackend:
@@ -133,6 +167,8 @@ class SimBackend:
     def __init__(self) -> None:
         self._leg_start: Optional[float] = None
         self._target: Optional[str] = None
+        self._obstacles: list[dict] = []
+        self._docks: dict[str, dict] = {}
 
     def go_to(self, dock_id: str) -> None:
         self._target = dock_id
@@ -158,6 +194,12 @@ class SimBackend:
 
     def dock(self, dock_id: str) -> None:
         self.go_to(dock_id)
+
+    def set_obstacles(self, obstacles: list[dict]) -> None:
+        self._obstacles = obstacles  # nothing to publish; kept for inspection
+
+    def set_docks(self, docks: dict[str, dict]) -> None:
+        self._docks = docks  # nothing to publish; kept for inspection
 
     def snapshot(self) -> dict:
         return {"connected": False, "mode": self.name, "docking_state": None, "odom": None}
@@ -209,6 +251,12 @@ class RosBackend:
 
     def dock(self, dock_id: str) -> None:
         self.go_to(dock_id)
+
+    def set_obstacles(self, obstacles: list[dict]) -> None:
+        self._node.publish_obstacles(json.dumps({"obstacles": obstacles}))
+
+    def set_docks(self, docks: dict[str, dict]) -> None:
+        self._node.publish_docks(_dock_registry_payload(docks))
 
     def snapshot(self) -> dict:
         st = self._node.get_state()

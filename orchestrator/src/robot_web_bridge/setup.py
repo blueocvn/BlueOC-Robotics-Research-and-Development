@@ -10,7 +10,7 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/config', glob('config/*.yaml')),
+        ('share/' + package_name + '/config', glob('config/*.yaml') + glob('config/*.pgm')),
         # Templates are also shipped as package_data (below) so the running
         # process can find them next to the module; this share/ copy is for
         # inspection / ros2 pkg prefix discovery.
@@ -18,8 +18,8 @@ setup(
         ('share/' + package_name + '/static', glob('robot_web_bridge/static/*')),
     ],
     include_package_data=True,
-    package_data={package_name: ['templates/*.html', 'static/*', 'config/*.yaml']},
-    install_requires=['setuptools', 'fastapi', 'uvicorn', 'jinja2', 'pyyaml'],
+    package_data={package_name: ['templates/*.html', 'static/*', 'config/*.yaml', 'config/*.pgm']},
+    install_requires=['setuptools', 'fastapi', 'uvicorn', 'jinja2', 'pyyaml', 'python-multipart'],
     zip_safe=False,
     maintainer='BlueOC',
     maintainer_email='ivanchen.code@gmail.com',
