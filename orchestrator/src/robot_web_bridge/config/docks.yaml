@@ -5,8 +5,8 @@
 docks:
   dock0:
     label: Water Station
-    pose_x: 0.64
-    pose_y: -0.65
+    pose_x: 1.74
+    pose_y: -0.62
     yaw: 1.57
   dock1:
     label: Table B-12

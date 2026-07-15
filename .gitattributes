@@ -1,0 +1,2 @@
+# Normalize line endings on checkin, force LF in the working tree.
+* text=auto eol=lf

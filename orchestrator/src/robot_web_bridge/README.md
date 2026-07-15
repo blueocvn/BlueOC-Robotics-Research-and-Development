@@ -111,3 +111,12 @@ Then open <http://localhost:8088/?dock=dock0>.
   pose-reset. Override the directory with `ROBOT_WEB_BRIDGE_CONFIG`.
 - `ROBOT_WEB_BRIDGE_HOST` / `ROBOT_WEB_BRIDGE_PORT` — bind address (default
   `0.0.0.0:8088`).
+- `ROBOT_WEB_BRIDGE_MAP_STYLE` — SLAM background look: `classic` (default, grey
+  walls) or `app` (robot-vacuum style: soft blue floor + blue walls). In `app`
+  mode, if a sibling `<map>.svg` sits next to the `.pgm`/`.yaml` (exported by the
+  `slam_map_beautification` notebook — smooth, contour-traced), it is served as-is;
+  otherwise the server falls back to its own blocky vector render, whose cell size
+  is `ROBOT_WEB_BRIDGE_MAP_BLOCK` px (default `3`, bigger = chunkier). Either way
+  rendering stays in the map's true frame, so dock/obstacle coordinates are
+  identical to `classic`; the app style only auto-levels the *view* (a display-only
+  rotation, same mechanism as `display_rotation_deg`).

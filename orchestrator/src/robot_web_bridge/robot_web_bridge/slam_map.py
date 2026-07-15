@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import base64
 import math
+import os
 import struct
 import zlib
 from collections import deque
@@ -34,6 +35,15 @@ OCC_V = 80            # <= this  → wall / occupied (black)
 FREE_GRAY = 244       # rendered free tone
 WALL_GRAY = 55        # rendered wall tone
 WALL_HALO_PX = 4      # keep walls within this many px of the main free region
+
+# ── app style (robot-vacuum look): soft blue floor + blocky blue walls ──────────
+# Opt in with ROBOT_WEB_BRIDGE_MAP_STYLE=app. Rendering stays in the ORIGINAL frame
+# (same size/origin/resolution → same world bounds), so coordinates are unchanged;
+# the squared "leveled" look is a display-only rotation (see `rotation_deg` below).
+MAP_STYLE = os.environ.get("ROBOT_WEB_BRIDGE_MAP_STYLE", "classic").strip().lower()
+BLOCK_PX = max(1, int(os.environ.get("ROBOT_WEB_BRIDGE_MAP_BLOCK", "3")))  # px per "pixel" cell
+APP_FLOOR_RGB = (188, 214, 240)   # #bcd6f0 soft blue floor
+APP_WALL_RGB = (74, 144, 217)     # #4a90d9 medium-blue walls / outline
 
 
 # ── PGM ────────────────────────────────────────────────────────────────────────
@@ -116,6 +126,43 @@ def _png_gray_alpha(w: int, h: int, pixels: bytes) -> bytes:
             + chunk(b"IEND", b""))
 
 
+# ── vector cells: snap a mask to a block grid, then emit merged rectangles ───────
+def _cell_grid(w: int, h: int, mask: bytearray, block: int, cov: float) -> tuple[int, int, bytearray]:
+    """0/1 grid at cell resolution: a cell is on when >= `cov` of its pixels are set.
+    Snapping to cells is what gives the crisp square 'pixel' look — but as vectors."""
+    cw, ch = w // block, h // block
+    grid = bytearray(cw * ch)
+    need = cov * block * block
+    for cy in range(ch):
+        for cx in range(cw):
+            count = 0
+            for y in range(cy * block, cy * block + block):
+                row = y * w
+                for x in range(cx * block, cx * block + block):
+                    count += mask[row + x]
+            if count >= need:
+                grid[cy * cw + cx] = 1
+    return cw, ch, grid
+
+
+def _rects_path(cw: int, ch: int, grid: bytearray, block: int) -> str:
+    """Merge on-cells into horizontal run rectangles and return one SVG path `d`
+    string (compact: one M..h..v..h..z subpath per run, in full-pixel coordinates)."""
+    parts = []
+    for cy in range(ch):
+        x = 0
+        while x < cw:
+            if grid[cy * cw + x]:
+                x0 = x
+                while x < cw and grid[cy * cw + x]:
+                    x += 1
+                px, py, ww, hh = x0 * block, cy * block, (x - x0) * block, block
+                parts.append(f"M{px} {py}h{ww}v{hh}h{-ww}z")
+            else:
+                x += 1
+    return "".join(parts)
+
+
 # ── orientation: angle that levels the dominant walls ──────────────────────────
 def _level_angle_deg(w: int, h: int, mask: bytearray) -> float:
     """Rotation (deg) whose min-area bounding box aligns the main region to axes."""
@@ -136,12 +183,41 @@ def _level_angle_deg(w: int, h: int, mask: bytearray) -> float:
     return round(fine, 2)
 
 
+# ── app-style render (soft blue floor + blocky blue walls, original frame) ──────
+def _render_app_style(w: int, h: int, data: bytes, mask: bytearray, halo: bytearray) -> str:
+    """Robot-vacuum look as a georeferenced *SVG* data URI: soft blue floor + blocky
+    blue walls, drawn as vectors so it stays crisp at any zoom (no pixelation). The
+    viewBox is the input pixel grid (0 0 w h), so it stretches over the world bounds
+    exactly like the raster map did — coordinates are unchanged."""
+    wall = bytearray(w * h)
+    for i in range(w * h):
+        if data[i] <= OCC_V and halo[i] and not mask[i]:
+            wall[i] = 1
+
+    cw, ch, floor_cells = _cell_grid(w, h, mask, BLOCK_PX, 0.5)
+    _, _, wall_cells = _cell_grid(w, h, wall, BLOCK_PX, 0.25)  # low coverage keeps thin walls
+    floor_d = _rects_path(cw, ch, floor_cells, BLOCK_PX)
+    wall_d = _rects_path(cw, ch, wall_cells, BLOCK_PX)
+
+    floor_hex = "#%02x%02x%02x" % APP_FLOOR_RGB
+    wall_hex = "#%02x%02x%02x" % APP_WALL_RGB
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
+        f'viewBox="0 0 {w} {h}" shape-rendering="crispEdges">'
+        f'<path fill="{floor_hex}" d="{floor_d}"/>'
+        f'<path fill="{wall_hex}" d="{wall_d}"/>'  # walls painted over the floor
+        f'</svg>'
+    )
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
 # ── public ─────────────────────────────────────────────────────────────────────
 def load_slam_map(yaml_path: Path) -> dict | None:
     """Return the render payload for ``yaml_path``, or ``None`` if unavailable.
 
-    Payload: ``image`` (PNG data URI), pixel size, ``resolution`` (m/px),
-    ``origin`` [x, y, yaw], world ``bounds`` and a display ``rotation_deg``.
+    Payload: ``image`` (PNG data URI in classic style, crisp SVG in app style),
+    pixel size, ``resolution`` (m/px), ``origin`` [x, y, yaw], world ``bounds``
+    and a display ``rotation_deg``.
     """
     try:
         meta = yaml.safe_load(yaml_path.read_text()) or {}
@@ -156,21 +232,38 @@ def load_slam_map(yaml_path: Path) -> dict | None:
     mask = _main_region_mask(w, h, data)
     halo = _dilate(w, h, mask, WALL_HALO_PX)
 
-    px = bytearray(w * h * 2)
-    for i in range(w * h):
-        v = data[i]
-        if mask[i]:
-            px[2 * i], px[2 * i + 1] = FREE_GRAY, 255
-        elif v <= OCC_V and halo[i]:
-            px[2 * i], px[2 * i + 1] = WALL_GRAY, 255
-        # else leave transparent (alpha 0)
+    if MAP_STYLE == "app":
+        # Prefer a sibling <stem>.svg exported offline by the beautification notebook
+        # (contour-traced -> smooth, matches the notebook). It's in the same pixel frame
+        # (viewBox 0 0 w h), so it georeferences exactly like the raster. Fall back to the
+        # stdlib blocky render when no SVG has been exported.
+        svg_sibling = yaml_path.with_suffix(".svg")
+        if svg_sibling.is_file():
+            data_uri = "data:image/svg+xml;base64," + base64.b64encode(svg_sibling.read_bytes()).decode()
+        else:
+            data_uri = _render_app_style(w, h, data, mask, halo)
+    else:
+        px = bytearray(w * h * 2)
+        for i in range(w * h):
+            v = data[i]
+            if mask[i]:
+                px[2 * i], px[2 * i + 1] = FREE_GRAY, 255
+            elif v <= OCC_V and halo[i]:
+                px[2 * i], px[2 * i + 1] = WALL_GRAY, 255
+            # else leave transparent (alpha 0)
+        data_uri = "data:image/png;base64," + base64.b64encode(_png_gray_alpha(w, h, bytes(px))).decode()
 
-    data_uri = "data:image/png;base64," + base64.b64encode(_png_gray_alpha(w, h, bytes(px))).decode()
-
-    # Keep the admin view in true map/cartesian orientation by default.
-    # If needed, operators can still set display_rotation_deg in the map YAML.
+    # Display orientation. Coordinates are NEVER rotated (the browser rotates the
+    # whole picture via `rotation_deg` and maps clicks back through that transform),
+    # so leveling is purely cosmetic. Priority: explicit YAML override, else "auto"
+    # (square the walls) for the app style, else stay in true cartesian orientation.
     override = meta.get("display_rotation_deg")
-    rotation = float(override) if override is not None else 0.0
+    if override is not None and str(override).strip().lower() != "auto":
+        rotation = float(override)
+    elif str(override).strip().lower() == "auto" or MAP_STYLE == "app":
+        rotation = _level_angle_deg(w, h, mask)
+    else:
+        rotation = 0.0
 
     return {
         "image": data_uri,
