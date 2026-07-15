@@ -167,7 +167,7 @@
           </div>
           <button id="btn-setpose"
                   class="w-full rounded-full bg-slate-100 text-[#314158] font-semibold text-[12px] py-2.5 mb-3 active:scale-[0.98] transition-transform">
-            Reset pose to selected dock
+            Find dock's tag &amp; reset pose
           </button>
 
           <button id="btn-abort"
@@ -244,6 +244,7 @@
   const S = 60;                      // px per metre
   let tool = 'select', sel = null, drag = null, dirty = false;
   let live = { odom: null, snap: null };
+  let lastDockState = null;
   let view = { scale: 1, x: 0, y: 0 };  // pan/zoom of g-view, in viewBox units
   let pan = null;                       // { x, y } last root-space point while panning
 
@@ -789,8 +790,8 @@
 
   $('btn-setpose').addEventListener('click', async () => {
     const id = $('dock-select').value;
-    await api('/v1/admin/reset_pose', { method: 'POST', body: new URLSearchParams({ dock_id: id }) });
-    toast(`Pose reset to ${id}`);
+    await api('/v1/admin/relocalize', { method: 'POST', body: new URLSearchParams({ dock_id: id }) });
+    toast(`Searching for ${dockLabel(id)}'s AprilTag…`);
   });
 
   $('btn-abort').addEventListener('click', async () => {
@@ -851,6 +852,11 @@
     $('st-at').textContent = r.at ? dockLabel(r.at) : 'in transit';
     $('st-carrying').textContent = r.carrying ? 'yes' : 'no';
     $('st-dockstate').textContent = s.docking_state || '—';
+    if (s.docking_state !== lastDockState) {
+      if (s.docking_state === 'relocalize_ok') toast('Tag found — pose reset ✓');
+      else if (s.docking_state === 'relocalize_failed') toast('Tag not found — pose not reset', true);
+      lastDockState = s.docking_state;
+    }
     $('st-odom').textContent = s.odom
       ? `${r2(s.odom[0])}, ${r2(s.odom[1])} @ ${deg(s.odom[2])}°` : 'no odom';
   }

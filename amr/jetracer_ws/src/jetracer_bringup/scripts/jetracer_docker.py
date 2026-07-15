@@ -33,15 +33,23 @@ Sequence:
   cycle). Between docks it undocks to ~staging ONLY if it actually docked; if a
   dock attempt failed (no tag / pivot timeout) it drives straight to the next.
 
+Relocalize:
+  /relocalize_at_dock rotates in place (no Nav2, no staging -- the point is the
+  robot's current pose belief may be wrong) until the named dock's AprilTag is
+  seen, then publishes /initialpose at that dock's *surveyed* map pose. Unlike
+  docking's search pivot, this never trusts the current localization to aim the
+  turn; it just spins until the tag is visible or relocalize_timeout elapses.
+
 State:
   Publishes the current phase as std_msgs/String on /docking_state (latched +
   5 Hz heartbeat) so a sequencer can wait on transitions.
 
 Triggers:
-    ros2 topic pub --once /dock_robot    std_msgs/msg/String '{data: "dock1"}'
-    ros2 topic pub --once /dock_sequence std_msgs/msg/String '{data: "dock0,dock2,loop"}'
-    ros2 topic pub --once /undock_robot  std_msgs/msg/Bool   '{data: true}'
-    ros2 topic pub --once /abort_docking std_msgs/msg/Bool   '{data: true}'
+    ros2 topic pub --once /dock_robot         std_msgs/msg/String '{data: "dock1"}'
+    ros2 topic pub --once /dock_sequence      std_msgs/msg/String '{data: "dock0,dock2,loop"}'
+    ros2 topic pub --once /undock_robot       std_msgs/msg/Bool   '{data: true}'
+    ros2 topic pub --once /abort_docking      std_msgs/msg/Bool   '{data: true}'
+    ros2 topic pub --once /relocalize_at_dock std_msgs/msg/String '{data: "dock1"}'
 """
 
 import math
@@ -51,7 +59,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.qos import (QoSProfile, QoSDurabilityPolicy,
                        QoSReliabilityPolicy, QoSHistoryPolicy)
-from geometry_msgs.msg import Twist, PoseStamped, Quaternion
+from geometry_msgs.msg import Twist, PoseStamped, Quaternion, PoseWithCovarianceStamped
 from std_msgs.msg import String, Bool
 from nav2_msgs.action import NavigateToPose
 from nav2_msgs.srv import ClearEntireCostmap
@@ -120,6 +128,14 @@ class JetRacerDocker(Node):
         self.declare_parameter('undock_speed',        0.10)
         # Docking sequence: seconds to dwell while docked before moving to the next.
         self.declare_parameter('sequence_dwell',      2.0)
+        # Relocalize: plain rotate-in-place search (not the docking K-turn pivot,
+        # which aims using the *current* pose belief -- the thing relocalize can't
+        # trust). Give up after relocalize_timeout with no detection; hold the
+        # relocalize_ok/relocalize_failed result on /docking_state for
+        # relocalize_dwell seconds so a poller can observe it before it clears.
+        self.declare_parameter('relocalize_speed',    0.35)
+        self.declare_parameter('relocalize_timeout',  30.0)
+        self.declare_parameter('relocalize_dwell',    2.0)
         # Scale on the undock reverse distance (2.0 = back out ~twice as far as the
         # staging pose, for extra clearance before maneuvering to the next dock).
         self.declare_parameter('undock_back_scale',   2.0)
@@ -179,6 +195,9 @@ class JetRacerDocker(Node):
                             for i, d in zip(ids, sdists)}
         self.seq_dwell   = self.get_parameter('sequence_dwell').value
         self.undock_back_scale = self.get_parameter('undock_back_scale').value
+        self.relocalize_speed   = self.get_parameter('relocalize_speed').value
+        self.relocalize_timeout = self.get_parameter('relocalize_timeout').value
+        self.relocalize_dwell   = self.get_parameter('relocalize_dwell').value
 
         # ── TF ────────────────────────────────────────────────────────────────
         self.tf = Buffer()
@@ -209,6 +228,8 @@ class JetRacerDocker(Node):
         self._seq_wait   = None    # 'dock' | 'undock' | 'settle' | None
         self._seq_dwell_start = None
         self._settle_start = None  # clock time the inter-dock settle/clear started
+        self._relocalize_start_t = None    # clock time the tag search began
+        self._relocalize_dwell_start = None  # clock time relocalize_ok/failed began
 
         # ── I/O ───────────────────────────────────────────────────────────────
         self.cmd_pub    = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -227,6 +248,8 @@ class JetRacerDocker(Node):
             reliability=QoSReliabilityPolicy.RELIABLE,
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL)
         self.state_pub = self.create_publisher(String, '/docking_state', state_qos)
+        self.initialpose_pub = self.create_publisher(
+            PoseWithCovarianceStamped, '/initialpose', 10)
 
         # Latched planner selection -> the BT's PlannerSelector. Latched (transient
         # local) so a late-joining / restarted bt_navigator still gets the current
@@ -234,10 +257,11 @@ class JetRacerDocker(Node):
         self.planner_pub = self.create_publisher(String, planner_sel_topic, state_qos)
         self._select_planner(self.transit_planner)
 
-        self.create_subscription(String, '/dock_robot',     self._trigger_cb,   10)
-        self.create_subscription(String, '/dock_sequence',  self._sequence_cb,  10)
-        self.create_subscription(Bool,   '/undock_robot',   self._undock_cb,    10)
-        self.create_subscription(Bool,   '/abort_docking',  self._abort_cb,     10)
+        self.create_subscription(String, '/dock_robot',         self._trigger_cb,     10)
+        self.create_subscription(String, '/dock_sequence',      self._sequence_cb,    10)
+        self.create_subscription(Bool,   '/undock_robot',       self._undock_cb,      10)
+        self.create_subscription(Bool,   '/abort_docking',      self._abort_cb,       10)
+        self.create_subscription(String, '/relocalize_at_dock', self._relocalize_cb,  10)
 
         self.create_timer(0.05, self._loop)           # 20 Hz control loop
         self.create_timer(0.2,  self._publish_state)   # 5 Hz state heartbeat
@@ -328,10 +352,87 @@ class JetRacerDocker(Node):
         else:
             self._start_staging()
 
+    def _relocalize_cb(self, msg):
+        if self.phase not in ('idle', 'docked'):
+            self.get_logger().warn(f'Busy ({self.phase}) — ignoring relocalize request.')
+            return
+        dock_id = msg.data.strip()
+        tag = self.dock_to_tag.get(dock_id)
+        if tag is None:
+            self.get_logger().error(
+                f'Unknown dock id "{dock_id}". Known: {list(self.dock_to_tag)}.')
+            return
+        xy = self.dock_xy.get(dock_id)
+        if xy is None or (xy[0] == 0.0 and xy[1] == 0.0):
+            self.get_logger().error(
+                f'Dock "{dock_id}" has no surveyed map pose — cannot relocalize.')
+            return
+        self._seq_active = False   # a manual relocalize cancels any sequence
+        self.target_id  = dock_id
+        self.target_tag = tag
+        self._last_dist = None
+        self._lost_since = None
+        self._relocalize_start_t = self.get_clock().now()
+        self.get_logger().info(
+            f'Relocalize requested: {dock_id} (tag frame {tag}) — rotating to search.')
+        self._set_phase('relocalizing')
+
+    def _relocalize_step(self):
+        """Rotate in place until the target tag is seen, then reset pose to it.
+
+        Deliberately doesn't reuse the docking pivot's K-turn: that aims using the
+        *current* map pose, which is exactly what relocalize can't trust yet. A
+        plain spin needs no position estimate at all.
+        """
+        if self._tag_visible():
+            self._stop()
+            x, y = self.dock_xy[self.target_id]
+            yaw = self.dock_yaw.get(self.target_id)
+            if yaw is None:
+                yaw = 0.0  # heading unsurveyed for this dock; leave as-is
+            self._publish_initialpose(x, y, yaw)
+            self.get_logger().info(
+                f'Relocalized at {self.target_id}: tag found, pose reset to '
+                f'({x:.2f}, {y:.2f}) @ {math.degrees(yaw):.0f}deg.')
+            self._relocalize_dwell_start = self.get_clock().now()
+            self._set_phase('relocalize_ok')
+            return
+
+        elapsed = (self.get_clock().now() - self._relocalize_start_t).nanoseconds / 1e9
+        if elapsed > self.relocalize_timeout:
+            self._stop()
+            self.get_logger().warn(
+                f'Relocalize at {self.target_id}: tag not found within '
+                f'{self.relocalize_timeout:.0f}s — giving up.')
+            self._relocalize_dwell_start = self.get_clock().now()
+            self._set_phase('relocalize_failed')
+            return
+
+        cmd = Twist()
+        cmd.angular.z = self.relocalize_speed
+        self.cmd_pub.publish(cmd)
+
+    def _relocalize_dwell_step(self):
+        """Hold relocalize_ok/relocalize_failed on /docking_state briefly so a
+        poller (e.g. the admin UI) reliably observes the result, then go idle."""
+        elapsed = (self.get_clock().now() - self._relocalize_dwell_start).nanoseconds / 1e9
+        if elapsed >= self.relocalize_dwell:
+            self._set_phase('idle')
+
+    def _publish_initialpose(self, x, y, yaw):
+        msg = PoseWithCovarianceStamped()
+        msg.header.frame_id = 'map'
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.pose.position.x = float(x)
+        msg.pose.pose.position.y = float(y)
+        msg.pose.pose.orientation = self._yaw_to_quat(float(yaw))
+        self.initialpose_pub.publish(msg)
+
     def _undock_cb(self, msg):
         if not msg.data:
             return
-        if self.phase in ('staging', 'approach', 'undock'):
+        if self.phase in ('staging', 'approach', 'undock',
+                          'relocalizing', 'relocalize_ok', 'relocalize_failed'):
             self.get_logger().warn(f'Busy ({self.phase}) — ignoring undock request.')
             return
         self._start_undock()
@@ -351,7 +452,8 @@ class JetRacerDocker(Node):
 
     def _sequence_cb(self, msg):
         """Start a sequence like "dock0,dock2" (append ",loop" to cycle)."""
-        if self.phase in ('staging', 'approach', 'pivot', 'final', 'undock'):
+        if self.phase in ('staging', 'approach', 'pivot', 'final', 'undock',
+                          'relocalizing', 'relocalize_ok', 'relocalize_failed'):
             self.get_logger().warn(f'Busy ({self.phase}) — ignoring sequence.')
             return
         parts = [p.strip() for p in msg.data.split(',') if p.strip()]
@@ -565,6 +667,10 @@ class JetRacerDocker(Node):
             self._final_step()
         elif self.phase == 'undock':
             self._undock_step()
+        elif self.phase == 'relocalizing':
+            self._relocalize_step()
+        elif self.phase in ('relocalize_ok', 'relocalize_failed'):
+            self._relocalize_dwell_step()
 
     def _approach(self):
         # Selected tag pose in base_footprint (latest available).

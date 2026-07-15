@@ -135,6 +135,12 @@ def generate_launch_description():
                 'dock_staging_dist': [0.82, 1.01, 1.11],
                 'undock_distance':   0.5,
                 'undock_speed':      0.10,
+                # /relocalize_at_dock: plain rotate-in-place search for a dock's
+                # tag, then /initialpose at its surveyed pose (dock_pose_x/y/yaw
+                # above) -- see jetracer_docker.py's module docstring.
+                'relocalize_speed':   0.35,
+                'relocalize_timeout': 30.0,
+                'relocalize_dwell':   2.0,
             }]),
 
         # dock pose publisher: apriltag TF (dock_0/1/2) -> /detected_dock_pose

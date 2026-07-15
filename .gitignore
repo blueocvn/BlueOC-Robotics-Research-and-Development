@@ -56,3 +56,6 @@ amr/jetracer_ws/src/navigation2/
 amr/jetracer_ws/src/robot_localization/
 amr/jetracer_ws/src/teleop_twist_keyboard/
 # apriltag and rplidar_ros are committed as source (not tag-pinnable — see thirdparty.repos)
+
+# mounting dir of the robot:
+jetracer_mount/

@@ -68,6 +68,11 @@ try:
             self._pub_docks = self.create_publisher(
                 String, "/dock_registry", _LATCHED_QOS
             )
+            # Admin "reset pose": rotate to find the dock's AprilTag, then
+            # /initialpose at that dock's surveyed pose (jetracer_docker owns it).
+            self._pub_relocalize = self.create_publisher(
+                String, "/relocalize_at_dock", 10
+            )
 
             # Subscribers — live feedback.
             self.create_subscription(
@@ -138,6 +143,9 @@ try:
 
         def publish_docks(self, payload: str) -> None:
             self._pub_docks.publish(String(data=payload))
+
+        def publish_relocalize(self, dock_id: str) -> None:
+            self._pub_relocalize.publish(String(data=dock_id))
 
         # ── snapshot ──────────────────────────────────────────────────────────
         def get_state(self) -> dict:

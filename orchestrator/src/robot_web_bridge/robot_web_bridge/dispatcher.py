@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import os
 import time
 from dataclasses import dataclass
@@ -125,6 +126,18 @@ def _dock_registry_payload(docks: dict[str, dict]) -> str:
         except (TypeError, ValueError):
             return None
 
+    def docked_heading(v):
+        # The map editor stores a dock's yaw as the direction its staging pose
+        # sticks out (away from the wall, into the room). jetracer_docker's
+        # dock_pose_yaw is the opposite: the robot's heading when docked, facing
+        # into the dock. Reverse by pi (a 180 deg flip, NOT a sign negation) so
+        # the staging pose lands on the approach side and the docked heading lines
+        # up. None (heading unknown) stays None.
+        y = f_or_none(v)
+        if y is None:
+            return None
+        return math.atan2(-math.sin(y), -math.cos(y))
+
     items: list[dict] = []
     for dock_id, raw in docks.items():
         d = raw if isinstance(raw, dict) else {}
@@ -133,7 +146,7 @@ def _dock_registry_payload(docks: dict[str, dict]) -> str:
             "tag_frame": str(d.get("tag_frame") or _default_tag_frame(str(dock_id))),
             "x": float(d.get("pose_x", d.get("x", 0.0))),
             "y": float(d.get("pose_y", d.get("y", 0.0))),
-            "yaw": f_or_none(d.get("yaw", None)),
+            "yaw": docked_heading(d.get("yaw", None)),
             "staging_dist": f_or_none(d.get("staging_dist", d.get("staging_distance", None))),
         })
     return json.dumps({"docks": items})
@@ -154,6 +167,7 @@ class Backend(Protocol):
     # operator (admin) passthroughs
     def teleop(self, linear: float, angular: float) -> None: ...
     def reset_pose(self, x: float, y: float, yaw: float) -> None: ...
+    def relocalize(self, dock_id: str) -> None: ...
     def dock(self, dock_id: str) -> None: ...
     def set_obstacles(self, obstacles: list[dict]) -> None: ...
     def set_docks(self, docks: dict[str, dict]) -> None: ...
@@ -190,6 +204,9 @@ class SimBackend:
         pass
 
     def reset_pose(self, x: float, y: float, yaw: float) -> None:
+        pass
+
+    def relocalize(self, dock_id: str) -> None:
         pass
 
     def dock(self, dock_id: str) -> None:
@@ -248,6 +265,9 @@ class RosBackend:
 
     def reset_pose(self, x: float, y: float, yaw: float) -> None:
         self._node.publish_initialpose(x, y, yaw)
+
+    def relocalize(self, dock_id: str) -> None:
+        self._node.publish_relocalize(dock_id)
 
     def dock(self, dock_id: str) -> None:
         self.go_to(dock_id)

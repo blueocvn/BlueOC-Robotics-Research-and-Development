@@ -396,6 +396,17 @@ def admin_reset_pose(
     return {"ok": True, "pose": {"x": x, "y": y, "yaw": yaw}}
 
 
+@admin_router.post("/admin/relocalize", dependencies=ADMIN)
+def admin_relocalize(request: Request, dock_id: str = Form(...)):
+    # Rotate in place until the dock's AprilTag is visible, then reset pose to
+    # that dock's surveyed map pose. jetracer_docker owns the search + /initialpose;
+    # watch `docking_state` (relocalizing / relocalize_ok / relocalize_failed) for
+    # progress. Only docks with a tag configured on the robot side will resolve —
+    # unknown dock ids are logged and ignored there rather than erroring here.
+    request.app.state.backend.relocalize(dock_id)
+    return {"ok": True, "dock_id": dock_id}
+
+
 @admin_router.post("/admin/slam/export", dependencies=ADMIN)
 def admin_export_slam_map(map_name: str = Form("")):
     """Serialize the current SLAM map to a Nav2-compatible .yaml/.pgm pair."""
