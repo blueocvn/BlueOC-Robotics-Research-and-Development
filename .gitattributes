@@ -1,2 +1,17 @@
 # Normalize line endings on checkin, force LF in the working tree.
 * text=auto eol=lf
+
+# Binary assets: NEVER line-ending-normalize -- eol=lf on a P5 .pgm (or any image)
+# deletes/rewrites CR bytes in the pixel data and shifts the image -> corrupt map.
+*.pgm  binary
+*.ppm  binary
+*.pbm  binary
+*.pnm  binary
+*.pgm  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.bmp  binary
+*.ico  binary
+*.pdf  binary
