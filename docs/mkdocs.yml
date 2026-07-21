@@ -22,6 +22,7 @@ nav:
   - Reference:
       - Calibration: CALIBRATION.md
       - Third-party Setup: THIRDPARTY_SETUP.md
+      - MkDocs: mkdocs.md
       - Getting Started (legacy): GETTING_STARTED.md
 
 theme:

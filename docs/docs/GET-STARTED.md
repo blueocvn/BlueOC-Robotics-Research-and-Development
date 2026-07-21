@@ -88,7 +88,7 @@ docs for the ones you're unfamiliar with before diving in.
 
 - Just want to see the **arm grasp cups**? → [ra_setup.md](ra_setup.md) (self-contained, needs only Isaac Sim + Jazzy).
 - Want the **AMR to map and navigate**? → [amr_setup.md](amr_setup.md).
-- Want the **web-order → robot** end-to-end flow? Set up `orchestrator_ws` plus at least the AMR, and keep a common `ROS_DOMAIN_ID`.
+- Want the **web-order → robot** end-to-end flow? Set up `orchestrator_ws` plus at least the AMR, and keep a common `ROS_DOMAIN_ID`. → [orchestrator.md](orchestrator.md).
 
 > **State of the system:** both robots run in **simulation**; there is no on-device
 > firmware yet. The orchestrator ↔ AMR docking seam and the orchestrator ↔ RA
