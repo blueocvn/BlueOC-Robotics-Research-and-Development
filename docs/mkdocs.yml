@@ -8,6 +8,7 @@ nav:
           - Overview: ra_concepts.md
           - Setup Guide: ra_setup.md
           - Real-Hardware Bringup: ra_hardware_bringup.md
+          - Camera Calibration: ra_camera_calibration.md
           - Use Cases:
               - Pick and Place: ra_pick_and_place.md
               - Visual Servoing: ra_visual_servoing.md
