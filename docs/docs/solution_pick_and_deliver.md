@@ -38,22 +38,24 @@ dispatcher that drives the AMR dock-to-dock. Its ROS contract:
 
 ## Integration status
 
-The orchestrator side is built; the AMR-side seam is the main open work.
+The orchestrator ↔ AMR seam is wired on both ends. The remaining open work is the
+**RA (arm) ↔ AMR handoff** — the arm has no orchestrator integration yet.
 
 | Contract | State |
 |----------|-------|
 | Orchestrator publishes `/dock_robot`, reads `/docking_state`, `/chassis/odom`, seeds `/initialpose` | ✅ Built (orchestrator side) |
-| A `/dock_robot` **consumer** on the AMR (dock id → Nav2 goal / docking behavior) | ❌ Not implemented |
-| A real `/docking_state` **producer** on the AMR | ❌ Not implemented (dispatcher strings are placeholders) |
-| RA ↔ AMR handoff (tray ready → AMR depart) | ❌ Not wired |
+| A `/dock_robot` **consumer** on the AMR (dock id → Nav2 goal / docking behavior) | ✅ Implemented — `jetracer_bringup/scripts/jetracer_docker.py` (subscribes `/dock_robot`, drives Nav2 + the `opennav_docking` action server) |
+| A real `/docking_state` **producer** on the AMR | ✅ Implemented — `jetracer_docker.py` publishes real phase strings (incl. `relocalize_ok`/`relocalize_failed`) on `/docking_state` |
+| RA ↔ AMR handoff (tray ready → AMR depart) | ❌ Not wired — the arm is not part of the orchestrator loop |
 
-Docking is currently a **topic contract** (`/dock_robot` + `/docking_state`),
-not a Nav2 docking server — wiring the AMR consumer/producer is what closes the
-loop.
+Docking runs through **`opennav_docking`** (a Nav2 docking action server) triggered
+by the `/dock_robot` topic; `jetracer_docker.py` also handles `/undock_robot` and
+`/abort_docking`. The open item is connecting the **arm**: signalling "tray ready"
+so the orchestrator dispatches the AMR after the arm finishes a cup.
 
 ## Running the pieces today
 
-Until the seam is wired, run the layers independently:
+Until the arm is wired into the loop, run the layers independently:
 
 1. **Arm refill** — [RA Pick and Place](ra_pick_and_place.md)
 2. **AMR navigation** — [AMR Navigate & Deliver](amr_pick_and_place.md)

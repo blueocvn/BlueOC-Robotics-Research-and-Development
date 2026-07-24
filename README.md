@@ -27,7 +27,7 @@ uv run mkdocs build     # outputs to docs/site/
 | Section | What's in it |
 |---|---|
 | **Get Started** | Which workspace to set up first; shared concepts (ROS 2, DDS, Isaac Sim) |
-| **Robot Arm (RA)** | Overview, setup guide, pick-and-place + visual-servoing use cases |
+| **Robot Arm (RA)** | Overview, setup guide, real-hardware bringup, pick-and-place + visual-servoing + imitation-learning use cases |
 | **JetRacer (AMR)** | Overview, setup guide, navigate-and-deliver use case |
 | **Robotic Solutions** | The combined RA + AMR pick-and-deliver flow, orchestrator |
 | **Reference** | Calibration, third-party setup |
@@ -50,13 +50,13 @@ flowchart TB
   end
  subgraph Physical["Physical stack — real hardware"]
     direction TD
-        AMR_real["JetRacer<br>⚠️ no driver yet - planned"]
-        RA_real["SO-ARM 101<br>⚠️ no hardware driver yet — planned"]
+        AMR_real["JetRacer<br>on-device: jetracer_driver · RPLidar · Nav2 · docking"]
+        RA_real["SO-ARM 101<br>feetech_ros2_driver — real bringup in progress"]
   end
-    User@{ label: "Customer's phone<br>(scans QR → web UI)" } -- HTTP --> Orchestrator["orchestrator_ws<br>robot_web_bridge (FastAPI + HTMX)"]
+    User@{ label: "Customer's phone<br>(scans QR → web UI)" } -- HTTP --> Orchestrator["orchestrator<br>robot_web_bridge (FastAPI + HTMX)"]
     Operator["Operator<br>(admin PIN-gated controls)"] -- HTTP (cookie auth) --> Orchestrator
     Orchestrator <-- ROS 2 messaging<br>(sim mode) --> Virtual
-    Virtual ~~~ Debug_AMR["jetracer_ws<br>dev/debug: SLAM · rviz2 · Nav2 viewing"]
+    Virtual ~~~ Debug_AMR["amr/workstation_ws<br>dev/debug: SLAM · rviz2 · Nav2 viewing"]
     Debug_AMR ~~~ Debug_RA["ra_ws<br>dev/debug: MoveIt · MTC · perception · visual servo"]
     Debug_AMR -. observe/debug .-> AMR_sim & AMR_real
     Debug_RA -. observe/debug .-> RA_sim & RA_real
@@ -66,11 +66,13 @@ flowchart TB
     User@{ shape: rect}
 ```
 
-**Current state:** `jetracer_ws` is the **workstation-side** control stack (SLAM,
-Nav2, ackermann control, Isaac Sim) — it runs on the workstation, not on the
-JetRacer. There is **no on-device JetRacer firmware in this repo yet**; the
-workstation currently drives simulation (Isaac Sim) and will drive the real
-chassis once firmware is added.
+**Current state:** the AMR runs on **real hardware**. `amr/jetracer_ws` is the
+**on-device** stack that runs on the JetRacer itself (Jetson, ROS 2 Humble): base
+driver (`jetracer_driver`), RPLidar, EKF odometry, Nav2, and AprilTag docking
+(`opennav_docking`) — the physical robot maps, localizes, navigates, and docks.
+`amr/workstation_ws` is a separate **workstation / Isaac Sim** stack (SLAM, Nav2,
+ackermann control) used for development and simulation. The arm (`ra_ws`) is the
+one still mid sim-to-real (real driver in place, closing the perception loop).
 
 ## Workspaces
 
@@ -80,14 +82,17 @@ they share a **DDS domain**, not a build space.
 
 | Workspace          | Concern                                                        |
 | ------------------ | ------------------------------------------------------------- |
-| `jetracer_ws/`     | AMR workstation control: SLAM, Nav2, ackermann control, Isaac Sim, interfaces. No on-device JetRacer firmware yet — planned. |
-| `ra_ws/`           | SO-ARM 101 (5-DOF) arm on **ROS 2 Jazzy**: MoveIt 2, MoveIt Task Constructor, YOLO/AprilTag perception, image-based visual-servo grasp → refill → place, driven against Isaac Sim. See [`docs/GET-STARTED.md`](docs/GET-STARTED.md). |
-| `orchestrator_ws/` | `robot_web_bridge` — HTTP/web UI + mission/state logic. Runs in the same Humble container as `jetracer_ws`. |
+| `amr/jetracer_ws/` | **On-device JetRacer** (Jetson, ROS 2 Humble): base driver (`jetracer_driver`), RPLidar, EKF odometry, Nav2, AprilTag docking (`opennav_docking`). The real robot — maps, localizes, navigates, docks. |
+| `amr/workstation_ws/` | AMR **workstation / Isaac Sim** stack: SLAM, Nav2, ackermann control, Isaac Sim interfaces — for development and simulation. |
+| `ra_ws/`           | SO-ARM 101 (5-DOF) arm on **ROS 2 Jazzy**: MoveIt 2, MoveIt Task Constructor, YOLO/AprilTag perception, image-based visual-servo grasp → refill → place. Runs against Isaac Sim **and** real hardware via `feetech_ros2_driver` (sim-to-real in progress). Also an imitation-learning path (LeRobot ACT). See [`ra_ws/README.md`](ra_ws/README.md) and the [docs](docs/). |
+| `orchestrator/` | `robot_web_bridge` — HTTP/web UI + mission/state logic. Runs in the same Humble container as `amr/workstation_ws`. |
 
 > **Note:** `ra_ws` targets **ROS 2 Jazzy (Ubuntu 24.04)** and is built and run
 > natively (not inside a Docker container). It interoperates with the other
-> workspaces over DDS as long as they share the same `ROS_DOMAIN_ID`. Full arm
-> setup: [`docs/GET-STARTED.md`](docs/GET-STARTED.md).
+> workspaces over DDS as long as they share the same `ROS_DOMAIN_ID`. Arm docs:
+> Setup Guide (`docs/docs/ra_setup.md`), Real-Hardware Bringup
+> (`docs/docs/ra_hardware_bringup.md`), and Imitation Learning
+> (`docs/docs/ra_imitation_learning.md`).
 
 ## Network setup
 
@@ -99,8 +104,8 @@ cp network.env.example network.env
 ```
 
 `network.env` is gitignored. The run scripts source it from the repo root, and
-the DDS profiles (`/tmp/cyclonedds.xml`, `jetracer_ws/fastdds.xml`) are rendered
-at runtime from `network.env` + `jetracer_ws/fastdds.xml.template`. Never commit
+the DDS profiles (`/tmp/cyclonedds.xml`, `amr/workstation_ws/fastdds.xml`) are rendered
+at runtime from `network.env` + `amr/workstation_ws/fastdds.xml.template`. Never commit
 real IPs — put them only in `network.env`.
 
 All workspaces must use the same `ROS_DOMAIN_ID` to see each other.
@@ -111,8 +116,8 @@ Two images, both at the repo root (shared, so neither lives inside a workspace):
 
 | Image | Dockerfile | Base | Contains | Used by |
 | --- | --- | --- | --- | --- |
-| **Dev (both)** | `Dockerfile.dev` | `osrf/ros:humble-desktop-full` | `jetracer_ws` (SLAM/Nav2) + `robot_web_bridge` deps, GUI tools (rviz2) | `jetracer_ws/run_workstation.sh` |
-| **Orchestrator only** | `Dockerfile.orchestrator` | `osrf/ros:humble-ros-base` | Just `robot_web_bridge` deps, no SLAM/Nav2, no GUI | `orchestrator_ws/run_orchestrator.sh` |
+| **Dev (both)** | `Dockerfile.dev` | `osrf/ros:humble-desktop-full` | `amr/workstation_ws` (SLAM/Nav2) + `robot_web_bridge` deps, GUI tools (rviz2) | `amr/workstation_ws/run_workstation.sh` |
+| **Orchestrator only** | `Dockerfile.orchestrator` | `osrf/ros:humble-ros-base` | Just `robot_web_bridge` deps, no SLAM/Nav2, no GUI | `orchestrator/run_orchestrator.sh` |
 
 Use **Dev** for local development (SLAM, Isaac Sim, and the web bridge
 together). Use **Orchestrator only** to run/deploy `robot_web_bridge` on its
@@ -136,8 +141,8 @@ before first run.
 
 ```bash
 # from the repo root
-./jetracer_ws/run_workstation.sh          # interactive shell inside the container
-./jetracer_ws/run_workstation.sh rviz2    # or: run one command then exit
+./amr/workstation_ws/run_workstation.sh          # interactive shell inside the container
+./amr/workstation_ws/run_workstation.sh rviz2    # or: run one command then exit
 ```
 
 This mounts `~/IsaacSim-ros_workspaces/humble_ws` (override with `WORKSPACE_HOST`)
@@ -179,18 +184,18 @@ stabilize before `slam_toolbox` starts.
 ## Running the orchestrator client (web UI)
 
 Two ways to run `robot_web_bridge`, depending on whether you're also running
-`jetracer_ws` in the same session:
+`amr/workstation_ws` in the same session:
 
-**Alongside `jetracer_ws`** (shares the Dev container — needs the same
+**Alongside `amr/workstation_ws`** (shares the Dev container — needs the same
 `ROS_DOMAIN_ID` to reach the AMR's topics):
 
 ```bash
 # 1. get into the Humble container (it doesn't launch one for you):
-./jetracer_ws/run_workstation.sh
+./amr/workstation_ws/run_workstation.sh
 
 # 2. inside the container, build once then run:
 cd /ros2_ws && colcon build --packages-select robot_web_bridge && source install/setup.bash
-./orchestrator_ws/run_web_bridge.sh
+./orchestrator/run_web_bridge.sh
 # — or directly: ros2 run robot_web_bridge server
 ```
 
@@ -198,7 +203,7 @@ cd /ros2_ws && colcon build --packages-select robot_web_bridge && source install
 robot it talks to, real or simulated, must be reachable on the same DDS domain):
 
 ```bash
-./orchestrator_ws/run_orchestrator.sh
+./orchestrator/run_orchestrator.sh
 # once inside the container:
 cd /ros2_ws && colcon build --packages-select robot_web_bridge && source install/setup.bash
 ./run_web_bridge.sh
@@ -211,7 +216,7 @@ similar) from the host.
 
 If `rclpy` isn't available (e.g. local dev outside either container), the
 bridge falls back to a simulated backend automatically — see
-[`orchestrator_ws/src/robot_web_bridge/README.md`](orchestrator_ws/src/robot_web_bridge/README.md)
+[`orchestrator/src/robot_web_bridge/README.md`](orchestrator/src/robot_web_bridge/README.md)
 for the admin API, `/docking_state` mapping, and dock registry config.
 
 ## Running everything together
@@ -222,10 +227,10 @@ second container):
 
 ```bash
 # Terminal 1 — starts the Humble container (SLAM/nav/Isaac), reads network.env:
-./jetracer_ws/run_workstation.sh
+./amr/workstation_ws/run_workstation.sh
 
 # Terminal 2 — attach to the SAME container, then run the web bridge:
 docker exec -it isaacsim_humble_ws bash
 source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash
-./orchestrator_ws/run_web_bridge.sh
+./orchestrator/run_web_bridge.sh
 ```

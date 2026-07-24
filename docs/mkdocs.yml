@@ -7,9 +7,11 @@ nav:
       - Robot Arm (RA):
           - Overview: ra_concepts.md
           - Setup Guide: ra_setup.md
+          - Real-Hardware Bringup: ra_hardware_bringup.md
           - Use Cases:
               - Pick and Place: ra_pick_and_place.md
               - Visual Servoing: ra_visual_servoing.md
+              - Imitation Learning: ra_imitation_learning.md
       - JetRacer (AMR):
           - Overview: amr_concepts.md
           - Setup Guide: amr_setup.md
