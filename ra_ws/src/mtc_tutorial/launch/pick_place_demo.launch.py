@@ -7,6 +7,9 @@ from moveit_configs_utils import MoveItConfigsBuilder
 
 
 def generate_launch_description():
+    # use_sim_time: true for Isaac Sim (default), false for the real arm.
+    use_sim_time = LaunchConfiguration("use_sim_time")
+
     # ── Visual-servo args (image-based / IBVS: closes the loop on arm-cam pixels) ─
     # Two phases: phase 0 aligns left/right on pixels, phase 1 approaches straight in
     # on the world distance. The k_yaw sign depends on the camera mount — flip it if
@@ -64,7 +67,7 @@ def generate_launch_description():
         parameters=[
             moveit_config.to_dict(),
             {"mode": "hybrid"},
-            {"use_sim_time": True},
+            {"use_sim_time": ParameterValue(use_sim_time, value_type=bool)},
             {"servo_img_k_yaw": ParameterValue(servo_img_k_yaw, value_type=float)},
             {"servo_img_yaw_step": ParameterValue(servo_img_yaw_step, value_type=float)},
             {"servo_img_deadband_px": ParameterValue(servo_img_deadband_px, value_type=float)},
@@ -94,10 +97,51 @@ def generate_launch_description():
             {"dispenser_standoff": ParameterValue(dispenser_standoff, value_type=float)},
             {"dispenser_fill_depth": ParameterValue(dispenser_fill_depth, value_type=float)},
             {"dispenser_flip_normal": ParameterValue(dispenser_flip_normal, value_type=bool)},
+            {"place_at_pickup": ParameterValue(
+                LaunchConfiguration("place_at_pickup"), value_type=bool)},
+            {"place_at_pickup_z_offset": ParameterValue(
+                LaunchConfiguration("place_at_pickup_z_offset"), value_type=float)},
+            {"bridge_standoff": ParameterValue(
+                LaunchConfiguration("bridge_standoff"), value_type=float)},
+            {"skip_servo": ParameterValue(
+                LaunchConfiguration("skip_servo"), value_type=bool)},
+            {"skip_servo_speed": ParameterValue(
+                LaunchConfiguration("skip_servo_speed"), value_type=float)},
+            {"place_z": ParameterValue(
+                LaunchConfiguration("place_z"), value_type=float)},
         ],
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument(
+            "use_sim_time", default_value="true",
+            description="true = Isaac Sim clock; false = real arm (wall clock)"),
+        DeclareLaunchArgument(
+            "place_at_pickup", default_value="false",
+            description="Place the cup back at its original detected position instead "
+                        "of the pink tray (stand-in destination when no tray is set up)."),
+        DeclareLaunchArgument(
+            "place_at_pickup_z_offset", default_value="0.0",
+            description="Extra z (m) added to the pickup height when placing back."),
+        DeclareLaunchArgument(
+            "bridge_standoff", default_value="0.16",
+            description="Pre-grasp claw pull-back (m) from the cup before servoing. "
+                        "0.16 suits the far sim cup; a CLOSE real cup needs ~0.08 or the "
+                        "standoff collapses onto the base (GOAL_STATE_INVALID)."),
+        DeclareLaunchArgument(
+            "skip_servo", default_value="false",
+            description="true = SKIP the visual servo. After the MTC standoff move, drive "
+                        "the claw straight in to the (predefined) grasp point open-loop — "
+                        "deterministic, no cameras/pixels. Pair with a fake "
+                        "/detected_object/position for a fully repeatable demo."),
+        DeclareLaunchArgument(
+            "skip_servo_speed", default_value="0.06",
+            description="m/s end-effector speed of the open-loop straight-in approach "
+                        "(skip_servo:=true). Lower = slower/gentler final approach."),
+        DeclareLaunchArgument(
+            "place_z", default_value="1e9",
+            description="Absolute destination release height (m, base frame). Overrides "
+                        "the tray_z+offset / pickup-z computation. 1e9 = unset (default)."),
         DeclareLaunchArgument(
             "servo_img_k_yaw", default_value="-0.0010",
             description="rad of base bearing per pixel of horizontal error (sign matches arm-cam mount; flip if it diverges)"),

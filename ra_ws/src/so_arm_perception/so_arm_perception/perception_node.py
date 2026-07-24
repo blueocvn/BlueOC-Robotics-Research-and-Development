@@ -414,7 +414,12 @@ class PerceptionNode(Node):
             cand.sort(key=lambda dw: float(np.hypot(dw[1][0], dw[1][1])))
             detections = [d for (d, _wp) in cand]
             # Publish every platform cup (world frame) for obstacle avoidance.
-            self._publish_cups([wp for (_d, wp) in cand])
+            # Apply the SAME eth_*_correction the single target position gets below:
+            # mtc_node matches the target against this list (cup_obstacle_match_radius,
+            # 5 cm) to skip it. If only the target were corrected, a correction larger
+            # than that radius would stop the target matching its own entry here and it
+            # would be added as an obstacle to itself (two cups in RViz, blocked plan).
+            self._publish_cups([wp + np.array(self.eth_corr) for (_d, wp) in cand])
 
         # Eye-in-hand target LOCK: during the phase-0 sweep a second cup can pan into
         # view; the raw "largest blob" pick (detections[0]) would then jump to it. Once
@@ -459,19 +464,30 @@ class PerceptionNode(Node):
         ]
         self.pixel_pub.publish(px)
 
-        # 3. Unproject to camera frame
+        # top_cam recovers (x, y) by ray-plane intersection at the known object
+        # height — it does NOT need the depth buffer. A real overhead webcam has no
+        # depth (usb_camera_node publishes a dummy zero frame just to pass the gate
+        # above), so the depth unprojection below WILL fail for it; that must NOT
+        # block the ray-plane world position. Only require depth on the non-ray-plane
+        # path (arm_cam eye-in-hand, whose height isn't fixed).
+        use_ray_plane = (label == "top_cam" and self.eth_use_ray_plane)
+
+        # 3. Unproject to camera frame (for the bbox marker, the servo range, and the
+        #    non-ray-plane world transform). Optional when ray-plane is in use.
         point_cam = unproj.pixel_to_camera_frame(best["u"], best["v"], depth)
         if point_cam is None:
-            self.get_logger().warn(f"[{label}] Depth lookup failed at detection center")
-            return
-
-        # 3b. Publish a 3D bounding-box marker at the object's depth (RViz viz).
-        # z = positive metric depth recovered from the center unprojection.
-        self._publish_bbox_marker(best["bbox"], float(-point_cam[2]), unproj)
-
-        # 3c. Publish the perceived metric range (camera-frame depth, +ve). Phase-1
-        # of the servo halts the approach once this drops below its threshold.
-        self.depth_pub.publish(Float32(data=float(-point_cam[2])))
+            if not use_ray_plane:
+                # Expected on a depthless webcam (arm_cam eye-in-hand): the image
+                # servo uses /detected_object/pixel + bbox size, never depth, so the
+                # pixel is already published above. Debug-level to avoid spam.
+                self.get_logger().debug(f"[{label}] Depth lookup failed at detection center")
+                return
+        else:
+            # 3b. 3D bounding-box marker at the object's depth (RViz viz).
+            self._publish_bbox_marker(best["bbox"], float(-point_cam[2]), unproj)
+            # 3c. Perceived metric range (camera-frame depth, +ve). Phase-1 of the
+            # servo halts the approach once this drops below its threshold.
+            self.depth_pub.publish(Float32(data=float(-point_cam[2])))
 
         # 4. Transform to base frame (needs TF: <camera frame> -> base_frame).
         #    For arm_cam this requires a gripper->arm_sim_camera static TF.
@@ -482,7 +498,7 @@ class PerceptionNode(Node):
         # top_cam: prefer the ray-plane intersection (axis-accurate, no
         # surface-depth bias) at the known mug height. arm_cam stays on the
         # depth-buffer unprojection (eye-in-hand height is not fixed).
-        if label == "top_cam" and self.eth_use_ray_plane:
+        if use_ray_plane:
             point_base = unproj.pixel_ray_to_plane_world(
                 best["u"], best["v"],
                 self.tf_buffer,

@@ -27,6 +27,7 @@ setup(
     entry_points={
         "console_scripts": [
             "perception_node = so_arm_perception.perception_node:main",
+            "usb_camera_node = so_arm_perception.usb_camera_node:main",
             "tracking_node = so_arm_perception.tracking_node:main",
             "apriltag_node = so_arm_perception.apriltag_node:main",
             "handle_detector = so_arm_perception.handle_detector:main",

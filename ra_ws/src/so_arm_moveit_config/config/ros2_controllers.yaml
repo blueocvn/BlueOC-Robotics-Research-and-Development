@@ -31,3 +31,11 @@ arm_group_controller:
 hand_group_controller:
   ros__parameters:
     joint: Jaw
+    # Real gripper: the Jaw can't always reach the exact commanded position — it
+    # hits its open limit or stalls on a grasped object. Treat a stall as success
+    # (instead of ABORTing) and loosen the goal tolerance so the ~2 deg it stops
+    # short of a full-open command still counts as reached.
+    allow_stalling: true
+    goal_tolerance: 0.05
+    stall_velocity_threshold: 0.005
+    stall_timeout: 1.0

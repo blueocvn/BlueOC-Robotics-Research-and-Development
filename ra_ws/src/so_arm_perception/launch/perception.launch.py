@@ -42,24 +42,33 @@ def generate_launch_description():
     eih_pitch = LaunchConfiguration("eih_pitch", default="0.0")
     eih_yaw   = LaunchConfiguration("eih_yaw",   default="0.0")
 
-    # Eye-to-hand static transform
-    # Adjust x, y, z, roll, pitch, yaw to match your camera placement
+    # Eye-to-hand static transform: world -> top_sim_camera (the top_cam optical
+    # frame, GL/Isaac convention x-right y-UP z-BACK — matches the ray-plane math
+    # in unprojector.pixel_ray_to_plane_world).
+    #
+    # DEFAULTS below are the Isaac SIM values (top_cam prim from Isaac's Property
+    # panel: pos (0.02967,0.31201,0.87595), rot (-37.913,0,180) deg; Isaac's XYZ
+    # Euler composes as Rx*Rz, so under the 180 yaw tf2's roll = -Isaac_roll, i.e.
+    # +37.913 deg = 0.661703 rad). REAL hardware overrides all six via launch args
+    # eth_x..eth_yaw — from calibrate_top_cam_extrinsics.py. See
+    # [[reference-real-camera-bringup]] for the real-cam values.
+    eth_x     = LaunchConfiguration("eth_x",     default="0.02967")
+    eth_y     = LaunchConfiguration("eth_y",     default="0.31201")
+    eth_z     = LaunchConfiguration("eth_z",     default="0.87595")
+    eth_roll  = LaunchConfiguration("eth_roll",  default="0.6617028")
+    eth_pitch = LaunchConfiguration("eth_pitch", default="0.0")
+    eth_yaw   = LaunchConfiguration("eth_yaw",   default="3.1415926536")
     eth_static_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         name="eth_static_tf",
-        # Top_cam prim transform from Isaac's Property panel (pos + XYZ Euler):
-        # pos (0.02967, 0.31201, 0.87595), rot (-37.913, 0, 180) deg.
-        # Isaac's XYZ-Euler composes as Rx*Rz, which under the 180 yaw equals
-        # tf2's RPY with roll = -Isaac_roll (the roll SIGN FLIPS). So Isaac -37.913
-        # -> tf2 roll +37.913 deg = 0.661703 rad. (Was Isaac -45 -> +45.)
         arguments=[
-            "--x",     "0.02967",
-            "--y",     "0.31201",
-            "--z",     "0.87595",
-            "--roll",  "0.6617028",       # +37.913 deg (= Isaac -37.913 under the 180 yaw)
-            "--pitch", "0.0",             #   0 deg
-            "--yaw",   "3.1415926536",    # 180 deg
+            "--x",     eth_x,
+            "--y",     eth_y,
+            "--z",     eth_z,
+            "--roll",  eth_roll,
+            "--pitch", eth_pitch,
+            "--yaw",   eth_yaw,
             "--frame-id",       "world",
             "--child-frame-id", "top_sim_camera",
         ],
@@ -144,6 +153,17 @@ def generate_launch_description():
             "use_sim_time":    use_sim_time,
             "eth_use_ray_plane": LaunchConfiguration("eth_use_ray_plane", default="true"),
             "eth_plane_z":       LaunchConfiguration("eth_plane_z", default="0.05986"),
+            # Detection mode per camera: green-interior HSV blob (sim) vs YOLO.
+            # A reflective metal cup defeats the green blob -> force YOLO with
+            # *_use_green:=false on real hardware.
+            "top_cam_use_green": LaunchConfiguration("top_cam_use_green", default="true"),
+            "arm_cam_use_green": LaunchConfiguration("arm_cam_use_green", default="true"),
+            # Constant world-frame offset added to the published object position.
+            # Nulls a residual bias (mainly the hand-measured calibration-tag
+            # position): set = (true - reported) at a known cup placement.
+            "eth_x_correction": LaunchConfiguration("eth_x_correction", default="0.0"),
+            "eth_y_correction": LaunchConfiguration("eth_y_correction", default="0.0"),
+            "eth_z_correction": LaunchConfiguration("eth_z_correction", default="0.0"),
         }],
         remappings=[
             # Remap if your Isaac Sim topic names differ
@@ -185,6 +205,21 @@ def generate_launch_description():
         DeclareLaunchArgument("eih_roll",  default_value="0.0"),
         DeclareLaunchArgument("eih_pitch", default_value="0.0"),
         DeclareLaunchArgument("eih_yaw",   default_value="0.0"),
+        # Eye-to-hand (top_cam) world->top_sim_camera TF. Defaults = Isaac sim;
+        # override all six on real hardware (calibrate_top_cam_extrinsics.py output).
+        DeclareLaunchArgument("eth_x",     default_value="0.02967"),
+        DeclareLaunchArgument("eth_y",     default_value="0.31201"),
+        DeclareLaunchArgument("eth_z",     default_value="0.87595"),
+        DeclareLaunchArgument("eth_roll",  default_value="0.6617028"),
+        DeclareLaunchArgument("eth_pitch", default_value="0.0"),
+        DeclareLaunchArgument("eth_yaw",   default_value="3.1415926536"),
+        DeclareLaunchArgument("top_cam_use_green", default_value="true",
+                              description="top_cam: green-HSV blob (true) vs YOLO (false). "
+                                          "Metal/reflective cup -> false."),
+        DeclareLaunchArgument("arm_cam_use_green", default_value="true"),
+        DeclareLaunchArgument("eth_x_correction", default_value="0.0"),
+        DeclareLaunchArgument("eth_y_correction", default_value="0.0"),
+        DeclareLaunchArgument("eth_z_correction", default_value="0.0"),
         DeclareLaunchArgument("apriltag_camera", default_value="top_cam",
                               description="camera the AprilTag detector runs on (top_cam for the 5 cm tag; arm_cam for eye-in-hand)"),
         DeclareLaunchArgument("apriltag_size",   default_value="0.05",

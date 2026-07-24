@@ -190,10 +190,9 @@ class YOLODetector:
             if dets:
                 return dets
             return self._detect_yolo(rgb_image)
-        dets = self._detect_yolo(rgb_image)
-        if dets:
-            return dets
-        return self._detect_hsv(rgb_image)
+        # YOLO-only: green HSV backup removed (metal cup false-positives on stray
+        # green; a missed YOLO frame is preferable to a bogus green detection).
+        return self._detect_yolo(rgb_image)
 
     def draw_detections(self, image: np.ndarray, detections: list,
                         color=(0, 255, 0)) -> np.ndarray:

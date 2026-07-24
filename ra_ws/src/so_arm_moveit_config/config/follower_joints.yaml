@@ -1,0 +1,61 @@
+# Per-joint calibration for the REAL SO-ARM101 follower (Feetech STS3215).
+# Consumed by feetech_ros2_driver via the `joint_config_file` hardware param.
+# Entries are matched to servos by `id` (the joint-name key is just a label).
+#
+# Seeded from the LeRobot follower calibration
+#   ~/.cache/huggingface/lerobot/calibration/robots/so101_follower/my_follower.json
+# which uses the same 2048-centered homing_offset convention as this driver.
+#
+# ⚠️ homing_offset here makes each servo read 2048 at the LeRobot "middle" pose,
+#    which is NOT guaranteed to equal the URDF zero pose MoveIt expects.
+#    range_min / range_max are the physical joint limits (in ticks).
+#
+# moving_speed (steps/s, default 2400 if omitted): per-joint runtime move-speed
+#    CAP used by the driver. For the ARM the real speed comes from MoveIt's
+#    trajectory timing (velocity scaling); this only caps peak servo speed. Do
+#    NOT set 0 (= max speed). Lower = gentler.
+joints:
+  Rotation:        # servo id 1  (LeRobot: shoulder_pan)
+    id: 1
+    homing_offset: 390
+    range_min: 726
+    range_max: 3264
+    moving_speed: 1500
+  Pitch:           # servo id 2  (LeRobot: shoulder_lift)
+    id: 2
+    homing_offset: 1480
+    range_min: 846
+    range_max: 3527
+    moving_speed: 1500
+  Elbow:           # servo id 3  (LeRobot: elbow_flex)
+    id: 3
+    homing_offset: 305
+    range_min: 850
+    range_max: 3040
+    moving_speed: 1500
+  Wrist_Pitch:     # servo id 4  (LeRobot: wrist_flex)
+    id: 4
+    homing_offset: -234
+    range_min: 1063
+    range_max: 3195
+    moving_speed: 1500
+  Wrist_Roll:      # servo id 5  (LeRobot: wrist_roll)
+    id: 5
+    # +1024 ticks (=90 deg) vs LeRobot's -1091: LeRobot's "middle" was 90 deg off
+    # the URDF zero, so RViz showed the wrist untilted while the arm was tilted.
+    # -67 makes the model read -90 deg at the physical side-grasp (matches sim
+    # recipe Wrist_Roll=-90). If the model ends up 180 deg wrong, use -2115 instead.
+    homing_offset: -67
+    # Full single-turn range so the homing shift can't clamp travel; MoveIt still
+    # enforces the URDF joint limits on commands.
+    range_min: 0
+    range_max: 4095
+    moving_speed: 1500
+  Jaw:             # servo id 6  (LeRobot: gripper)
+    id: 6
+    homing_offset: -860
+    range_min: 1187
+    range_max: 3163
+    # Gripper move speed (steps/s), default 2400. Lowered for a gentler open/close.
+    # Raise toward 2400 for faster, lower (e.g. 300) for slower. Do NOT set 0 (= max).
+    moving_speed: 300

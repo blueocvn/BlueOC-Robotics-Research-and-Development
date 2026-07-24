@@ -41,7 +41,7 @@
         <joint name="Jaw" value="1.7453"/>
     </group_state>
     <group_state name="close_grip" group="hand_group">
-        <joint name="Jaw" value="0.4"/>
+        <joint name="Jaw" value="0.1"/>
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="gripper" parent_link="gripper" group="hand_group" parent_group="arm_group"/>

@@ -157,6 +157,10 @@ private:
   // the eye-in-hand view induces. Raw obj_x_/obj_y_ stay unfiltered for logging.
   double obj_fx_{ 0.0 }, obj_fy_{ 0.0 };
   bool obj_filt_init_{ false };
+  // Where this cup was FIRST detected (snapshotted at grasp time). With the
+  // place_at_pickup param, resolveTrayPlacePoint returns the cup here instead of
+  // the pink tray — a stand-in destination when no tray is set up.
+  double pickup_x_{ 0.0 }, pickup_y_{ 0.0 }, pickup_z_{ 0.0 };
 
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr obj_sub_;
 
@@ -216,6 +220,12 @@ private:
   // (Wrist_Roll=-pi/2, Wrist_Pitch=-(Pitch+Elbow)) keeps it a horizontal side
   // grasp with the object held upright.
   void visualServoToGrasp();
+  // Deterministic replacement for visualServoToGrasp() when skip_servo:=true.
+  // The object pose is PREDEFINED (accurate), so no closed-loop refinement is
+  // needed: stream ONE straight-line level move from the MTC standoff to the
+  // grasp point (claw midpoint at the cup) via streamLevelMove. For repeatable
+  // demos with a fake /detected_object/position and no cameras.
+  void openLoopApproach(double snap_x, double snap_y);
   // Eye-in-hand: switch the perception node's source camera at runtime so the
   // servo consumes object positions from the hand-mounted camera ("arm_cam")
   // during alignment, and the overhead camera ("top_cam") otherwise.
@@ -967,6 +977,8 @@ void MTCTaskNode::doTask()
 
     double snap_x, snap_y, snap_z;
     { std::lock_guard<std::mutex> lock(obj_mutex_); snap_x = obj_x_; snap_y = obj_y_; snap_z = obj_z_; }
+    // Remember the pickup spot for the place_at_pickup destination mode.
+    pickup_x_ = snap_x; pickup_y_ = snap_y; pickup_z_ = snap_z;
     RCLCPP_INFO(LOGGER,
                 "Cup %d/%d snapped — x=%.4f y=%.4f z=%.4f — creating task ...",
                 cup + 1, total_cups, snap_x, snap_y, snap_z);
@@ -1020,6 +1032,45 @@ void MTCTaskNode::doTask()
     }
     RCLCPP_INFO(LOGGER, "==== [4] Execution SUCCEEDED ====");
 
+    // ── Pre-grasp arrival check: did the arm actually reach the commanded
+    //    standoff (grasp height, radius, gap) BEFORE the servo takes over?
+    //    Recompute the SAME standoff target createTask() built, then FK the live
+    //    joints for the "gripper" link and report desired vs achieved + error. ──
+    {
+      double ox, oy;
+      { std::lock_guard<std::mutex> lk(obj_mutex_); ox = obj_x_; oy = obj_y_; }
+      const double bridge_standoff = paramd("bridge_standoff", 0.16);
+      const double tcp_fwd    = paramd("grasp_tcp_forward", 0.05);
+      const double tcp_z      = paramd("grasp_tcp_z", 0.0);
+      const double tcp_lat    = paramd("grasp_tcp_lateral", 0.0);
+      const double pre_gap    = paramd("servo_standoff", 0.02);
+      const double yaw_bias   = paramd("grasp_yaw_bias", YAW_RIGHT_BIAS);
+      const double standoff_z = paramd("servo_grasp_z", CUP_GRASP_Z);
+      const double bearing  = std::atan2(oy, ox);
+      const double yaw_base = bearing + yaw_bias;
+      const double obj_r    = std::hypot(ox, oy);
+      const double claw_r   = std::max(0.05, obj_r - bridge_standoff);
+      double dgx, dgy, dgz;
+      clawMidpointToGripperTarget(claw_r * std::cos(bearing), claw_r * std::sin(bearing),
+                                  standoff_z, yaw_base, tcp_fwd + pre_gap, tcp_z,
+                                  dgx, dgy, dgz, tcp_lat);
+      auto rm = task_.getRobotModel();
+      moveit::core::RobotState rs = seedStateFromCurrent(rm);
+      rs.update();
+      const Eigen::Vector3d ag = rs.getGlobalLinkTransform("gripper").translation();
+      const Eigen::Vector3d dg(dgx, dgy, dgz);
+      const double des_r = std::hypot(dgx, dgy), ach_r = std::hypot(ag.x(), ag.y());
+      RCLCPP_INFO(LOGGER,
+          "[pregrasp-check] gripper DESIRED=(%.3f,%.3f,%.3f) ACHIEVED=(%.3f,%.3f,%.3f) "
+          "err=%.3f m [dx%.3f dy%.3f dz%.3f] | HEIGHT z des=%.3f ach=%.3f (d%.3f) | "
+          "REACH r des=%.3f ach=%.3f (d%.3f) | cup r=%.3f standoff_gap=%.3f claw_r=%.3f",
+          dgx, dgy, dgz, ag.x(), ag.y(), ag.z(),
+          (ag - dg).norm(), ag.x() - dgx, ag.y() - dgy, ag.z() - dgz,
+          dgz, ag.z(), ag.z() - dgz,
+          des_r, ach_r, ach_r - des_r,
+          obj_r, bridge_standoff, claw_r);
+    }
+
     // The collision-checked pre-grasp move is done, so drop the cup obstacles:
     // the servo/pick phases that follow are NOT collision-checked, and a nearby
     // obstacle could otherwise flag their start state as in-collision.
@@ -1032,9 +1083,17 @@ void MTCTaskNode::doTask()
 
     // Gross move reached — close the loop with the visual servo, then carry the cup
     // to the dispenser and place it in the tray.
-    RCLCPP_INFO(LOGGER, "==== [5] Pre-grasp reached — starting visual servo bridge ====");
-    visualServoToGrasp();
-    RCLCPP_INFO(LOGGER, "==== [6] Visual servo bridge complete ====");
+    if (paramb("skip_servo", false))
+    {
+      RCLCPP_INFO(LOGGER, "==== [5] Pre-grasp reached — skip_servo: open-loop straight-in grasp ====");
+      openLoopApproach(snap_x, snap_y);
+    }
+    else
+    {
+      RCLCPP_INFO(LOGGER, "==== [5] Pre-grasp reached — starting visual servo bridge ====");
+      visualServoToGrasp();
+    }
+    RCLCPP_INFO(LOGGER, "==== [6] Grasp bridge complete ====");
     continueToDispenser(cup, total_cups);
   }
 
@@ -1254,6 +1313,20 @@ bool MTCTaskNode::runReleaseTask()
 void MTCTaskNode::resolveTrayPlacePoint(int cup_index, int num_cups, double& place_x,
                                         double& place_y, double& place_z, double& place_yaw)
 {
+  // Stand-in destination when no pink tray is set up: put the cup back exactly
+  // where it was picked up. Skips tray detection / offsets / multi-cup slotting.
+  if (paramb("place_at_pickup", false))
+  {
+    place_x = pickup_x_;
+    place_y = pickup_y_;
+    place_z = pickup_z_ + paramd("place_at_pickup_z_offset", 0.0);
+    if (paramd("place_z", 1e9) < 1e8) place_z = paramd("place_z", 1e9);  // absolute override
+    place_yaw = std::atan2(place_y, place_x) + s_yaw_bias_;
+    RCLCPP_INFO(LOGGER, "[place] place_at_pickup -> returning cup to (%.3f,%.3f,%.3f)",
+                place_x, place_y, place_z);
+    return;
+  }
+
   place_x = paramd("place_x", -0.31253);
   place_y = paramd("place_y", -0.26902);
   const double tray_z = paramd("place_tray_z", -0.02744);
@@ -1311,6 +1384,10 @@ void MTCTaskNode::resolveTrayPlacePoint(int cup_index, int num_cups, double& pla
   }
   place_yaw = std::atan2(place_y, place_x) + s_yaw_bias_;
   place_z = tray_z + paramd("place_z_offset", 0.045);
+  // Absolute destination-height override (m, base frame) for demos. Sentinel 1e9
+  // = unset (keep the tray_z + offset computation above). Set place_z:=0.04 to
+  // release the cup at exactly z=0.04.
+  if (paramd("place_z", 1e9) < 1e8) place_z = paramd("place_z", 1e9);
 }
 
 // ── Pick the cup, carry it home, then approach the AprilTag dispenser paddle ──
@@ -1702,6 +1779,64 @@ void MTCTaskNode::visualServoToGrasp()
     RCLCPP_INFO(LOGGER, "[servo] leaving perception on '%s'; '%s' restored at cycle end",
                 arm_cam.c_str(), idle_cam.c_str());
   RCLCPP_INFO(LOGGER, "[servo] stopped.");
+}
+
+// ── Open-loop straight-in grasp (skip_servo demo mode) ───────────────────────
+// Deterministic stand-in for the visual servo when the object pose is PREDEFINED
+// (accurate) — e.g. a fake /detected_object/position for a repeatable demo. The
+// MTC gross move already parked the claw at the standoff FACING the cup; here we
+// stream ONE straight-line LEVEL move to the grasp point (claw midpoint at the
+// cup center), the same pose the servo's phase 1 converges to. No cameras, no
+// pixels, no closed loop. runPickLiftTask() then closes + attaches as usual.
+void MTCTaskNode::openLoopApproach(double snap_x, double snap_y)
+{
+  // Ensure the in-process model is loaded (streamLevelMove needs it).
+  if (!robot_model_)
+  {
+    rml_ = std::make_shared<robot_model_loader::RobotModelLoader>(node_);
+    robot_model_ = rml_->getModel();
+    if (!robot_model_) { RCLCPP_ERROR(LOGGER, "[skip-servo] no robot model"); return; }
+  }
+
+  // SAME grasp geometry createTask()/the servo use, so we land where phase 1 would.
+  const double tcp_fwd  = paramd("grasp_tcp_forward", 0.05);
+  const double tcp_z    = paramd("grasp_tcp_z", 0.0);
+  const double tcp_lat  = paramd("grasp_tcp_lateral", 0.0);
+  const double yaw_bias = paramd("grasp_yaw_bias", YAW_RIGHT_BIAS);
+  const double grasp_z  = paramd("servo_grasp_z", CUP_GRASP_Z);
+  // final_gap (m) leaves the claw midpoint short of the cup center; 0 = jaws
+  // surround the center (matches the servo's servo_standoff default of 0).
+  const double final_gap = paramd("servo_standoff", 0.0);
+
+  // streamLevelMove reads these members directly — set them like visualServoToGrasp.
+  s_wrist_roll_     = paramd("servo_wrist_roll", -M_PI / 2.0);
+  s_tcp_lat_        = tcp_lat;
+  s_yaw_bias_       = yaw_bias;
+  s_img_cart_step_  = paramd("servo_img_cart_step", 0.01);
+  s_img_cart_speed_ = paramd("skip_servo_speed", paramd("servo_img_cart_speed", 0.06));
+
+  const double bearing  = std::atan2(snap_y, snap_x);      // true cup azimuth
+  const double yaw_base = bearing + yaw_bias;              // jaw-capture facing
+  const double obj_r    = std::hypot(snap_x, snap_y);
+  const double claw_r   = std::max(0.05, obj_r - final_gap);
+  double gx, gy, gz;
+  clawMidpointToGripperTarget(claw_r * std::cos(bearing), claw_r * std::sin(bearing),
+                              grasp_z, yaw_base, tcp_fwd, tcp_z, gx, gy, gz, tcp_lat);
+
+  // Pin the base Rotation to the side-grasp facing branch (facing yaw + pi/2) so
+  // position-only IK keeps the branch the standoff move used (no sideways lean).
+  s_level_seed_rotation_ = yaw_base + M_PI / 2.0;
+  RCLCPP_INFO(LOGGER,
+              "[skip-servo] open-loop straight-in: cup=(%.3f,%.3f) r=%.3f bearing=%.2f "
+              "-> gripper target=(%.3f,%.3f,%.3f) yaw=%.2f",
+              snap_x, snap_y, obj_r, bearing, gx, gy, gz, yaw_base);
+
+  const double dur = streamLevelMove(Eigen::Vector3d(gx, gy, gz));
+  if (dur <= 0.0) { RCLCPP_ERROR(LOGGER, "[skip-servo] approach stream failed"); return; }
+  // Wait for the trajectory to finish before the grasp close (runPickLiftTask).
+  rclcpp::Rate r(20);
+  for (double t = 0.0; t < dur + 1.0 && rclcpp::ok(); t += 0.05) r.sleep();
+  RCLCPP_INFO(LOGGER, "[skip-servo] open-loop approach complete (%.2f s)", dur);
 }
 
 // Image-based servo step (decoupled proportional, à la XLeRobot's follow demo):
