@@ -24,8 +24,11 @@ uv run mkdocs serve     # → http://127.0.0.1:8000 (live-reloads on save)
 | `uv run mkdocs serve` | Start the live-reloading dev server |
 | `uv run mkdocs build` | Build the static site into `docs/site/` |
 | `uv run mkdocs build --strict` | Fail on warnings (broken links) — use in CI |
-| `uv run mkdocs gh-deploy` | Build and publish to the `gh-pages` branch |
 | `uv add <package>` | Add a dependency (e.g. an MkDocs plugin) |
+
+Publishing is automatic: pushing to `main` triggers `.github/workflows/docs.yml`,
+which builds the site and deploys it to GitHub Pages (Pages source must be set to
+**GitHub Actions**).
 
 ## Project layout
 

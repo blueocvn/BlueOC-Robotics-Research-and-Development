@@ -90,6 +90,15 @@ change a color, edit the matching CSS custom property (e.g.
 
 ## Deploy to GitHub Pages
 
+Deployment is automatic via GitHub Actions (`.github/workflows/docs.yml`): every
+push to `main` that touches `docs/**` builds the site and publishes it to Pages.
+No manual step — just merge your changes.
+
+Set once in the repo: `Settings → Pages → Source: **GitHub Actions**`.
+
+To preview locally before pushing:
+
 ```bash
-uv run mkdocs gh-deploy        # builds and pushes to the gh-pages branch
+uv run mkdocs serve            # live-reload dev server at http://127.0.0.1:8000
+uv run mkdocs build            # static build into docs/site/
 ```
