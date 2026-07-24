@@ -4,9 +4,12 @@ ROS 2 workstation packages for the JetRacer (AMR) + robot-arm fulfillment system
 
 ## Documentation
 
+📖 **Live docs:** <https://blueocvn.github.io/BlueOC-Robotics-Research-and-Development/>
+
 Full setup guides, concepts, and use cases live in [`docs/`](docs/) as a
-[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) site. Preview it
-locally with [uv](https://docs.astral.sh/uv/) — no `pip` or `venv` step needed:
+[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) site (published to
+the link above via GitHub Pages). Preview it locally with
+[uv](https://docs.astral.sh/uv/) — no `pip` or `venv` step needed:
 
 ```bash
 # one-time: install uv
