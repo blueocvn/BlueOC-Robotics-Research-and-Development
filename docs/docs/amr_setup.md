@@ -173,7 +173,7 @@ Ackermann commands (zero linear velocity with non-zero steering).
 
 ### 8. Orchestrator integration (status)
 
-The web orchestrator (`orchestrator_ws/robot_web_bridge`) owns a single dispatcher
+The web orchestrator (`orchestrator/robot_web_bridge`) owns a single dispatcher
 that drives the AMR dock-to-dock. On the AMR side this seam is **not yet wired**:
 
 | Contract | State |

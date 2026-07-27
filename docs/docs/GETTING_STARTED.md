@@ -91,7 +91,7 @@ See `CALIBRATION.md` — docking accuracy depends on the camera TF + calibration
 
 The application layer — a FastAPI + HTMX mobile web UI + HTTP API for commanding
 the robot (the QR-code "Get Water" / "Refill" ordering flow). It lives in a
-separate workspace, **`orchestrator_ws/`**, and talks to this stack over the ROS
+separate workspace, **`orchestrator/`**, and talks to this stack over the ROS
 graph: it publishes `/dock_robot`, `/abort_docking`, `/cmd_vel`, `/initialpose`
 and subscribes `/docking_state` + `/chassis/odom`. So the robot stack from §3
 (hardware + Nav2 + docking) must already be running, on the **same
@@ -100,7 +100,7 @@ and subscribes `/docking_state` + `/chassis/odom`. So the robot stack from §3
 ### Start it
 
 ```bash
-cd ../orchestrator_ws
+cd ../orchestrator
 ./run_web_bridge.sh          # serves on http://<host>:8088
 ```
 

@@ -20,10 +20,10 @@ graph (a shared DDS domain), not a shared build space. **Use the same
 |---|---|---|---|
 | `ra_ws` | SO-ARM 101 robot arm — perception, MoveIt 2 / MTC, visual servo, grasp → fill → place | **Jazzy** (native) | **[Robotic Arm setup →](ra_setup.md)** |
 | `jetracer_ws` | JetRacer AMR — SLAM, Nav2, Ackermann drive | **Humble** (Docker) | **[AMR setup →](amr_setup.md)** |
-| `orchestrator_ws` | `robot_web_bridge` — FastAPI + HTMX web UI + dispatcher | Humble | see the package README |
+| `orchestrator` | `robot_web_bridge` — FastAPI + HTMX web UI + dispatcher | Humble | see the package README |
 
 > **⚠️ Two ROS distros on purpose.** `ra_ws` runs on **Jazzy (Ubuntu 24.04)**
-> natively; `jetracer_ws` / `orchestrator_ws` run on **Humble** inside
+> natively; `jetracer_ws` / `orchestrator` run on **Humble** inside
 > `Dockerfile.dev`. They interoperate over DDS — do **not** try to build `ra_ws`
 > inside the Humble container.
 
@@ -88,7 +88,7 @@ docs for the ones you're unfamiliar with before diving in.
 
 - Just want to see the **arm grasp cups**? → [ra_setup.md](ra_setup.md) (self-contained, needs only Isaac Sim + Jazzy).
 - Want the **AMR to map and navigate**? → [amr_setup.md](amr_setup.md).
-- Want the **web-order → robot** end-to-end flow? Set up `orchestrator_ws` plus at least the AMR, and keep a common `ROS_DOMAIN_ID`. → [orchestrator.md](orchestrator.md).
+- Want the **web-order → robot** end-to-end flow? Set up `orchestrator` plus at least the AMR, and keep a common `ROS_DOMAIN_ID`. → [orchestrator.md](orchestrator.md).
 
 > **State of the system:** both robots run in **simulation**; there is no on-device
 > firmware yet. The orchestrator ↔ AMR docking seam and the orchestrator ↔ RA

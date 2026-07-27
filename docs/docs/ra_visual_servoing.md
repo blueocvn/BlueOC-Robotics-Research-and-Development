@@ -94,16 +94,19 @@ Both are used, deliberately, for different jobs.
 
 ## Enabling it
 
-Visual servoing is on by default via a launch arg:
+Visual servoing is **on by default**; disable it with `skip_servo:=true`:
 
 | Arg | Default | Purpose |
 |-----|---------|---------|
-| `servo_image_mode` | `true` | image-based (IBVS) arm-cam servo (vs. open-loop pose) |
+| `skip_servo` | `false` | `false` = image-based (IBVS) arm-cam servo; `true` = skip it (open-loop straight-in grasp) |
 | `grasp_yaw_bias` | `-0.5` | approach angle so the mug lands in the single-jaw gap |
 | `servo_grasp_z` | `0.05986` | side-grasp height (mug mid-height) |
 
 ```bash
-ros2 launch mtc_tutorial bringup.launch.py servo_image_mode:=true servo_grasp_z:=0.05
+# IBVS is already on by default — this just tunes the grasp height:
+ros2 launch mtc_tutorial bringup.launch.py servo_grasp_z:=0.05
+# open-loop grasp instead (skip the servo):
+ros2 launch mtc_tutorial bringup.launch.py skip_servo:=true
 ```
 
 ## Tuning tips

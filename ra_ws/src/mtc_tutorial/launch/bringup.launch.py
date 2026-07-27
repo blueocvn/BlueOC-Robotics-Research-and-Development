@@ -13,8 +13,9 @@
 # or just overridden on the command line: `ros2 launch mtc_tutorial bringup.launch.py task_flow:=place`.
 import os
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 from ament_index_python.packages import get_package_share_directory
 
 
@@ -37,17 +38,37 @@ def generate_launch_description():
         )
     )
 
+    # The commonly-tuned pick/fill args, declared here so `ros2 launch ...
+    # bringup.launch.py --show-args` lists them and no "undeclared argument"
+    # warning fires. Defaults MUST match pick_place_demo.launch.py. Any OTHER
+    # pick_place arg still propagates via the shared launch context when passed
+    # on the command line.
+    tuning_args = [
+        DeclareLaunchArgument("grasp_yaw_bias", default_value="-0.5"),
+        DeclareLaunchArgument("servo_grasp_z", default_value="0.05986"),
+        DeclareLaunchArgument("dispenser_standoff", default_value="0.10"),
+        DeclareLaunchArgument("dispenser_fill_depth", default_value="-0.08"),
+        DeclareLaunchArgument("skip_servo", default_value="false"),
+    ]
+
     # Layer 3: mtc_node — the grasp→fill→place pipeline. Needs move_group + the
     # spawned controllers (loaded at ~3 s in mtc_demo) and perception's
-    # /detected_object/position, so start it last. Pass-through args go in
-    # launch_arguments={...} here if you want them baked in.
+    # /detected_object/position, so start it last. The tuning args above are
+    # forwarded explicitly; add more to launch_arguments below to bake them in.
     pick_place = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(mtc_launch, "pick_place_demo.launch.py"))
-        # , launch_arguments={"task_flow": "dispenser"}.items()
+        PythonLaunchDescriptionSource(os.path.join(mtc_launch, "pick_place_demo.launch.py")),
+        launch_arguments={
+            "grasp_yaw_bias": LaunchConfiguration("grasp_yaw_bias"),
+            "servo_grasp_z": LaunchConfiguration("servo_grasp_z"),
+            "dispenser_standoff": LaunchConfiguration("dispenser_standoff"),
+            "dispenser_fill_depth": LaunchConfiguration("dispenser_fill_depth"),
+            "skip_servo": LaunchConfiguration("skip_servo"),
+        }.items(),
     )
 
     return LaunchDescription(
-        [
+        tuning_args
+        + [
             mtc_demo,
             TimerAction(period=3.0, actions=[perception]),
             TimerAction(period=10.0, actions=[pick_place]),

@@ -21,7 +21,7 @@ This guide assumes you already have **Isaac Sim installed** and starts there.
         from, or the bridge will pick up the wrong distro (or none at all).
 
 > **⚠️ ROS distro:** `ra_ws` targets **ROS 2 Jazzy (Ubuntu 24.04)** — *not* the
-> Humble stack the rest of the repo (`jetracer_ws`, `orchestrator_ws`) runs in.
+> Humble stack the rest of the repo (`jetracer_ws`, `orchestrator`) runs in.
 > Build and run `ra_ws` against a native Jazzy install, **not** inside the
 > `Dockerfile.dev` Humble container. The workspaces still interoperate over DDS
 > (use the same `ROS_DOMAIN_ID`).
@@ -165,7 +165,7 @@ All are args to `pick_place_demo.launch.py` (forward them through `bringup`):
 
 | Arg | Default | Purpose |
 |---|---|---|
-| `servo_image_mode` | `true` | image-based (IBVS) arm-cam servo |
+| `skip_servo` | `false` | `false` = run the image-based (IBVS) arm-cam servo; `true` = skip it (open-loop straight-in grasp) |
 | `grasp_yaw_bias` | `-0.5` | approach angle so the mug lands in the single-jaw gap |
 | `servo_grasp_z` | `0.05986` | side-grasp height (mug mid-height) |
 | `dispenser_standoff` | `0.10` | hold-back from the tag before pressing |

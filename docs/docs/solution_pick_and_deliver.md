@@ -30,7 +30,7 @@ Humble in `Dockerfile.dev`) but interoperate over DDS — keep the **same
 
 ## The orchestrator seam
 
-The web orchestrator (`orchestrator_ws/robot_web_bridge`) owns a single
+The web orchestrator (`orchestrator/robot_web_bridge`) owns a single
 dispatcher that drives the AMR dock-to-dock. Its ROS contract:
 
 - **Publishes** `/dock_robot`, `/abort_docking`, `/cmd_vel`, `/initialpose`
