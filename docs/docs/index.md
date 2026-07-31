@@ -102,3 +102,4 @@ what is **planned** — start with the overviews above.
 | Run the robot arm | [RA Setup Guide](ra_setup.md) |
 | Run the JetRacer | [AMR Setup Guide](amr_setup.md) |
 | See how both robots + the server fit together | [Pick and Deliver](solution_pick_and_deliver.md) |
+| Look up a topic, route, or parameter | [API Book](api/index.md) |

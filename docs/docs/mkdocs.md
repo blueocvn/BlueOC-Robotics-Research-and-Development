@@ -35,15 +35,20 @@ which builds the site and deploys it to GitHub Pages (Pages source must be set t
 ```
 docs/
 ├── mkdocs.yml            # site config — theme, palette, nav, extensions
-├── pyproject.toml        # project + deps (mkdocs-material)
+├── pyproject.toml        # project + deps (mkdocs-material, neoteroi)
 ├── uv.lock               # pinned dependency versions
 ├── README.md             # maintainer notes
+├── scripts/
+│   └── gen_openapi.py    # dumps the bridge's OpenAPI spec into docs/api/
 └── docs/                 # docs_dir — everything here becomes a page
     ├── index.md          # home page
     ├── ra_*.md           # robot arm pages
     ├── amr_*.md          # JetRacer pages
+    ├── api/              # API Book
+    │   └── openapi.json  # GENERATED — do not edit by hand
     └── stylesheets/
-        └── extra.css     # light/dark palettes + component styling
+        ├── extra.css     # light/dark palettes + component styling
+        └── openapi.css   # API reference styling
 ```
 
 !!! note "The nested `docs/docs/`"
@@ -57,6 +62,19 @@ docs/
 2. Add it to the `nav:` list in `mkdocs.yml` to control its title and position.
 
 Without a `nav` entry the page still builds, but it won't appear in the sidebar.
+
+## The API Book
+
+`docs/api/http.md` renders its route reference from `docs/api/openapi.json`,
+which is **generated** from the `robot_web_bridge` FastAPI app:
+
+```bash
+uv sync --extra openapi
+uv run python scripts/gen_openapi.py
+```
+
+CI regenerates it and fails the build if the committed copy is stale, so the
+HTTP reference cannot drift from the code. Never edit `openapi.json` by hand.
 
 ## Theming
 

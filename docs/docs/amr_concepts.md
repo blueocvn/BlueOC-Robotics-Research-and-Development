@@ -83,8 +83,11 @@ launch`). Full table with folders and vendored samples in the
 | **P3** | Drive interface + fulfillment loop | 🟡 Partial |
 | **P4** | Sim-to-real / on-device firmware | ⚪ Planned |
 
-- **P3** — `cmd_vel` → Ackermann is built; the orchestrator's `/dock_robot`
-  protocol is **not yet consumed** by the AMR (see
+- **P3** — `cmd_vel` → Ackermann is built, and the orchestrator's `/dock_robot`
+  protocol **is** consumed by the AMR: `jetracer_bringup/scripts/jetracer_docker.py`
+  subscribes to it, drives the `opennav_docking` action server, and publishes
+  real phase strings on `/docking_state`. What's still missing is the
+  **RA ↔ AMR handoff** — the arm is not part of the orchestrator loop (see
   [Pick and Deliver](solution_pick_and_deliver.md)).
 - **P4** — No JetRacer firmware in the repo yet — the workstation drives sim
   only.

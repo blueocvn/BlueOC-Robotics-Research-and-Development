@@ -81,8 +81,11 @@ phải tên thư mục. Bảng đầy đủ kèm thư mục và mẫu vendored n
 | **P3** | Giao tiếp lái + vòng lặp hoàn thành đơn | 🟡 Một phần |
 | **P4** | Sim-to-real / firmware trên thiết bị | ⚪ Dự kiến |
 
-- **P3** — phần `cmd_vel` → Ackermann đã dựng xong; giao thức `/dock_robot` của
-  orchestrator **vẫn chưa được AMR đọc** (xem
+- **P3** — `cmd_vel` → Ackermann đã xong, và AMR **có** đọc giao thức
+  `/dock_robot` của orchestrator: `jetracer_bringup/scripts/jetracer_docker.py`
+  subscribe topic này, điều khiển action server `opennav_docking`, và publish
+  chuỗi trạng thái thật lên `/docking_state`. Phần còn thiếu là **chuyển giao
+  RA ↔ AMR** — cánh tay chưa nằm trong vòng lặp của orchestrator (xem
   [Gắp và giao](solution_pick_and_deliver.md)).
 - **P4** — Repo chưa có firmware JetRacer — workstation mới chỉ điều khiển bản
   mô phỏng.

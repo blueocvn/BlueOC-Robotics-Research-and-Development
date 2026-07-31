@@ -141,10 +141,18 @@ phải.
     **có xác suất, không được đảm bảo**. Xem [Visual servoing](ra_visual_servoing.md)
     để biết các núm tinh chỉnh.
 
-??? warning "Hiệu chuẩn — một sai lệch chưa giải thích được"
-    Một **độ lệch x** mang tính hệ thống khi đặt cốc hiện đang bị triệt tiêu bằng
-    một hằng số viết cứng `+0.044 m`. Nguyên nhân gốc chưa được xác định — hãy coi
-    đây là một dấu hiệu đáng ngờ đã biết, không phải một vấn đề đã giải quyết.
+??? warning "Calibration — an unexplained bias"
+    Cốc luôn rơi lệch về một phía ở **cả** x và y. Hai giá trị bù đã đo được dùng
+    để triệt tiêu:
+
+    ```cpp
+    place_x += paramd("place_x_offset", 0.044);
+    place_y += paramd("place_y_offset", 0.0386);
+    ```
+
+    Đây là **ROS parameter có giá trị mặc định**, nên bạn override được mà không
+    cần build lại. Độ lớn đã đo (~4 cm), nhưng **nguyên nhân gốc thì chưa rõ** —
+    coi đây là dấu hiệu đáng ngờ, không phải vấn đề đã giải quyết.
 
 ??? warning "Perception — được tinh chỉnh cho mô phỏng"
     Các ngưỡng HSV và trọng số YOLO tiền huấn luyện trên COCO đều được **tinh chỉnh

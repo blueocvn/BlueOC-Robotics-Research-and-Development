@@ -58,8 +58,9 @@ ros2 launch cmdvel_to_ackermann cmdvel_to_ackermann.launch.py
 ## Docking (fulfillment)
 
 Giao hàng từ dock tới dock là chặng cuối của vòng lặp, do orchestrator điều khiển.
-Bên đọc phía AMR là phần việc còn để ngỏ — xem trạng thái và contract tại
-[Gắp và giao](solution_pick_and_deliver.md) và
+Phía AMR đã làm xong — `jetracer_docker.py` đọc `/dock_robot` và publish
+`/docking_state`. Việc còn lại là **chuyển giao RA ↔ AMR**. Xem trạng thái và
+contract tại [Gắp và giao](solution_pick_and_deliver.md) và
 [Hướng dẫn cài đặt §8](amr_setup.md).
 
 ## If it stalls

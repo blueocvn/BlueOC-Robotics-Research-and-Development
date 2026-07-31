@@ -1,0 +1,139 @@
+/* =============================================================
+   API Book — styling for the generated OpenAPI reference.
+
+   neoteroi.mkdocsoad emits its own class names and ships no CSS
+   (upstream expects a CDN link, which we don't want — the site
+   must build and render offline). These rules cover its output
+   and give the reference the scannable, method-badged layout of
+   a Read the Docs style API page.
+
+   Everything here reuses the --rf-* variables from extra.css, so
+   the BlueOC palette stays authoritative in both colour schemes.
+   ============================================================= */
+
+/* ---------- HTTP method badges ---------- */
+.md-typeset [class^="http-"] {
+  display: inline-block;
+  min-width: 4.2em;
+  padding: 0.15em 0.6em;
+  border-radius: 3px;
+  font-family: var(--md-code-font-family, monospace);
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  text-align: center;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: #fff;
+}
+
+.md-typeset .http-get     { background-color: #2b7bb9; }
+.md-typeset .http-post    { background-color: #3f9d52; }
+.md-typeset .http-put     { background-color: #c98b1b; }
+.md-typeset .http-patch   { background-color: #8a63c4; }
+.md-typeset .http-delete  { background-color: #c0453c; }
+.md-typeset .http-head,
+.md-typeset .http-options { background-color: #6b7684; }
+
+/* ---------- Operation grouping ---------- */
+.md-typeset .api-tag {
+  margin-top: 2.4em;
+  padding-bottom: 0.3em;
+  border-bottom: 2px solid var(--rf-accent);
+  font-weight: 700;
+}
+
+.md-typeset .api-version {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.5em;
+  border: 1px solid var(--rf-border);
+  border-radius: 3px;
+  background: var(--rf-surface-2);
+  font-family: var(--md-code-font-family, monospace);
+  font-size: 0.7em;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+/* A rule between operations — the main scanning aid on a long page. */
+.md-typeset .operation-separator {
+  height: 0;
+  margin: 2.2em 0;
+  border: 0;
+  border-top: 1px solid var(--rf-border);
+}
+
+/* ---------- Parameters ---------- */
+.md-typeset .parameter-name,
+.md-typeset .route-param {
+  font-family: var(--md-code-font-family, monospace);
+  font-weight: 600;
+  color: var(--rf-accent);
+}
+
+/* Path parameters inside a route, e.g. /orders/{order_id} */
+.md-typeset .route-param {
+  padding: 0 0.15em;
+  border-radius: 2px;
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.md-typeset .request-body-title,
+.md-typeset .responses-title {
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+  font-size: 0.82em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+}
+
+/* ---------- Type annotations ---------- */
+.md-typeset .string-type,
+.md-typeset .number-type {
+  font-family: var(--md-code-font-family, monospace);
+  font-size: 0.82em;
+  opacity: 0.85;
+}
+
+.md-typeset .ref-link {
+  font-family: var(--md-code-font-family, monospace);
+  font-weight: 600;
+}
+
+/* ---------- Inline notes ---------- */
+.md-typeset .hint,
+.md-typeset .note,
+.md-typeset .small-note {
+  font-size: 0.8em;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .small-note.warning {
+  font-weight: 600;
+  /* Not the palette accent — a warning must read as a warning in both
+     schemes, and the dark-mode accent is a friendly cyan. */
+  color: #c98b1b;
+}
+
+/* ---------- API Book landing grid ---------- */
+.md-typeset .grid.cards > ul > li {
+  border-color: var(--rf-border);
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--rf-accent);
+  box-shadow: 0 0 0 1px var(--rf-accent);
+}
+
+/* ---------- Link previews ---------- */
+/* Material renders instant previews into a tooltip host; keep it on the
+   BlueOC surface colours rather than the theme default. */
+.md-tooltip__inner,
+.md-preview__inner {
+  background: var(--rf-surface);
+  border: 1px solid var(--rf-border);
+}

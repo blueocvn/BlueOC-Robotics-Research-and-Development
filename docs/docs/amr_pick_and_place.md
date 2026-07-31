@@ -57,8 +57,10 @@ ros2 launch cmdvel_to_ackermann cmdvel_to_ackermann.launch.py
 ## Docking (fulfillment)
 
 Dock-to-dock delivery is the last leg of the loop, coordinated by the
-orchestrator. The AMR-side consumer is the current open work — see the status
-and contract in [Pick and Deliver](solution_pick_and_deliver.md) and
+orchestrator. The AMR side is implemented — `jetracer_docker.py` consumes
+`/dock_robot` and publishes `/docking_state`. The remaining open work is the
+**RA ↔ AMR handoff**. See the status and contract in
+[Pick and Deliver](solution_pick_and_deliver.md) and
 [Setup Guide §8](amr_setup.md).
 
 ## If it stalls

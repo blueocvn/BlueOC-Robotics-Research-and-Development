@@ -60,10 +60,15 @@ The arm exposes six joints; all six stream on `/isaac_joint_states`.
 | Cameras | 2 × USB — `top_cam` (overhead), `arm_cam` (eye-in-hand) | Feed the perception + visual-servo loops |
 | **Host compute** | **x86 workstation, Ubuntu 24.04, NVIDIA GPU** | Required for Isaac Sim and YOLO inference; runs ROS 2 + MoveIt + perception |
 
-!!! warning "Simulation only, today"
-    No hardware driver exists yet — the arm runs entirely in **Isaac Sim** via
-    `topic_based_ros2_control`. Driving the real servos over the BusLinker is
-    future work (see the [Roadmap](#roadmap)).
+!!! info "Sim-first, with a real-hardware path"
+    The arm runs in **Isaac Sim** via `topic_based_ros2_control` for development,
+    and there is now a **real-hardware driver**: `feetech_ros2_driver` drives the
+    physical Feetech servos over the BusLinker, brought up with `real_all.launch.py`
+    (see [Real-Hardware Bringup](ra_hardware_bringup.md)). On real hardware the
+    cameras are **not yet calibrated** accurately enough for perception-driven
+    grasping, so the reliable demo runs open-loop with a predefined object —
+    **camera calibration is the current gating task** (see
+    [Camera Calibration](ra_camera_calibration.md)).
 
 ## Packages & Modules
 
@@ -96,7 +101,7 @@ dependency (see the [Setup Guide](ra_setup.md)).
 ??? package "4 · mtc_tutorial"
     Orchestrates the complete grasp-and-place pipeline.
 
-    - MTC Node (Motion Task Commander) drives the pipeline end to end
+    - MTC Node (MoveIt Task Constructor) drives the pipeline end to end
     - Pipeline stages: grasp → servo (visual servoing) → fill → place
     - Launch files and task definitions
 

@@ -123,8 +123,8 @@ In another shell, tunnel the port to a public URL so phones can scan and order:
 ./run_web_bridge_sim.sh      # SimBackend: no ROS, each leg completes on a timer
 ```
 
-Verify the mode at runtime: `GET /api/state` → `{"mode": "robot" | "simulation"}`.
-Health check: `GET /healthz`.
+Verify the mode at runtime: `GET /state` → `{"mode": "ros" | "simulation"}`.
+Health check: `GET /healthz`. Full route list in the [API Book](api/http.md).
 
 ---
 

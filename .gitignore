@@ -27,6 +27,7 @@ metadata.yaml
 
 # Ignore claude and vscode config
 .claude/
+CLAUDE.md
 .vscode/
 
 # Python caches
@@ -59,3 +60,5 @@ amr/jetracer_ws/src/teleop_twist_keyboard/
 
 # mounting dir of the robot:
 jetracer_mount/
+# Scratch notes kept out of the repo (the folder name says local-only)
+localonly/

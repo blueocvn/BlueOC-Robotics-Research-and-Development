@@ -6,6 +6,9 @@ on:
     paths:
       - "docs/**"
       - ".github/workflows/docs.yml"
+      # The API book's HTTP reference is generated from the bridge's FastAPI
+      # app, so a route change there must rebuild the docs.
+      - "orchestrator/src/robot_web_bridge/**"
   workflow_dispatch:
 
 # Least-privilege token: read the repo, write to Pages
@@ -31,13 +34,34 @@ jobs:
           cache: pip
 
       - name: Install MkDocs + Material
-        run: pip install mkdocs-material
+        # mkdocs-material >=9.7 is required: navigation.instant.preview (the
+        # hover link previews) was Insiders-only before 9.7.0.
+        # neoteroi-mkdocs renders the OpenAPI spec into the API book.
+        run: pip install "mkdocs-material>=9.7" neoteroi-mkdocs
+
+      - name: Install bridge deps for OpenAPI generation
+        # robot_web_bridge.app imports cleanly without ROS (it falls back to a
+        # simulated backend), so the spec can be generated in a plain venv.
+        run: pip install fastapi jinja2 pyyaml python-multipart
+
+      - name: Regenerate OpenAPI spec
+        run: python docs/scripts/gen_openapi.py
+
+      - name: Fail if the committed spec was stale
+        # Keeps the in-repo copy honest so local `mkdocs serve` matches CI.
+        run: |
+          if ! git diff --exit-code -- docs/docs/api/openapi.json; then
+            echo "::error::docs/docs/api/openapi.json is stale. Run: python docs/scripts/gen_openapi.py"
+            exit 1
+          fi
 
       - name: Build site
-        # NOTE: not --strict yet -- CALIBRATION.md / orchestrator.md link to repo
-        # source files outside the docs tree (21 warnings). Re-add --strict once
-        # those links are fixed so broken links fail the build.
-        run: mkdocs build --config-file docs/mkdocs.yml
+        # --strict is now on: broken links fail the build. Getting here needed
+        # the 21 dead links in CALIBRATION.md / orchestrator.md fixed (they point
+        # at GitHub blob URLs now) and docs/docs/README.md excluded via
+        # exclude_docs -- it is an unrelated Isaac Lab RL note that collided with
+        # index.md and never rendered.
+        run: mkdocs build --strict --config-file docs/mkdocs.yml
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -174,13 +174,18 @@ Ackermann commands (zero linear velocity with non-zero steering).
 ### 8. Orchestrator integration (status)
 
 The web orchestrator (`orchestrator/robot_web_bridge`) owns a single dispatcher
-that drives the AMR dock-to-dock. On the AMR side this seam is **not yet wired**:
+that drives the AMR dock-to-dock. This seam is now wired on **both** ends:
 
 | Contract | State |
 |---|---|
-| Orchestrator publishes `/dock_robot`, reads `/docking_state`, `/chassis/odom`, seeds `/initialpose` | Built (orchestrator side) |
-| A `/dock_robot` **consumer** on the AMR (dock id → Nav2 goal / docking behavior) | **Not implemented** |
-| A real `/docking_state` **producer** on the AMR | **Not implemented** (dispatcher strings are placeholders) |
+| Orchestrator publishes `/dock_robot`, reads `/docking_state`, `/chassis/odom`, seeds `/initialpose` | ✅ Built (orchestrator side) |
+| A `/dock_robot` **consumer** on the AMR (dock id → Nav2 goal / docking behavior) | ✅ Implemented — `jetracer_bringup/scripts/jetracer_docker.py` |
+| A real `/docking_state` **producer** on the AMR | ✅ Implemented — `jetracer_docker.py` publishes real phase strings |
+| RA ↔ AMR handoff (tray ready → AMR depart) | ❌ Not wired — the arm is not part of the orchestrator loop |
+
+The remaining open work is the **arm** side. See
+[Pick and Deliver](solution_pick_and_deliver.md) for the full status, and the
+[API Book](api/ros-jetracer.md) for the topic contract.
 
 ### 9. Troubleshooting
 
@@ -198,8 +203,9 @@ that drives the AMR dock-to-dock. On the AMR side this seam is **not yet wired**
 - The whole AMR stack runs on **sim time** (`use_sim_time:=true`); keep `/clock` flowing.
 - Lidar reaches SLAM/Nav2 as `/scan`, produced by a `pointcloud_to_laserscan`
   node inside `carter_navigation` from `/front_3d_lidar/lidar_points`.
-- Docking is currently a **topic contract** (`/dock_robot` + `/docking_state`), not a
-  Nav2 docking server — the AMR-side consumer/producer are the main open work.
+- Docking is triggered by a **topic contract** (`/dock_robot` + `/docking_state`);
+  `jetracer_docker.py` consumes it and drives the `opennav_docking` Nav2 action
+  server. The main open work is now the **RA ↔ AMR handoff**.
 - The default `carter_navigation` map is the warehouse sample — supply your own
   mapped `.yaml` via `map:=` for the real space.
 - Several vendored samples (`iw_hub_navigation`, `multiple_robot_*`,

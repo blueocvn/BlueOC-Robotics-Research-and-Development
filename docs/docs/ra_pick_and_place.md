@@ -140,9 +140,17 @@ Known constraints, in the order they are likely to bite a new developer.
     guaranteed**. See [Visual Servoing](ra_visual_servoing.md) for the tuning knobs.
 
 ??? warning "Calibration — an unexplained bias"
-    A systematic place **x-offset** is currently cancelled by a hard-coded
-    `+0.044 m` constant. The root cause is not yet identified — treat this as a
-    known smell, not a solved problem.
+    The cup lands systematically short in **both** x and y, and two measured
+    corrections cancel it:
+
+    ```cpp
+    place_x += paramd("place_x_offset", 0.044);
+    place_y += paramd("place_y_offset", 0.0386);
+    ```
+
+    These are ROS **parameters with defaults**, so you can override them without
+    recompiling. The magnitudes were measured (~4 cm), but the **root cause is
+    not identified** — treat this as a known smell, not a solved problem.
 
 ??? warning "Perception — tuned for simulation"
     HSV thresholds and the COCO-pretrained YOLO weights are **sim-tuned**. Real

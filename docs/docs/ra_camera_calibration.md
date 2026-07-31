@@ -125,16 +125,24 @@ the table"*, re-run with `-p tag_z_up:=false`. If you couldn't square the tag to
 axes, pass `-p tag_yaw_deg:=<deg>`. Watch the printed **position stddev** — a few mm is
 good; centimetres means glare, motion, or a wrong `tag_size`.
 
-**3.** Paste the printed `--x/--y/--z/--roll/--pitch/--yaw` into `eth_static_tf` in
-`ra_ws/src/so_arm_perception/launch/perception.launch.py` (the `eth_x … eth_yaw`
-defaults). `real_all.launch.py` also forwards `eth_x…eth_yaw` as launch args, so you
-can test a fresh solve without editing the file:
+**3.** Persist the solved `--x/--y/--z/--roll/--pitch/--yaw`. Where you paste it
+depends on how you launch:
 
-```bash
-ros2 launch mtc_tutorial real_all.launch.py \
-  eth_x:=0.02967 eth_y:=0.31201 eth_z:=0.87595 \
-  eth_roll:=0.6617028 eth_pitch:=0.0 eth_yaw:=3.1415926536
-```
+- **Full real bringup (`real_all.launch.py`)** — it does **not** expose `eth_x…eth_yaw`
+  as command-line args; it passes them to perception as **hard-coded values**. Edit them
+  in the `top_cam` perception include of
+  `ra_ws/src/mtc_tutorial/launch/real_all.launch.py` (the
+  `"eth_x": … "eth_yaw": …` block).
+- **Perception standalone (`perception.launch.py`)** — here `eth_x…eth_yaw` **are**
+  declared launch args, so you can either edit their defaults in `eth_static_tf` in
+  `ra_ws/src/so_arm_perception/launch/perception.launch.py` or override them on the
+  command line for a quick test (the values below are that file's current defaults):
+
+  ```bash
+  ros2 launch so_arm_perception perception.launch.py \
+    eth_x:=0.02967 eth_y:=0.31201 eth_z:=0.87595 \
+    eth_roll:=0.6617028 eth_pitch:=0.0 eth_yaw:=3.1415926536
+  ```
 
 ---
 
