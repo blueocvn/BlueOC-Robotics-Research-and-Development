@@ -1,4 +1,4 @@
-# JetRacer — Bắt đầu
+# JetRacer — Getting Started
 
 Stack chạy trên robot vật lý. Chạy **trên chính chiếc JetRacer** (Waveshare
 JetRacer, ROS 2 Humble): driver bệ xe, RPLidar, odometry EKF, điều hướng Nav2, và
@@ -24,7 +24,7 @@ source ws_setup.bash
 
 ---
 
-## 2. Các lớp
+## 2. The layers
 
 Stack được tách ra để bạn chỉ dựng đúng phần mình cần:
 
@@ -41,9 +41,9 @@ Stack được tách ra để bạn chỉ dựng đúng phần mình cần:
 
 ---
 
-## 3. Các quy trình thường dùng
+## 3. Common workflows
 
-### Điều hướng trên bản đồ đã biết
+### Navigate on a known map
 
 Cách dễ nhất — tmux dựng phần cứng (khung trái) rồi Nav2 (khung phải, sau 8 giây):
 
@@ -63,7 +63,7 @@ Hoặc làm thủ công, trong hai terminal:
 Bản đồ nằm trong `jetracer_ws/maps/` (`test_map_outer_v6.yaml` là mặc định). Sau
 đó đặt một goal Nav2 từ RViz.
 
-### Dựng bản đồ mới
+### Build a new map
 
 1. `./start_hardware.sh`
 2. Chạy SLAM (`slam_toolbox`) dựa trên `/scan` + TF của robot.
@@ -87,7 +87,7 @@ Xem `CALIBRATION.md` — độ chính xác docking phụ thuộc vào TF camera 
 
 ---
 
-## 4. Robot Web Bridge (ứng dụng đặt hàng)
+## 4. Robot Web Bridge (ordering app)
 
 Lớp ứng dụng — một giao diện web di động FastAPI + HTMX kèm API HTTP để ra lệnh
 cho robot (luồng đặt hàng "Get Water" / "Refill" qua mã QR). Nó nằm ở một
@@ -96,7 +96,7 @@ nó publish `/dock_robot`, `/abort_docking`, `/cmd_vel`, `/initialpose` và
 subscribe `/docking_state` + `/chassis/odom`. Vì vậy stack robot ở §3 (phần cứng +
 Nav2 + docking) phải đang chạy sẵn, trên **cùng một `ROS_DOMAIN_ID`**.
 
-### Khởi động
+### Start it
 
 ```bash
 cd ../orchestrator
@@ -108,7 +108,7 @@ Nó cần được chạy bên trong container Humble (hoặc một shell đã n
 cổng bằng `ROBOT_WEB_BRIDGE_PORT=9000`, và đặt mã PIN vận hành qua
 `ROBOT_WEB_BRIDGE_ADMIN_PIN` cho các route admin.
 
-### Mở ra cho điện thoại (mã QR)
+### Expose it for phones (QR codes)
 
 Ở một shell khác, tạo tunnel cổng này ra một URL công khai để điện thoại quét và
 đặt hàng:
@@ -117,7 +117,7 @@ cổng bằng `ROBOT_WEB_BRIDGE_PORT=9000`, và đặt mã PIN vận hành qua
 ./run_tunnel.sh              # in ra một URL https://<...>.trycloudflare.com
 ```
 
-### Không cần robot (phát triển / demo)
+### Without the robot (dev / demo)
 
 ```bash
 ./run_web_bridge_sim.sh      # SimBackend: không cần ROS, mỗi chặng xong theo bộ đếm
@@ -129,7 +129,7 @@ Kiểm tra sức khỏe: `GET /healthz`. Danh sách route đầy đủ ở
 
 ---
 
-## 5. Ghi đè giá trị mặc định
+## 5. Overriding defaults
 
 Các tham số thêm được truyền thẳng xuống launch file:
 
@@ -142,7 +142,7 @@ Mặc định: cổng bệ xe `/dev/ttyACM0`, cổng lidar `/dev/ttyACM1`.
 
 ---
 
-## Khắc phục sự cố
+## Troubleshooting
 
 - **Thiếu `ros2` hoặc các gói (nav2, robot_localization, jetracer_bringup)** →
   bạn đã nạp setup hợp nhất. Hãy dùng `source ws_setup.bash`.

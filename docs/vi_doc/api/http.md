@@ -1,4 +1,4 @@
-# API HTTP
+# HTTP API
 
 Dịch vụ `robot_web_bridge` mở JetRacer ra qua HTTP. Đây là cách nhanh nhất để có
 một demo chạy được: **không cần cài ROS trên máy bạn**, và nó vẫn chạy được khi
@@ -16,7 +16,7 @@ pip install fastapi "uvicorn[standard]" jinja2 pyyaml python-multipart
 uvicorn robot_web_bridge.app:app --reload --port 8088
 ```
 
-## Bạn đang nói chuyện với robot thật chứ?
+## Are you talking to a real robot?
 
 `GET /state` cho biết chế độ backend. Hãy kiểm tra trước khi tin vào bất cứ điều gì.
 
@@ -32,7 +32,7 @@ curl -s localhost:8088/state | jq .mode
     và tiếp tục phục vụ. Một demo "chạy tốt" trên laptop của bạn có thể đang nói
     chuyện với hư không. Hãy luôn kiểm tra `mode` trong các bài test tích hợp.
 
-## Bắt đầu nhanh
+## Quick start
 
 Đặt một đơn hàng và theo dõi tiến trình:
 
@@ -51,7 +51,7 @@ curl -s localhost:8088/state | jq
 curl -s -X POST localhost:8088/abort
 ```
 
-## Xác thực admin
+## Admin authentication
 
 Các route vận hành dưới `/v1/admin/` được bảo vệ bằng mã PIN. Đây là những năng
 lực thực sự nguy hiểm — teleop trực tiếp, đặt lại pose, docking thủ công — nên
@@ -81,7 +81,7 @@ Mọi route trừ `login`, `logout` và `session` sẽ trả về **401** nếu 
     thầm đăng xuất toàn bộ người vận hành. Hãy đặt cả hai một cách tường minh
     trước khi sàn hackathon mở cửa.
 
-## Tham khảo route
+## Route reference
 
 FastAPI tự sinh sẵn tài liệu tương tác cho chính nó, nên danh sách route luôn
 khớp với mã nguồn đang chạy — không cần bảng viết tay nào cả. Khi bridge đang

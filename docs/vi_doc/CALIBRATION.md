@@ -1,4 +1,4 @@
-# Hướng dẫn hiệu chuẩn JetRacer
+# JetRacer Calibration Guide
 
 Tất cả những thứ trên robot này cần được đo/tinh chỉnh thay vì phỏng đoán. Nhiều
 giá trị được ship sẵn chỉ là **giá trị tạm hoặc ước lượng** — chúng đủ tốt để dựng
@@ -15,7 +15,7 @@ Thứ tự ưu tiên (tác động lớn nhất trước): **1 → 2 → 3 → 4
 
 ---
 
-## 1. Intrinsics camera 🔴 (làm trước — chặn toàn bộ độ chính xác docking)
+## 1. Camera intrinsics 🔴 (do first — gates all docking accuracy)
 
 - **Các file:** [`imx219_measured.yaml`][measured] (kết quả hiệu chuẩn oST thật) và
   [`imx219_inferred.yaml`][inferred] (thô, suy ra từ thông số kỹ thuật).
@@ -53,7 +53,7 @@ Thứ tự ưu tiên (tác động lớn nhất trước): **1 → 2 → 3 → 4
 - **Kiểm tra:** đặt một tag ở khoảng cách đã biết; giá trị khoảng cách trên
   `/detected_dock_pose` phải khớp với thước dây trong khoảng ~1–2 cm.
 
-## 2. Hệ số tỉ lệ odometry bánh xe 🟡
+## 2. Wheel odometry scale 🟡
 
 - **File:** [`cmd_vel_to_serial.py`][cmd-vel] — `ENCODER_SCALE = 0.001 * 10`
 - **Vì sao quan trọng:** EKF suy vị trí bằng phép dead-reckoning từ vận tốc tiến
@@ -64,7 +64,7 @@ Thứ tự ưu tiên (tác động lớn nhất trước): **1 → 2 → 3 → 4
   `tỉ_lệ_mới = tỉ_lệ_cũ × (1.0 / x_đo_được)`. Lặp lại cho tới khi chạy 1 m đọc ra
   khoảng 1,0 m.
 
-## 3. Hình học Ackermann: chiều dài cơ sở, góc lái tối đa, bán kính quay tối thiểu 🟡
+## 3. Ackermann geometry: wheelbase, max steer, min turning radius 🟡
 
 Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 
@@ -85,7 +85,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 - **Sau đó:** đặt `minimum_turning_radius` ≈ R_min × 1,1, cập nhật
   `wheelbase`/`delta_max_deg` trong bộ lọc, và kiểm tra lại URDF cho hợp lý.
 
-## 4. TF gắn lidar 🔴 (đang mâu thuẫn — hãy dẹp phần trùng lặp)
+## 4. Lidar mounting TF 🔴 (conflicting — fix the duplication)
 
 - **Mâu thuẫn:** có hai TF khác nhau cho cùng một cảm biến:
     - URDF [`jetracer.urdf`][urdf]: node con `laser`, `xyz 0.05 0 0.09`, không yaw.
@@ -105,7 +105,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
      A1 được gắn lộn ngược trên khung Waveshare — hãy kiểm chứng xem nó có thật sự
      cần thiết không.
 
-## 5. Extrinsics camera (pose gắn) 🟡
+## 5. Camera extrinsic (mount pose) 🟡
 
 - **File:** URDF [`jetracer.urdf`][urdf] — `camera_link` ở `xyz 0.12 0 0.07`,
   `rpy 0 0.25 0` (chúc xuống khoảng 14°).
@@ -116,7 +116,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
   đo góc, hoặc nhận dạng một tag ở vị trí đã biết rồi suy ngược ra góc). Cập nhật
   `origin` của khớp.
 
-## 6. Nhận dạng AprilTag 🟡
+## 6. AprilTag detection 🟡
 
 - **File:** [`dock_tags_36h11.yaml`][dock-tags]
 - **Kích thước tag:** cạnh `0.188 m` — hãy **đo cạnh ô vuông đen thật đã in** và
@@ -125,7 +125,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 - **Tinh chỉnh nếu cần:** `decimate: 2.0` (giảm xuống = nhận được tag nhỏ hơn/xa
   hơn, tốn CPU), `refine`, `sharpening`.
 
-## 7. Độ lệch nhận dạng dock + điểm chờ 🟡
+## 7. Dock detection offsets + staging 🟡
 
 - **File:** [`jetracer_docking.yaml`][docking-yaml]
 - **`external_detection_translation_x: -0.20`**, `rotation_yaw/pitch/roll` —
@@ -140,7 +140,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 - **Cách làm:** thực hiện một lần dock thủ công, quan sát xe dừng ở đâu so với tag;
   chỉnh dần `translation_x` cho tới khi nó dừng đúng giữa ở khoảng lùi mong muốn.
 
-## 8. Footprint (footprint) của costmap 🟡
+## 8. Costmap footprint 🟡
 
 - **File:** [`jetracer_nav2.yaml`][nav2-yaml] —
   `footprint: [[0.17,0.09],[0.17,-0.09],[-0.17,-0.09],[-0.17,0.09]]`
@@ -151,7 +151,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 - **Cách làm:** đo chiều dài/chiều rộng khung xe và độ lệch gốc tọa độ; cập nhật cả
   hai footprint của costmap.
 
-## 9. Bù lệch yaw khi chạy thẳng 🟢🟡
+## 9. Straight-line yaw trim 🟢🟡
 
 - **File:** [`cmd_vel_to_serial.py`][cmd-vel] — `YAW_TRIM = 0.0145` (chỉ áp dụng
   khi chạy tiến).
@@ -159,7 +159,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
   khoảng 0,005 cho tới khi xe đi thẳng. Đây là vấn đề cơ khí (độ chụm/căn chỉnh) —
   hãy kiểm tra lại nếu cơ cấu lái có thay đổi.
 
-## 10. Sai lệch con quay 🟢 (tự động, nhưng phải tôn trọng quy trình)
+## 10. Gyro bias 🟢 (auto, but respect the procedure)
 
 - **File:** [`cmd_vel_to_serial.py`][cmd-vel] — lấy trung bình 100 mẫu (khoảng 2
   giây) lúc khởi động.
@@ -167,13 +167,13 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
   khi khởi chạy driver, nếu không yaw sẽ trôi suốt cả phiên làm việc. Hãy theo dõi
   log tìm dòng "Gyro calibrated."
 
-## 11. Hiệp phương sai IMU 🟡
+## 11. IMU covariances 🟡
 
 - **File:** [`cmd_vel_to_serial.py`][cmd-vel] — viết cứng `0.01`. Chỉ quan trọng
   nếu EKF tin tưởng con quay quá nhiều hoặc quá ít; chỉ tinh chỉnh khi hướng bị
   nhiễu hoặc phản ứng chậm chạp.
 
-## 12. Tỉ lệ cmd_vel → tốc độ 🟡 (kiểm chứng, có thể vẫn ổn)
+## 12. cmd_vel → speed scaling 🟡 (verify, may be fine)
 
 - **Đường đi:** [`cmd_vel_to_serial.py`][cmd-vel] đóng gói `linear.x` thành mm/s
   gửi xuống firmware.
@@ -183,7 +183,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
   encoder (mục 2) bù được một phần, nhưng tỉ lệ lệnh open-loop vẫn quan trọng với
   firmware.
 
-## 13. Định vị (AMCL) — ghi chú, không phải hiệu chuẩn 🟡
+## 13. Localization (AMCL) — note, not a calibration 🟡
 
 - **File:** [`jetracer_nav2.yaml`][nav2-yaml] —
   `robot_model_type: DifferentialMotionModel` dùng cho một chiếc xe hơi. Chấp nhận
@@ -192,7 +192,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 
 ---
 
-## Trình tự khởi chạy đề xuất
+## Suggested bring-up sequence
 
 1. **Intrinsics camera** (#1) — hãy bắt đầu bằng việc kiểm tra *file YAML nào* đang
    thật sự được nạp; có thể đã tồn tại sẵn một bản đã đo.

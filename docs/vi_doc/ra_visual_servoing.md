@@ -1,16 +1,16 @@
-# Trường hợp sử dụng RA — Visual servoing
+# RA Use Case — Visual Servoing
 
 Bên trong [pipeline gắp và đặt](ra_pick_and_place.md), cánh tay không dựa vào một
 pose gắp open-loop duy nhất. Sau bước di chuyển thô, nó chuyển sang **visual servoing
 dựa trên ảnh (IBVS)** dùng camera eye-in-hand `arm_cam`, đóng vòng phản hồi lên
 chiếc cốc cho tới khi hình học gắp đã đúng.
 
-## Mục tiêu
+## Objective
 
 Khép lại **khoảng cách vài centimét cuối cùng** giữa "cốc đại khái ở đâu" và "gripper phải ở chính xác chỗ nào" — bằng phản hồi camera trực tiếp thay vì tin vào
 pose open-loop.
 
-## Vì sao cần servo
+## Why servo
 
 Pose của cốc lấy từ camera phía trên chỉ là gần đúng, còn gripper SO-ARM 101 là một
 càng một má với khe bắt hẹp. Visual servoing bằng camera trên tay sẽ sửa sai số của
@@ -27,7 +27,7 @@ Cụ thể, pose open-loop mang theo ba sai số chồng lên nhau:
 Từng cái thì nhỏ; cộng lại thì đủ để trượt khỏi một khe kẹp hẹp. Visual servoing loại
 bỏ chúng bằng cách **đo kết quả thay vì dự đoán nó**.
 
-## Vì sao không dùng MoveIt Servo
+## Why not MoveIt Servo
 
 !!! warning "Cánh tay cố ý **không** dùng `moveit_servo`"
     `moveit_servo` hiện thực việc bám **Cartesian 6 bậc tự do**. SO-ARM 101 chỉ có
@@ -48,7 +48,7 @@ bỏ chúng bằng cách **đo kết quả thay vì dự đoán nó**.
 servo Cartesian tổng quát. Đây là bằng chứng độc lập cho thấy vòng lặp tự viết là
 lựa chọn đúng trên cánh tay này, chứ không phải một cách chống chế.
 
-## Hoạt động thế nào — hai pha
+## How it works — two phases
 
 Vòng lặp được tách ra để **xoay và tịnh tiến không bao giờ cãi nhau**:
 
@@ -70,7 +70,7 @@ Ba chi tiết khiến pha 0 hoạt động đúng mực:
 - **Anti-windup** — bộ tích phân phương vị bị giảm lại khi cánh tay đang trễ so
   với lệnh, để điểm đặt không thể chạy trước cánh tay vật lý và gây vọt lố.
 
-## IBVS so với PBVS — mỗi loại dùng ở đâu
+## IBVS vs PBVS — where each is used
 
 Cả hai đều được dùng, một cách có chủ đích, cho những việc khác nhau.
 
@@ -90,7 +90,7 @@ Cả hai đều được dùng, một cách có chủ đích, cho những việc
     pha gắp cuối vốn đòi hỏi độ chính xác cao chính là lựa chọn chuyển giao tốt
     nhất sang cánh tay thật — PBVS được dành cho các chuyển động thô, neo vào fiducial, nơi pose tuyệt đối thực sự cần thiết.
 
-## Bật nó lên
+## Enabling it
 
 Visual servoing **được bật mặc định**; tắt nó bằng `skip_servo:=true`:
 
@@ -107,7 +107,7 @@ ros2 launch mtc_tutorial bringup.launch.py servo_grasp_z:=0.05
 ros2 launch mtc_tutorial bringup.launch.py skip_servo:=true
 ```
 
-## Mẹo tinh chỉnh
+## Tuning tips
 
 - **Cốc tuột khỏi má kẹp** → chỉnh `grasp_yaw_bias` để đường tiếp cận đưa miệng
   cốc vào đúng khe của gripper một má.
@@ -117,16 +117,16 @@ ros2 launch mtc_tutorial bringup.launch.py skip_servo:=true
   đang có dữ liệu và được ánh xạ tới `camera_eih_ns` (`arm_cam`); vòng lặp servo
   cần một luồng hình eye-in-hand còn sống.
 
-## Nó nằm ở đâu
+## Where it fits
 
 ```
 di chuyển thô → [ BÁM THỊ GIÁC (arm_cam, IBVS) ] → đóng kẹp → chở → hứng → đặt
 ```
 
-Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và hợp đồng topic tại
-[Tổng quan](ra_concepts.md#hợp-đồng-ros-isaac-sim).
+Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và topic contract tại
+[Tổng quan](ra_concepts.md#the-ros-contract-isaac-sim).
 
-## Thách thức & giới hạn
+## Challenges & limitations
 
 ??? warning "Các hệ số được tinh chỉnh thủ công, và dấu của chúng phụ thuộc cách gắn camera"
     `servo_img_k_yaw` mã hóa số radian phương vị đế trên mỗi điểm ảnh sai số — và
@@ -154,9 +154,9 @@ Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và 
 ??? warning "Được tinh chỉnh dựa trên hình ảnh mô phỏng"
     Bộ nhận dạng cấp dữ liệu cho servo được tinh chỉnh cho mô phỏng. Ánh sáng thật,
     nhòe chuyển động, và một chiếc cốc thật sẽ làm thay đổi tín hiệu điểm ảnh mà
-    vòng lặp tiêu thụ.
+    vòng lặp đọc.
 
-## Hướng đi tương lai
+## Future direction
 
 1. **Rào an toàn trước đã** — một **timeout** cho servo và một lối thoát khi thất
    bại, cộng thêm cơ chế dừng theo tiếp xúc dựa trên lực/dòng. Đây là điều kiện

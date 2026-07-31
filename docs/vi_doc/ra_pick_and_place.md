@@ -1,10 +1,10 @@
-# Trường hợp sử dụng RA — Gắp và đặt (Rót nước)
+# RA Use Case — Pick and Place (Refill)
 
 Bản demo trọn vẹn: cánh tay nhận ra một chiếc cốc rỗng, gắp nó lên, mang tới máy
 lọc để "hứng nước", rồi đặt vào khay. Trang này đi qua kịch bản đó; về cài
 đặt/build, xem [Hướng dẫn cài đặt](ra_setup.md).
 
-## Mục tiêu
+## Objective
 
 Tự động hoàn thành một đơn đồ uống từ đầu tới cuối: **nhận dạng → gắp → hứng →
 đặt**, lặp lại cho mọi chiếc cốc mà camera phía trên nhìn thấy, không cần con
@@ -26,13 +26,13 @@ như mọi quyết định thiết kế dưới đây đều bắt nguồn từ 
 | Đặt | Cốc rơi vào đúng ô khay được phân, không va vào các cốc đã đặt |
 | Vòng lặp | Lặp gọn gàng qua N cốc mà không gắp lại chiếc đã đặt xuống |
 
-## Điều kiện tiên quyết
+## Prerequisites
 
-- Workspace đã build và Isaac Sim đang chạy với hợp đồng ROS đã kiểm chứng — xem
+- Workspace đã build và Isaac Sim đang chạy với ROS contract đã kiểm chứng — xem
   [Hướng dẫn cài đặt §1–5](ra_setup.md).
 - Scene cánh tay đã mở trong Isaac Sim và đã bấm **Play**.
 
-## Chạy nó
+## Run it
 
 Một lệnh duy nhất dựng MoveIt (`move_group` + bộ điều khiển + RViz), perception và
 `mtc_node`, xếp lệch nhau để phụ thuộc của mỗi lớp lên trước:
@@ -42,7 +42,7 @@ source install/setup.bash
 ros2 launch mtc_tutorial bringup.launch.py
 ```
 
-## Điều gì xảy ra
+## What happens
 
 1. `move_group`, `ros2_control`, và các bộ điều khiển `arm_group` / `hand_group`
    khởi động.
@@ -64,7 +64,7 @@ ros2 launch mtc_tutorial bringup.launch.py
     bắt đầu (mặc định là một nếu không có cốc nào), rải đều trên khay. Một chiếc
     cốc duy nhất sẽ được đặt ở giữa.
 
-## Giải pháp đề xuất — và lý do
+## Proposed solution — and why
 
 Mỗi giai đoạn được chọn để làm việc *quanh* giới hạn của phần cứng 5 bậc tự do,
 một má kẹp, thay vì chống lại nó.
@@ -79,14 +79,14 @@ một má kẹp, thay vì chống lại nó.
 | **MoveIt Task Constructor (MTC)** | Tác vụ này vốn dĩ chia thành giai đoạn (tiếp cận → gắp → nâng → chở → đặt). MTC diễn đạt điều đó thành các giai đoạn ghép được, có lập kế hoạch nhận biết va chạm (OMPL / RRTConnect), thay vì một script khối duy nhất. |
 | **Visual servoing trước khi gắp** | Lập kế hoạch đưa gripper tới *gần*, nhưng pose open-loop mang theo sai số của perception + hiệu chuẩn. Đóng vòng phản hồi bằng camera trên tay sẽ sửa nốt vài centimét cuối — xem [Visual servoing](ra_visual_servoing.md). |
 | **Phân ô khay + loại trừ** | Các cốc được rải đều trên khay, và những cốc đã đặt bị loại khỏi việc nhận dạng để cánh tay không gắp lại chiếc mình vừa đặt xuống. |
-| **Ưu tiên mô phỏng (Isaac + `topic_based_ros2_control`)** | Đúng hợp đồng topic ROS mà cánh tay thật sẽ dùng, với rủi ro phần cứng bằng không và một scene tái lập được. |
+| **Ưu tiên mô phỏng (Isaac + `topic_based_ros2_control`)** | Đúng topic contract ROS mà cánh tay thật sẽ dùng, với rủi ro phần cứng bằng không và một scene tái lập được. |
 
 !!! tip "Mạch xuyên suốt"
     Perception cho ra pose thế giới gần đúng → lập kế hoạch đưa tới gần →
     **closed-loop vision sửa bước cuối** → hình học gripper (góc + độ cao) lo phần
     còn lại. Mỗi lớp đều gỡ lỗi được độc lập.
 
-## Tinh chỉnh
+## Tuning
 
 Hình học gắp/hứng được điều khiển bằng các tham số launch (giá trị mặc định hiển
 thị bên dưới) — bảng đầy đủ ở [Hướng dẫn cài đặt §7](ra_setup.md):
@@ -98,7 +98,7 @@ ros2 launch mtc_tutorial bringup.launch.py \
     dispenser_fill_depth:=-0.08
 ```
 
-## Nếu bị treo
+## If it stalls
 
 - **`mtc_node` chờ mãi `/detected_object/position`** → perception không publish;
   hãy kiểm tra các topic camera và tham số `camera_*_ns`.
@@ -107,7 +107,7 @@ ros2 launch mtc_tutorial bringup.launch.py \
 
 Thêm nữa ở [Hướng dẫn cài đặt §8](ra_setup.md).
 
-## Thách thức & giới hạn
+## Challenges & limitations
 
 Các ràng buộc đã biết, xếp theo thứ tự mà một lập trình viên mới có khả năng vấp
 phải.
@@ -161,10 +161,10 @@ phải.
     biến dòng chảy, hay xử lý tràn đổ.
 
 ??? warning "Chưa tích hợp vào hệ thống lớn hơn"
-    Cánh tay chạy độc lập. Các topic tác vụ giữa bộ điều phối ↔ RA và việc chuyển
+    Cánh tay chạy độc lập. Các topic tác vụ giữa orchestrator ↔ RA và việc chuyển
     cốc AMR ↔ RA đã **được thiết kế nhưng chưa đấu nối**.
 
-## Hướng đi tương lai
+## Future direction
 
 Xếp theo thứ tự việc nào tháo gỡ được nhiều nút thắt nhất.
 

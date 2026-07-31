@@ -1,4 +1,4 @@
-# Điểm khởi chạy
+# Launch Entry Points
 
 Chạy launch file nào, và mỗi file giả định sẵn có những gì. Nhầm chỗ này là cách
 phổ biến nhất để mất một giờ trong hackathon.
@@ -24,7 +24,7 @@ ros2 launch jetracer_bringup nav_bringup.launch.py map:=/path/to/map.yaml
 ros2 launch jetracer_bringup jetracer.launch.py map:=/path/to/map.yaml
 ```
 
-### Tham số
+### Arguments
 
 | Launch file | Tham số |
 |---|---|
@@ -44,7 +44,7 @@ ros2 launch jetracer_bringup jetracer.launch.py map:=/path/to/map.yaml
     ls -l /dev/serial/by-id/
     ```
 
-### Camera CSI
+### CSI camera
 
 `hardware.launch.py` khởi động `gscam2` với một pipeline GStreamer mặc định cho
 IMX219, có thể ghi đè qua `$GSCAM_CONFIG`.
@@ -56,7 +56,7 @@ IMX219, có thể ghi đè qua `$GSCAM_CONFIG`.
     thông báo lỗi không hề chỉ rõ nguyên nhân là định dạng. Nếu bạn ghi đè
     `$GSCAM_CONFIG`, hãy giữ phần kết RGB, hoặc bỏ hẳn biến này để dùng mặc định.
 
-## Cánh tay robot
+## Robot Arm
 
 | Launch file | Mục đích |
 |---|---|
@@ -77,7 +77,7 @@ ros2 launch mtc_tutorial bringup.launch.py
 ros2 launch mtc_tutorial real_all.launch.py
 ```
 
-### Tham số của `real_all.launch.py`
+### `real_all.launch.py` arguments
 
 Điểm khởi chạy cho toàn bộ stack. Nhóm theo thứ chúng điều khiển.
 
@@ -119,10 +119,10 @@ ros2 launch mtc_tutorial real_all.launch.py
 | `servo_grasp_z` | Độ cao gắp trong lúc servo |
 | `mtc_delay` | Độ trễ trước khi MTC bắt đầu |
 
-### Tham số của `perception.launch.py`
+### `perception.launch.py` arguments
 
 Phản chiếu các tham số của `perception_node` — xem
-[Giao diện cánh tay](ros-arm.md#các-tham-số-quan-trọng) để biết ý nghĩa. Bộ extrinsics là thứ bạn sẽ chỉnh nhiều nhất:
+[Giao diện cánh tay](ros-arm.md#key-parameters) để biết ý nghĩa. Bộ extrinsics là thứ bạn sẽ chỉnh nhiều nhất:
 
 `eth_x`, `eth_y`, `eth_z`, `eth_roll`, `eth_pitch`, `eth_yaw` (eye-to-hand) và
 `eih_x` … `eih_yaw` (eye-in-hand).
@@ -142,7 +142,7 @@ ros2 run robot_web_bridge server        # http://localhost:8088
 
 Xem [API HTTP](http.md) để biết các route và đường chạy không cần ROS.
 
-## Xem thêm
+## See also
 
 - [Giao diện JetRacer](ros-jetracer.md)
 - [Giao diện cánh tay](ros-arm.md)

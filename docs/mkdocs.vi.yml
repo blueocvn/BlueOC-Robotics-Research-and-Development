@@ -13,39 +13,33 @@ site_description: Tài liệu tiếng Việt — BlueOC Robotics
 docs_dir: vi_doc
 
 nav:
-  - Trang chủ: index.md
-  - Bắt đầu: GET-STARTED.md
-  - Robot:
-      - Cánh tay robot (RA):
-          - Tổng quan: ra_concepts.md
-          - Hướng dẫn cài đặt: ra_setup.md
-          - Khởi chạy phần cứng thật: ra_hardware_bringup.md
-          - Hiệu chuẩn camera: ra_camera_calibration.md
-          - Trường hợp sử dụng:
-              - Gắp và đặt: ra_pick_and_place.md
+  - Home: index.md
+  - Get Started: GET-STARTED.md
+  - Robots:
+      - Robot Arm (RA):
+          - Overview: ra_concepts.md
+          - Setup Guide: ra_setup.md
+          - Real-Hardware Bringup: ra_hardware_bringup.md
+          - Camera Calibration: ra_camera_calibration.md
+          - Use Cases:
+              - Pick and Place: ra_pick_and_place.md
               - Visual Servoing: ra_visual_servoing.md
               - Imitation Learning: ra_imitation_learning.md
       - JetRacer (AMR):
-          - Tổng quan: amr_concepts.md
-          - Hướng dẫn cài đặt: amr_setup.md
-          - Cài đặt trên thiết bị: amr_jetracer_setup.md
-          - Trường hợp sử dụng:
-              - Điều hướng & Giao hàng: amr_pick_and_place.md
-  - Giải pháp robot:
-      - Gắp và giao (RA + AMR):
-          - Tổng quan: solution_pick_and_deliver.md
-          - Bộ điều phối: orchestrator.md
-  - Sổ tay API:
-      - Tổng quan: api/index.md
-      - API HTTP: api/http.md
-      - ROS 2 — JetRacer: api/ros-jetracer.md
-      - ROS 2 — Cánh tay robot: api/ros-arm.md
-      - Điểm khởi chạy: api/launch.md
-  - Tham khảo:
-      - Hiệu chuẩn: CALIBRATION.md
-      - Cài đặt bên thứ ba: THIRDPARTY_SETUP.md
+          - Overview: amr_concepts.md
+          - Setup Guide: amr_setup.md
+          - On-device Setup: amr_jetracer_setup.md
+          - Use Cases:
+              - Navigate & Deliver: amr_pick_and_place.md
+  - Robotic Solutions:
+      - Pick and Deliver (RA + AMR):
+          - Overview: solution_pick_and_deliver.md
+          - Orchestrator: orchestrator.md
+  - Reference:
+      - Calibration: CALIBRATION.md
+      - Third-party Setup: THIRDPARTY_SETUP.md
       - MkDocs: mkdocs.md
-      - Bắt đầu (bản cũ): GETTING_STARTED.md
+      - Getting Started (legacy): GETTING_STARTED.md
 
 # README.md is written for people browsing the folder on GitHub, not for the
 # built site -- excluding it explicitly avoids the index.md conflict warning.
@@ -99,9 +93,6 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
-      # Vietnamese headings are non-ASCII; the default slugify strips them and
-      # would collapse anchors to empty or colliding ids.
-      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
   - pymdownx.details
   - pymdownx.inlinehilite
   - pymdownx.highlight:

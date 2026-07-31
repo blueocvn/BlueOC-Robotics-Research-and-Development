@@ -1,7 +1,7 @@
-# Bắt đầu
+# Getting Started
 
-Chào mừng bạn đến với hệ thống **Robot Fulfillment** — một bộ điều phối web điều
-phái một robot di động (AMR) và một cánh tay robot (RA) để hoàn thành các đơn đồ
+Chào mừng bạn đến với hệ thống **Robot Fulfillment** — một orchestrator web điều
+phái một xe tự hành (AMR) và một cánh tay robot (RA) để hoàn thành các đơn đồ
 uống, tất cả đều chạy được trên NVIDIA Isaac Sim mà không cần phần cứng vật lý.
 
 Trang này là tấm bản đồ. Hãy chọn workspace bạn muốn dựng, và lướt qua phần
@@ -10,7 +10,7 @@ Trang này là tấm bản đồ. Hãy chọn workspace bạn muốn dựng, và
 
 ---
 
-## Hướng dẫn cài đặt
+## Setup guides
 
 Mỗi workspace tự build và tự chạy; chúng chỉ giao tiếp qua đồ thị ROS 2 (một miền
 DDS chung), không dùng chung không gian build. **Hãy dùng cùng một
@@ -20,7 +20,7 @@ DDS chung), không dùng chung không gian build. **Hãy dùng cùng một
 |---|---|---|---|
 | `ra_ws` | Cánh tay robot SO-ARM 101 — perception, MoveIt 2 / MTC, visual servoing, gắp → hứng → đặt | **Jazzy** (native) | **[Cài đặt cánh tay robot →](ra_setup.md)** |
 | `jetracer_ws` | JetRacer AMR — SLAM, Nav2, Ackermann | **Humble** (Docker) | **[Cài đặt AMR →](amr_setup.md)** |
-| `orchestrator` | `robot_web_bridge` — giao diện web FastAPI + HTMX + bộ điều phái | Humble | xem README của gói |
+| `orchestrator` | `robot_web_bridge` — giao diện web FastAPI + HTMX + dispatcher | Humble | xem README của gói |
 
 > **⚠️ Hai bản phân phối ROS là có chủ đích.** `ra_ws` chạy **Jazzy (Ubuntu 24.04)**
 > native; `jetracer_ws` / `orchestrator` chạy **Humble** bên trong `Dockerfile.dev`.
@@ -35,23 +35,23 @@ DDS chung), không dùng chung không gian build. **Hãy dùng cùng một
 
 ---
 
-## Khái niệm & chủ đề cho người mới
+## Concepts & topics for new learners
 
 Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn được xây trên đó. Hãy
 đọc tài liệu được dẫn cho những khái niệm bạn chưa quen trước khi lao vào.
 
-### Nền tảng chung (cả hai robot)
+### Shared foundations (both robots)
 
 | Khái niệm | Ở đây nghĩa là gì | Đọc thêm |
 |---|---|---|
 | **ROS 2** | Middleware mà mọi thứ chạy trên đó — node, topic, service, action | [docs.ros.org](https://docs.ros.org/en/humble/index.html) |
 | **DDS / `ROS_DOMAIN_ID`** | Cách ba workspace phát hiện và nói chuyện với nhau qua mạng | [ROS 2 DDS & domain ID](https://docs.ros.org/en/humble/Concepts/Intermediate/About-Domain-ID.html) |
-| **colcon / rosdep** | Build các workspace; giải quyết phụ thuộc hệ thống | [colcon](https://colcon.readthedocs.io/) · [rosdep](https://docs.ros.org/en/humble/Tutorials/Intermediate/Rosdep.html) |
+| **colcon / rosdep** | Build các workspace; giải quyết system dependency | [colcon](https://colcon.readthedocs.io/) · [rosdep](https://docs.ros.org/en/humble/Tutorials/Intermediate/Rosdep.html) |
 | **TF2** | Cây hệ tọa độ (world → camera → gripper, v.v.) | [tf2](https://docs.ros.org/en/humble/Concepts/Intermediate/About-Tf2.html) |
 | **NVIDIA Isaac Sim** | Bộ mô phỏng cung cấp vật lý, robot, cảm biến và ROS 2 Bridge | [Tài liệu Isaac Sim](https://docs.isaacsim.omniverse.nvidia.com/) |
 | **`use_sim_time` / `/clock`** | Mọi node chạy theo thời gian mô phỏng; `/clock` phải luôn chảy | [Dùng sim time](https://docs.ros.org/en/humble/Tutorials/Advanced/Simulators/Webots/Setting-Up-Simulation-Webots-Basic.html) |
 
-### Khái niệm về cánh tay robot (`ra_ws`)
+### Robot arm (`ra_ws`) concepts
 
 | Khái niệm | Ở đây nghĩa là gì | Đọc thêm |
 |---|---|---|
@@ -59,7 +59,7 @@ Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn 
 | **MoveIt Task Constructor (MTC)** | Chia tác vụ gắp → nâng → đặt thành các giai đoạn; là xương sống của `mtc_node` | [Tài liệu MTC](https://moveit.picknik.ai/main/doc/examples/moveit_task_constructor/moveit_task_constructor_tutorial.html) |
 | **OMPL / RRTConnect** | Bộ lập kế hoạch chuyển động theo lấy mẫu, dùng cho các chuyển động lớn | [OMPL](https://ompl.kavrakilab.org/) |
 | **Động học ngược (chỉ vị trí, 5 bậc tự do)** | Giải góc khớp cho một mục tiêu; cánh tay chỉ có 5 bậc tự do nên hướng chỉ điều khiển được một phần | [MoveIt IK](https://moveit.picknik.ai/main/doc/examples/kinematics_configuration/kinematics_configuration_tutorial.html) |
-| **`ros2_control` / `topic_based_ros2_control`** | Lớp bộ điều khiển; biến thể dựa trên topic làm cầu nối tới Isaac Sim | [ros2_control](https://control.ros.org/) |
+| **`ros2_control` / `topic_based_ros2_control`** | Lớp bộ điều khiển; biến thể dựa trên topic làm bridge tới Isaac Sim | [ros2_control](https://control.ros.org/) |
 | **Visual servoing (IBVS / PBVS)** | Đóng vòng phản hồi từ camera để tiến sát vào cốc (vòng lặp tự viết, *không phải* `moveit_servo`) | [Tổng quan visual servo](https://visp.inria.fr/visual-servoing/) · [XLeRobot SO-101 servoing](https://xlerobot.readthedocs.io/en/latest/software/getting_started/SO101.html) |
 | **YOLO (YOLO11n)** | Bộ nhận dạng vật thể bằng mạng nơ-ron, dùng để tìm cốc | [Ultralytics YOLO](https://docs.ultralytics.com/) |
 | **AprilTag** | Fiducial trên máy lọc nước cho độ chính xác pose dưới milimét | [AprilTag](https://april.eecs.umich.edu/software/apriltag) |
@@ -67,7 +67,7 @@ Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn 
 
 → Hướng dẫn đầy đủ: **[Cài đặt cánh tay robot](ra_setup.md)**
 
-### Khái niệm về AMR (`jetracer_ws`)
+### AMR (`jetracer_ws`) concepts
 
 | Khái niệm | Ở đây nghĩa là gì | Đọc thêm |
 |---|---|---|
@@ -84,13 +84,13 @@ Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn 
 
 ---
 
-## Nên dựng cái nào trước?
+## Which do I set up first?
 
 - Chỉ muốn xem **cánh tay gắp cốc**? → [ra_setup.md](ra_setup.md) (độc lập, chỉ cần Isaac Sim + Jazzy).
 - Muốn **AMR dựng bản đồ và điều hướng**? → [amr_setup.md](amr_setup.md).
 - Muốn luồng trọn vẹn **đơn hàng web → robot**? Hãy dựng `orchestrator` cộng thêm ít nhất AMR, và giữ chung một `ROS_DOMAIN_ID`. → [orchestrator.md](orchestrator.md).
 
 > **Trạng thái hệ thống:** cả hai robot đều chạy **mô phỏng**; chưa có firmware
-> trên thiết bị. Mối nối docking bộ điều phối ↔ AMR và phần tích hợp bộ điều phối
+> trên thiết bị. Mối nối docking orchestrator ↔ AMR và phần tích hợp orchestrator
 > ↔ RA vẫn còn dang dở — các hướng dẫn cài đặt nêu rõ đâu là phần đã dựng và đâu
 > là phần còn trong kế hoạch.

@@ -1,4 +1,4 @@
-# Cánh tay robot — Khởi chạy phần cứng thật
+# Robotic Arm — Real-Hardware Bringup
 
 Chạy stack gắp-và-đặt của SO-ARM 101 trên **cánh tay vật lý** thay vì Isaac Sim.
 Đây là con đường **sim-to-real**: vẫn pipeline MoveIt / MTC và các node perception
@@ -8,7 +8,7 @@ trình mô phỏng, xem [Hướng dẫn cài đặt](ra_setup.md).
 > **⚠️ Bản phân phối ROS:** giống stack mô phỏng — **ROS 2 Jazzy**, build trong
 > `ra_ws`. Không phải container Humble mà AMR dùng.
 
-## Khác gì so với mô phỏng
+## What's different from sim
 
 | Lớp | Mô phỏng | Phần cứng thật |
 |-------|-----|---------------|
@@ -18,7 +18,7 @@ trình mô phỏng, xem [Hướng dẫn cài đặt](ra_setup.md).
 | Đấu nối khớp | bộ điều khiển mô phỏng | `config/follower_joints.yaml`, `*.ros2_control.xacro`, `ros2_controllers.yaml` |
 | Khởi chạy | `bringup.launch.py` | **`real_all.launch.py`** / `bringup_real.launch.py` |
 
-## Các gói liên quan
+## Packages involved
 
 - **`feetech_ros2_driver`** — giao diện phần cứng servo thật (vendored; xem
   `VENDORED.md` của nó — đây là bản fork của `JafarAbdi/feetech_ros2_driver` có
@@ -36,7 +36,7 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
-## Khởi chạy
+## Bring it up
 
 Một lệnh launch khởi động MoveIt + bộ điều khiển + driver Feetech + perception +
 `mtc_node`:
@@ -45,19 +45,19 @@ Một lệnh launch khởi động MoveIt + bộ điều khiển + driver Feetec
 ros2 launch mtc_tutorial real_all.launch.py
 ```
 
-### Các tham số launch hữu ích
+### Useful launch arguments
 
 | Tham số | Mặc định | Mục đích |
 |-----|---------|---------|
 | `run_sensing` | `true` | khởi động camera + các node perception |
 | `fake_object` | `false` | publish một `/detected_object/position` cố định thay vì dùng perception |
 | `obj_x` / `obj_y` / `obj_z` | — | pose thế giới của vật giả (phía trước = **−Y**) |
-| `skip_servo` | `false` | bỏ qua cầu nối visual servoing — gắp thẳng open-loop |
+| `skip_servo` | `false` | bỏ qua bridge visual servoing — gắp thẳng open-loop |
 | `place_z` | (không đặt) | ghi đè độ cao nhả tuyệt đối |
 | `tag_x` / `tag_y` / `tag_z` | — | pose AprilTag giả ("mái chèo máy lọc") |
 | `bridge_standoff` | `0.08` | khoảng hở so với cốc tại vị trí lùi trước khi gắp |
 
-## Chế độ demo tất định (vị trí định sẵn)
+## Deterministic demo mode (predefined positions)
 
 !!! important "Vì sao dùng vị trí định sẵn"
     Trên phần cứng thật, các camera **chưa được hiệu chuẩn đủ chính xác** để định
@@ -65,9 +65,9 @@ ros2 launch mtc_tutorial real_all.launch.py
     **hiệu chuẩn camera là công việc đang chặn tiến độ** (xem
     [Hiệu chuẩn camera](ra_camera_calibration.md)). Để có bản demo trực tiếp lặp
     lại được, hãy chạy open-loop với vật và đích đến **định sẵn**, cách này bỏ qua
-    hoàn toàn perception và cầu nối visual servoing.
+    hoàn toàn perception và bridge visual servoing.
 
-### Từ một terminal mới — từng bước
+### From a fresh terminal — step by step
 
 **1. Điều kiện tiên quyết (một lần mỗi phiên đăng nhập / khởi động máy).**
 
@@ -141,7 +141,7 @@ chính xác của camera. Khi hiệu chuẩn đã chặt chẽ hơn, hãy bỏ
     này: *"standoff … is OUTSIDE the level-wrist workspace"*. Để gắp một chiếc cốc
     ở gần hơn, hãy tăng `servo_grasp_z` hoặc giảm `bridge_standoff`.
 
-## Cạm bẫy đã biết — hãy đưa cánh tay về home trước lần lập kế hoạch đầu tiên
+## Known gotcha — home the arm before the first plan
 
 !!! warning "Start state out of bounds"
     Bộ điều hợp `CheckStartStateBounds` của MoveIt sẽ **từ chối lập kế hoạch** nếu
@@ -160,7 +160,7 @@ chính xác của camera. Khi hiệu chuẩn đã chặt chẽ hơn, hãy bỏ
     trong khoảng 4 giây) trước khi khởi chạy pipeline, hoặc thêm một bước tự động
     về home trước lần lập kế hoạch đầu tiên.
 
-## Ghi chú an toàn
+## Safety notes
 
 - Không có cảm biến dòng/lực — gripper đóng lại **chỉ dựa vào động học**; nó không
   thể phát hiện một cú gắp hụt hay va chạm. Hãy xem mọi cú gắp là open-loop.

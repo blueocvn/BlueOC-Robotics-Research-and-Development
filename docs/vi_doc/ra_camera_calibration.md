@@ -1,4 +1,4 @@
-# Cánh tay robot — Hiệu chuẩn camera
+# Robotic Arm — Camera Calibration
 
 Cánh tay dùng **hai** camera, và chỉ một trong số đó là *eye-to-hand*:
 
@@ -9,7 +9,7 @@ Cánh tay dùng **hai** camera, và chỉ một trong số đó là *eye-to-hand
 
 Trang này nói về việc hiệu chuẩn **`top_cam` eye-to-hand**. Đây là công việc
 đang chặn tiến độ của việc gắp dựa trên perception (xem ghi chú trong
-[Khởi chạy phần cứng thật](ra_hardware_bringup.md#chế-độ-demo-tất-định-vị-trí-định-sẵn));
+[Khởi chạy phần cứng thật](ra_hardware_bringup.md#deterministic-demo-mode-predefined-positions));
 cho tới khi nó đủ chặt chẽ, hãy chạy bản demo tất định với `fake_object:=true`.
 
 Việc hiệu chuẩn gồm **hai giai đoạn, theo đúng thứ tự** — chúng dùng các bia
@@ -18,7 +18,7 @@ Việc hiệu chuẩn gồm **hai giai đoạn, theo đúng thứ tự** — ch�
 1. **Intrinsics** — dùng **bàn cờ**, hiệu chuẩn OpenCV tiêu chuẩn. Cho ra
    `fx, fy, cx, cy` và các hệ số méo.
 2. **Extrinsics** (phép biến đổi `world → top_sim_camera`) — dùng **một AprilTag
-   duy nhất** đặt tại một pose thế giới đã đo. Nó tiêu thụ intrinsics từ giai đoạn 1,
+   duy nhất** đặt tại một pose thế giới đã đo. Nó đọc intrinsics từ giai đoạn 1,
    nên intrinsics **bắt buộc** phải làm trước.
 
 > **⚠️ Python:** hãy chạy các công cụ hiệu chuẩn ROS bằng trình thông dịch **hệ
@@ -27,7 +27,7 @@ Việc hiệu chuẩn gồm **hai giai đoạn, theo đúng thứ tự** — ch�
 
 ---
 
-## Giai đoạn 1 — Intrinsics (bàn cờ)
+## Stage 1 — Intrinsics (checkerboard)
 
 **Mục tiêu:** giá trị `fx/fy/cx/cy` thật + độ méo ống kính cho `top_cam`, để các
 điểm ảnh chiếu ngược ra đúng tia.
@@ -89,7 +89,7 @@ thích trong `ra_ws/src/so_arm_perception/so_arm_perception/usb_camera_node.py`.
 
 ---
 
-## Giai đoạn 2 — Extrinsics (AprilTag): `world → top_sim_camera`
+## Stage 2 — Extrinsic (AprilTag): `world → top_sim_camera`
 
 **Mục tiêu:** xác định camera nằm ở đâu trong hệ đế robot (`world`), để tia đi qua
 một điểm ảnh được nhận dạng gặp mặt bàn đúng tại điểm thế giới tương ứng. Bước này
@@ -151,7 +151,7 @@ là có chói sáng, rung lắc, hoặc `tag_size` sai.
 
 ---
 
-## Kiểm chứng từ đầu đến cuối
+## Verify end-to-end
 
 Khi cả hai giai đoạn đã được áp dụng và perception đang chạy, hãy đặt cốc tại một
 vị trí thế giới **đã đo bằng thước dây** rồi đọc kết quả nhận dạng:

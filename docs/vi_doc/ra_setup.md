@@ -1,4 +1,4 @@
-# Cài đặt cánh tay robot (`ra_ws`) — Demo rót nước SO-ARM 101 trên Isaac Sim
+# Robotic Arm Setup (`ra_ws`) — SO-ARM 101 Isaac Sim Refill Demo
 
 Một SO-ARM 101 5 bậc tự do gắp chiếc cốc có lòng màu xanh lá trong NVIDIA Isaac
 Sim, visual servoing tới nó bằng camera gắn trên tay, mang tới máy lọc được đánh dấu
@@ -27,7 +27,7 @@ Hướng dẫn này giả định bạn đã **cài sẵn Isaac Sim** và bắt 
 > **không phải** bên trong container Humble `Dockerfile.dev`. Các workspace vẫn
 > giao tiếp được với nhau qua DDS (dùng cùng `ROS_DOMAIN_ID`).
 
-### 1. Điều kiện tiên quyết
+### 1. Prerequisites
 
 | Thành phần | Phiên bản / ghi chú |
 |---|---|
@@ -40,7 +40,7 @@ Hướng dẫn này giả định bạn đã **cài sẵn Isaac Sim** và bắt 
 > ROS 2 Bridge của Isaac Sim phải được cấu hình cho Jazzy (đặt bridge dùng ROS hệ
 > thống của bạn, hoặc nạp bản ROS 2 trước khi khởi chạy Isaac).
 
-### 2. Bố cục workspace
+### 2. Workspace layout
 
 Chỉ bốn gói sau thuộc về dự án cánh tay — mọi thứ còn lại là phụ thuộc thượng
 nguồn tiêu chuẩn mà bạn cài riêng (xem §3):
@@ -55,7 +55,7 @@ nguồn tiêu chuẩn mà bạn cài riêng (xem §3):
 Scene Isaac Sim (robot, bàn, cốc, khay, máy lọc, camera) nằm dưới thư mục
 `simulation/` của repo — hãy mở nó trong Isaac Sim trước khi chạy.
 
-### 3. Cài đặt phụ thuộc
+### 3. Install dependencies
 
 #### 3.1 ROS 2 Jazzy + MoveIt 2
 ```bash
@@ -78,7 +78,7 @@ Nếu không, hãy clone nó vào `ra_ws/src/` và để `colcon` build:
 cd ra_ws/src && git clone -b jazzy https://github.com/moveit/moveit_task_constructor.git
 ```
 
-#### 3.3 Các gói Python cho perception
+#### 3.3 Perception Python packages
 ```bash
 python3 -m pip install "numpy>=1.24" "opencv-python>=4.8" "ultralytics>=8.3" \
      "scipy>=1.11" "pupil-apriltags>=1.0"
@@ -89,13 +89,13 @@ công nào. `pupil-apriltags` cung cấp bộ nhận dạng AprilTag mà `aprilt
 để định vị fiducial trên máy lọc — gói này là bắt buộc (launch perception luôn khởi
 động node đó).
 
-#### 3.4 Giải quyết phần còn lại bằng rosdep
+#### 3.4 Resolve the rest with rosdep
 ```bash
 cd ra_ws
 rosdep install --from-paths src --ignore-src -r -y
 ```
 
-### 4. Build workspace
+### 4. Build the workspace
 
 ```bash
 cd ra_ws
@@ -104,7 +104,7 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
-### 5. Cài đặt Isaac Sim (hợp đồng ROS)
+### 5. Isaac Sim setup (the ROS contract)
 
 Phía ROS nói chuyện với Isaac Sim qua **`topic_based_ros2_control`**. Hãy mở scene
 và đảm bảo action graph ROS 2 của nó publish/subscribe đúng các topic sau:
@@ -126,14 +126,14 @@ Namespace camera là tham số của perception node (`camera_eth_ns` = `top_cam
 2. Xác nhận extension ROS 2 Bridge đã bật và được đặt cho ROS 2 Jazzy.
 3. Bấm **Play** (vật lý + render product của camera phải đang chạy, nếu không
    `/isaac_joint_states` và các topic camera sẽ im lặng).
-4. Trong một terminal đã source, kiểm chứng hợp đồng:
+4. Trong một terminal đã source, kiểm chứng contract:
    ```bash
    ros2 topic hz /isaac_joint_states
    ros2 topic hz /clock
    ros2 topic list | grep -E "top_cam|arm_cam"
    ```
 
-### 6. Chạy pipeline
+### 6. Run the pipeline
 
 > **⚠️ Isaac Sim phải chạy trước.** Hãy mở scene cánh tay và bấm **Play**
 > (xem §5) *trước* lệnh dưới đây. `mtc_node` chặn tại
@@ -160,7 +160,7 @@ ros2 launch mtc_tutorial bringup.launch.py
 ra lúc bắt đầu (nếu không có cốc nào, mặc định là một), và chúng được rải đều trên
 khay (một cốc duy nhất sẽ được đặt ở giữa).
 
-### 7. Cấu hình quan trọng (tham số launch)
+### 7. Key configuration (launch args)
 
 Tất cả đều là tham số của `pick_place_demo.launch.py` (hãy truyền chúng qua
 `bringup`):
@@ -175,7 +175,7 @@ Tất cả đều là tham số của `pick_place_demo.launch.py` (hãy truyền
 
 Ví dụ: `ros2 launch mtc_tutorial bringup.launch.py servo_grasp_z:=0.05`.
 
-### 8. Khắc phục sự cố
+### 8. Troubleshooting
 
 <div class="table-even" markdown>
 
@@ -189,7 +189,7 @@ Ví dụ: `ros2 launch mtc_tutorial bringup.launch.py servo_grasp_z:=0.05`.
 
 </div>
 
-### 9. Ghi chú cho người bảo trì
+### 9. Notes for maintainers
 
 - Toàn bộ stack cánh tay chạy theo **thời gian mô phỏng** (`use_sim_time:=true`); hãy giữ `/clock` luôn chảy.
 - Gripper mở qua action GripperCommand `hand_group_controller/gripper_cmd`; cánh

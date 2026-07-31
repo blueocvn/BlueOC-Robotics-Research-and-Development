@@ -1,4 +1,4 @@
-# Giao diện ROS 2 — JetRacer
+# ROS 2 Interfaces — JetRacer
 
 Topic, service và action cho JetRacer AMR. Dùng chúng khi bạn cần phản hồi ở tốc
 độ đầy đủ hoặc mức điều khiển mà [API HTTP](http.md) không cung cấp.
@@ -6,7 +6,7 @@ Topic, service và action cho JetRacer AMR. Dùng chúng khi bạn cần phản 
 Mọi tên dưới đây là tuyệt đối trừ khi được đánh dấu *tương đối*, khi đó namespace
 của node sẽ được áp dụng.
 
-## Ra lệnh cho robot
+## Command the robot
 
 Đây là các topic bạn publish tới. [API HTTP](http.md) chỉ là một lớp bọc mỏng
 quanh đúng những topic này.
@@ -18,8 +18,8 @@ quanh đúng những topic này.
 | `/dock_sequence` | `std_msgs/msg/String` | bạn | Chạy chuỗi nhiều dock |
 | `/undock_robot` | `std_msgs/msg/Bool` | bạn | Rời dock hiện tại |
 | `/abort_docking` | `std_msgs/msg/Bool` | bạn, bridge | Hủy lượt docking đang chạy |
-| `/relocalize_at_dock` | `std_msgs/msg/String` | bridge | Xoay tìm AprilTag của dock rồi gieo lại pose |
-| `/initialpose` | `geometry_msgs/msg/PoseWithCovarianceStamped` | bridge, docker | Gieo pose cho AMCL |
+| `/relocalize_at_dock` | `std_msgs/msg/String` | bridge | Xoay tìm AprilTag của dock rồi set lại pose |
+| `/initialpose` | `geometry_msgs/msg/PoseWithCovarianceStamped` | bridge, docker | Set pose cho AMCL |
 
 ```bash
 # gửi robot tới dock0
@@ -36,7 +36,7 @@ ros2 topic pub --once /abort_docking std_msgs/msg/Bool "{data: true}"
     lượt docking đang chạy, cả hai luồng đều tới động cơ và robot sẽ hành xử
     khó lường. Hãy hủy trước, rồi mới điều khiển.
 
-## Đọc trạng thái robot
+## Read robot state
 
 | Topic | Kiểu | Publish bởi | Ghi chú |
 |---|---|---|---|
@@ -61,7 +61,7 @@ ros2 topic pub --once /abort_docking std_msgs/msg/Bool "{data: true}"
     trường (`ROBOT_WEB_BRIDGE_INPROGRESS_STATES`, `_SUCCESS_STATES`,
     `_ERROR_STATES`).
 
-## Cấu hình bản đồ
+## Map configuration
 
 Trình biên tập bản đồ của admin đẩy cấu hình xuống robot qua hai topic String
 **có latch**, mang nội dung JSON:
@@ -74,7 +74,7 @@ Trình biên tập bản đồ của admin đẩy cấu hình xuống robot qua 
 Cả hai đều là transient-local, nên một node khởi động muộn vẫn nhận được cấu hình
 hiện tại.
 
-## Action và service
+## Actions and services
 
 | Tên | Kiểu | Vai trò |
 |---|---|---|
@@ -85,7 +85,7 @@ hiện tại.
 Việc xóa costmap tồn tại để cái dock vừa rời khỏi không bị giữ lại như một vật
 cản cũ.
 
-## Tham số của node
+## Node parameters
 
 ### `jetracer_driver` — `cmd_vel_to_serial`
 
@@ -120,7 +120,7 @@ Publish pose của dock từ kết quả nhận dạng AprilTag thông qua TF.
 | `publish_rate` | `15.0` | Hz |
 | `detection_timeout` | `0.5` | Số giây trước khi kết quả bị coi là cũ |
 
-## Xem thêm
+## See also
 
 - [API HTTP](http.md) — cùng những lệnh này mà không cần cài ROS
 - [Điểm khởi chạy](launch.md) — cách dựng stack lên

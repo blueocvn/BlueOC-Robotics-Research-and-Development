@@ -1,4 +1,4 @@
-# Sổ tay API
+# API Book
 
 Toàn bộ những gì bạn có thể gọi, publish hoặc subscribe trong hackathon — cho cả
 **JetRacer** (AMR) và **SO-ARM 101** (cánh tay robot).
@@ -45,7 +45,7 @@ Bề mặt API chia thành ba lớp. Phần lớn các đội chỉ cần lớp 
 
 </div>
 
-## Nên dùng lớp nào?
+## Which layer should I use?
 
 | Nếu bạn muốn… | Dùng | Cần ROS trên máy? |
 |---|---|---|
@@ -62,15 +62,15 @@ Bề mặt API chia thành ba lớp. Phần lớn các đội chỉ cần lớp 
     gian. Nhờ vậy bạn có thể dựng và kiểm thử toàn bộ front end trước khi chạm
     vào robot thật. `GET /state` cho biết bạn đang ở chế độ nào.
 
-## Quy ước dùng trong sổ tay này
+## Conventions used in this book
 
 - **Tên topic** là tuyệt đối (`/cmd_vel`) trừ khi được ghi là *tương đối*, khi đó
   namespace của node sẽ được áp dụng.
 - **Kiểu message** được viết dạng `package/msg/Type`.
 - Các route có dấu :material-lock: yêu cầu xác thực người vận hành — xem
-  [Xác thực admin](http.md#xác-thực-admin).
+  [Xác thực admin](http.md#admin-authentication).
 
-## Báo cáo sai lệch
+## Reporting drift
 
 Phần tham khảo HTTP được sinh tự động từ ứng dụng FastAPI đang chạy, nên nó không
 thể lỗi thời. Các trang ROS được bảo trì thủ công dựa trên mã nguồn. Nếu bạn thấy

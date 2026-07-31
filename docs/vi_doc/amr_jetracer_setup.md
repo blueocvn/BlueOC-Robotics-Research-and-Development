@@ -1,4 +1,4 @@
-# Cài đặt AMR (`jetracer_ws`) — JetRacer SLAM + Nav2 trên thiết bị
+# AMR Setup (`jetracer_ws`) — JetRacer SLAM + Nav2 on device
 
 Một chiếc Waveshare JetRacer kiểu ô tô (Ackermann) chạy ROS 2 Humble, có khả
 năng dựng bản đồ không gian, tự định vị, điều hướng và docking. Trang này nói về
@@ -15,13 +15,13 @@ driver bệ xe, RPLidar, odometry EKF, Nav2, và docking bằng AprilTag.
 > **`ws_setup.bash`**, không phải `install/setup.bash` hợp nhất (xem §3 để biết lý
 > do).
 
-### 1. Phần cứng & điều kiện tiên quyết
+### 1. Hardware & prerequisites
 
 | Thành phần | Ghi chú |
 |---|---|
 | Khung xe | Waveshare **JetRacer** (Ackermann), máy tính Jetson tích hợp |
 | HĐH / ROS | JetPack + **ROS 2 Humble** cài native trên Jetson |
-| MCU bệ xe | Serial (mặc định `/dev/ttyACM0`) — động cơ + IMU/con quay; do `jetracer_driver` tiêu thụ |
+| MCU bệ xe | Serial (mặc định `/dev/ttyACM0`) — động cơ + IMU/con quay; do `jetracer_driver` đọc |
 | Lidar | **RPLidar A1** trên `/dev/ttyACM1`, baud 115200, gắn **lộn ngược** (`laser_frame`, yaw π, z ≈ 0,18 m) |
 | Camera | CSI **IMX219** ở 640×360 (qua `gscam2`) → bộ nhận dạng AprilTag cho docking |
 | Công cụ build | `colcon`, `rosdep`, `vcstool` (`sudo apt install python3-vcstool`), `git`, `tmux` |
@@ -31,7 +31,7 @@ driver bệ xe, RPLidar, odometry EKF, Nav2, và docking bằng AprilTag.
 > lúc driver khởi động — con quay hiệu chuẩn khi đó, và chuyển động sẽ làm hỏng
 > odometry.
 
-### 2. Khôi phục mã nguồn bên thứ ba & build
+### 2. Restore third-party sources & build
 
 `src/` trộn các gói của chính dự án (được commit) với các gói ROS 2 bên thứ ba đã
 ghim (không commit, khôi phục qua `vcstool`). Trên một thiết bị mới:
@@ -57,7 +57,7 @@ Các gói của chính dự án là `jetracer_bringup`, `jetracer_description`,
 [`THIRDPARTY_SETUP.md`](https://github.com/blueocvn/robotic-arm/blob/main/amr/jetracer_ws/THIRDPARTY_SETUP.md)
 để biết đầy đủ cách phân chia và lý do các bản vá.
 
-### 3. Nạp môi trường — dùng `ws_setup.bash`, không phải `install/setup.bash`
+### 3. Sourcing — use `ws_setup.bash`, not `install/setup.bash`
 
 Sau khi build, hãy nạp workspace bằng:
 
@@ -76,9 +76,9 @@ source ws_setup.bash
 > Nếu `ros2` hay một gói nào đó (nav2, robot_localization, jetracer_bringup) báo
 > "not found", nghĩa là bạn đã nạp setup hợp nhất — hãy dùng `ws_setup.bash`.
 
-### 4. Mạng DDS — peer unicast tĩnh
+### 4. DDS networking — static unicast peers
 
-Robot phải dùng chung đồ thị DDS với workstation / bộ điều phối. Trên JetRacer,
+Robot phải dùng chung đồ thị DDS với workstation / orchestrator. Trên JetRacer,
 cấu hình DDS nằm trong **`ros2_docker_v3.sh`** ngay trên thiết bị.
 
 **Vì sao có bước thủ công này:** DDS bình thường tự phát hiện các bên qua UDP
@@ -108,7 +108,7 @@ một cái là cặp đó không thấy nhau.
        <Peers>
            <Peer Address="192.168.20.XXX"/> <!-- JetRacer (chính thiết bị này)   -->
            <Peer Address="192.168.20.XXX"/>   <!-- workstation                    -->
-           <Peer Address="192.168.20.XXX"/>   <!-- ví dụ máy chạy bộ điều phối    -->
+           <Peer Address="192.168.20.XXX"/>   <!-- ví dụ máy chạy orchestrator    -->
            <Peer Address="192.168.20.XXX"/>   <!-- mỗi máy trên đồ thị một <Peer> -->
        </Peers>
    </Discovery>
@@ -124,7 +124,7 @@ một cái là cặp đó không thấy nhau.
 > `JETRACER_IP`, `DDS_INTERFACE`). Hãy giữ hai bên đồng bộ — mọi IP ở bên này đều
 > phải tới được và được liệt kê ở bên kia.
 
-### 5. Các lớp (`start_*.sh`)
+### 5. The layers (`start_*.sh`)
 
 Stack được tách ra để bạn chỉ dựng đúng phần mình cần. Mọi script đều nạp
 `ws_setup.bash` trước.
@@ -141,9 +141,9 @@ Stack được tách ra để bạn chỉ dựng đúng phần mình cần. Mọ
 `start_mapping.sh` đều dựng các node chuyển động của Nav2 — **đừng chạy cả hai cùng
 lúc.**
 
-### 6. Các quy trình thường dùng
+### 6. Common workflows
 
-#### Điều hướng trên bản đồ đã biết
+#### Navigate on a known map
 
 Cách dễ nhất — tmux dựng phần cứng (khung trái) rồi Nav2 (khung phải, sau khoảng 8
 giây để TF và `/scan` sống trước):
@@ -162,15 +162,15 @@ Hoặc làm thủ công, trong hai terminal:
 ```
 
 Bản đồ nằm trong `jetracer_ws/maps/` (`test_map_outer_v6.yaml` là mặc định). Sau đó
-đặt một **2D Pose Estimate** để gieo cho AMCL và một **Nav2 Goal** từ RViz.
+đặt một **2D Pose Estimate** để khởi tạo cho AMCL và một **Nav2 Goal** từ RViz.
 
-#### Dựng bản đồ mới
+#### Build a new map
 
 1. `./start_hardware.sh`
 2. Chạy SLAM (`slam_toolbox`) dựa trên `/scan` + TF của robot.
 3. Khám phá không gian — teleop (`teleop_twist_keyboard`), **hoặc**
    `./start_mapping.sh` để tự động khám phá biên.
-4. Tuần tự hóa bản đồ và bỏ file `.yaml` / `.pgm` vào `jetracer_ws/maps/`.
+4. Serialize bản đồ và bỏ file `.yaml` / `.pgm` vào `jetracer_ws/maps/`.
 
 #### Docking (AprilTag)
 
@@ -186,7 +186,7 @@ docker) đang chạy, một bản demo khứ hồi:
 Nó publish `/dock_robot` (String) và `/undock_robot` (Bool) rồi chờ
 `/docking_state`. Độ chính xác docking phụ thuộc vào hiệu chuẩn camera — xem §8.
 
-### 7. Ghi đè giá trị mặc định (cổng serial, bản đồ)
+### 7. Overriding defaults (serial ports, map)
 
 Các tham số thêm được truyền thẳng xuống launch file:
 
@@ -197,7 +197,7 @@ Các tham số thêm được truyền thẳng xuống launch file:
 
 Mặc định: cổng bệ xe `/dev/ttyACM0`, cổng lidar `/dev/ttyACM1`.
 
-### 8. Hiệu chuẩn
+### 8. Calibration
 
 Một số giá trị được ship sẵn chỉ là **giá trị tạm/ước lượng** và sẽ làm giảm độ
 chính xác thấy rõ cho tới khi được đo thật. Hãy làm theo thứ tự ưu tiên sau (xem
@@ -213,19 +213,19 @@ chính xác thấy rõ cho tới khi được đo thật. Hãy làm theo thứ t
 3. **Hình học Ackermann** 🟡 — chiều dài cơ sở / góc lái tối đa / bán kính quay tối
    thiểu phải khớp nhau ở cả ba nơi chúng xuất hiện.
 
-### 9. Khắc phục sự cố
+### 9. Troubleshooting
 
 | Triệu chứng | Nguyên nhân / cách khắc phục |
 |---|---|
 | `ros2` / nav2 / robot_localization / jetracer_bringup báo "not found" | Bạn đã nạp `install/setup.bash` hợp nhất. Hãy dùng `source ws_setup.bash` (§3). |
 | Odometry trôi ngay từ đầu | Robot đã di chuyển trong lúc hiệu chuẩn con quay ~2 giây. Khởi động lại driver và giữ nó đứng yên. |
 | Sai cổng serial / driver không mở được thiết bị | Cổng bị hoán đổi sau khi khởi động lại — hãy ghi đè bằng `base_port:=` / `lidar_port:=` (§7). |
-| Nav2 không chạy / không có đường đi | Kiểm tra `/scan` và TF còn sống (`ros2 topic hz /scan`) và AMCL đã định vị đúng bản đồ (hãy gieo một 2D Pose Estimate). |
+| Nav2 không chạy / không có đường đi | Kiểm tra `/scan` và TF còn sống (`ros2 topic hz /scan`) và AMCL đã định vị đúng bản đồ (hãy đặt một 2D Pose Estimate). |
 | Docking nhắm sai chỗ | Intrinsics camera vẫn là giá trị tạm — hãy hiệu chuẩn `imx219.yaml` (§8). |
 | Các bên DDS không thấy nhau | `ROS_DOMAIN_ID` không khớp, hoặc các danh sách `<Peers>` unicast không khớp — mọi máy đều phải liệt kê IP của mọi máy còn lại, vì multicast đã tắt (§4). |
 | Lỗi `rcl node's rmw handle is invalid` lúc khởi động | CycloneDDS không bind được — tên `<NetworkInterface>` không tồn tại trên máy đó. Hãy kiểm tra `ip -o -4 addr show` và đặt đúng card mạng thật (Linux hiện đại: `enp*` / `eno*` / `wlp*`, không phải `eth0`). |
 
-### 10. Ghi chú cho người bảo trì
+### 10. Notes for maintainers
 
 - Việc nạp môi trường dùng `ws_setup.bash` là có chủ đích, không phải setup hợp
   nhất — đừng "sửa" các script khởi động để chúng dùng `install/setup.bash` (§3).
@@ -236,8 +236,8 @@ chính xác thấy rõ cho tới khi được đo thật. Hãy làm theo thứ t
   nằm trong `ros2_docker_v3.sh` trên thiết bị (§4). Thêm một máy vào đồ thị nghĩa là
   phải thêm IP của nó vào đó (và vào mọi peer khác).
 - Odometry: driver publish `/odom` thô, EKF hợp nhất nó thành `/odometry/filtered`
-  (thứ mà Nav2 tiêu thụ) và sở hữu TF `odom→base_footprint`.
-- Docking là một **hợp đồng topic** (`/dock_robot`, `/undock_robot`,
+  (thứ mà Nav2 đọc) và sở hữu TF `odom→base_footprint`.
+- Docking là một **topic contract** (`/dock_robot`, `/undock_robot`,
   `/docking_state`) do `jetracer_docker.py` điều khiển, không phải một Nav2 docking
   server.
 - Các giá trị hiệu chuẩn trong `jetracer_bringup/config/` được ship dưới dạng giá

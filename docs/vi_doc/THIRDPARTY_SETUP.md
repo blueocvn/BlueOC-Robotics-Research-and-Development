@@ -1,11 +1,11 @@
-# Cài đặt bên thứ ba cho jetracer_ws
+# jetracer_ws third-party setup
 
 `src/` trộn lẫn **các gói của chính dự án** (được commit vào repo này) với **các
 gói ROS 2 Humble của bên thứ ba** *không* được commit. Mã nguồn bên thứ ba được
-khôi phục từ các bản phát hành thượng nguồn đã ghim bằng [vcstool], giúp repo gọn
+khôi phục từ các bản phát hành upstream đã ghim bằng [vcstool], giúp repo gọn
 nhẹ mà vẫn tái tạo được chính xác từng byte.
 
-## Cài đặt trên máy mới
+## Fresh-machine setup
 
 ```bash
 cd amr/jetracer_ws
@@ -21,16 +21,16 @@ patch -p1 -d src/robot_localization < patches/robot_localization-ekf-jetracer-tu
 colcon build --symlink-install
 ```
 
-## Cái gì nằm ở đâu
+## What lives where
 
 **Được commit trong git**
 - Của chính dự án: `jetracer_bringup`, `jetracer_description`, `jetracer_driver`
-- Bên thứ ba không có tag phát hành thượng nguồn (ghim tag không đáng tin nên
+- Bên thứ ba không có tag phát hành upstream (ghim tag không đáng tin nên
   phải vendored): `gscam2`, `m-explore-ros2`, `nav2_graceful_controller`,
   `navigation_msgs` (map_msgs)
 - Bên thứ ba mà việc ghim tag sẽ **làm robot tệ đi**, nên phải vendored:
   - `apriltag` — bản đang dùng mới hơn `v3.4.5` (bổ sung aruco + ước lượng pose của tag)
-  - `rplidar_ros` — nhánh ROS 2 có hỗ trợ C1; các tag thượng nguồn đều là ROS 1
+  - `rplidar_ros` — nhánh ROS 2 có hỗ trợ C1; các tag upstream đều là ROS 1
 
 **Được khôi phục qua `thirdparty.repos`** (mỗi gói ghim theo một tag phát hành và
 được kiểm chứng từng byte so với tag đó; xem file ấy để biết URL/phiên bản chính
@@ -38,10 +38,10 @@ xác): `navigation2` 1.1.5, `robot_localization` 3.5.4, `angles`, `apriltag_msgs
 `BehaviorTree.CPP`, `bond_core`, `diagnostics`, `geographic_info`,
 `laser_geometry`, `teleop_twist_keyboard`.
 
-## Các bản vá cục bộ
+## Local patches
 
 Cả hai đều đã được xác nhận là thay đổi thật, bằng cách so sánh từng byte giữa cây
-làm việc và tag thượng nguồn đã ghim:
+làm việc và tag upstream đã ghim:
 
 - `patches/nav2_util-bond-shared_ptr.patch` — thay đổi cục bộ duy nhất của nav2
   1.1.5: thành viên `bond_` của nav2_util đổi từ `unique_ptr` -> `shared_ptr`.
@@ -52,6 +52,6 @@ làm việc và tag thượng nguồn đã ghim:
 Các sửa đổi lạc lối do IDE "optimize imports" (đường dẫn import tuyệt đối trong
 `nav2_smac_planner/lattice_primitives`, `bond_core/bondpy`,
 `geographic_info/geodesy`) **không phải** thay đổi thật và được cố ý loại bỏ —
-chạy lại `vcs import` sẽ khôi phục đúng các import thượng nguồn.
+chạy lại `vcs import` sẽ khôi phục đúng các import upstream.
 
 [vcstool]: https://github.com/dirk-thomas/vcstool

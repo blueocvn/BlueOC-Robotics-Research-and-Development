@@ -1,4 +1,4 @@
-# Trường hợp sử dụng RA — Imitation learning (LeRobot)
+# RA Use Case — Imitation Learning (LeRobot)
 
 Một lựa chọn thay thế cho pipeline gắp-và-đặt viết sẵn bằng MTC: dạy SO-ARM 101 kỹ
 năng **gắp → giữ → đặt** bằng *biểu diễn mẫu*. Một người điều khiển cánh tay
@@ -14,13 +14,13 @@ vào Isaac Sim hay `move_group`.
 
 !!! note "Trạng thái bàn giao"
     Một **chính sách ACT đã huấn luyện và đã hội tụ** — xem
-    [Mô hình đã huấn luyện](#mô-hình-đã-huấn-luyện) bên dưới. **Tập dữ liệu đã ghi**
+    [Mô hình đã huấn luyện](#the-trained-model) bên dưới. **Tập dữ liệu đã ghi**
     mới là tài sản tái sử dụng chính (bạn có thể huấn luyện lại bất kỳ chính sách
     nào từ nó). Mọi thứ cần để ghi lại, huấn luyện lại, triển khai hay phát lại đều
-    nằm trên trang này. Bản thân thư viện LeRobot là một bản cài từ thượng nguồn
+    nằm trên trang này. Bản thân thư viện LeRobot là một bản cài từ upstream
     (`~/lerobot`, chế độ editable) và **không** được vendored vào repo này.
 
-## Môi trường
+## Environment
 
 | Hạng mục | Giá trị |
 |------|-------|
@@ -36,7 +36,7 @@ vào Isaac Sim hay `move_group`.
     không nó sẽ âm thầm lùi về CPU. Trên card mới hơn (ví dụ dòng RTX 50) hãy dùng
     wheel cu128 tương ứng. `ffmpeg` phải nằm trong `PATH` để giải mã video.
 
-## Phần cứng
+## Hardware
 
 Hai cánh tay SO-101 nối qua USB serial:
 
@@ -52,7 +52,7 @@ conda activate lerobot
 lerobot-find-port          # rút/cắm lại để nhận diện từng cánh tay
 ```
 
-## Hiệu chuẩn
+## Calibration
 
 Hiệu chuẩn động cơ cho từng cánh tay nằm trong bộ nhớ đệm của LeRobot (**không**
 nằm trong repo này):
@@ -72,7 +72,7 @@ lerobot-calibrate --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.
 lerobot-calibrate --teleop.type=so101_leader  --teleop.port=/dev/ttyACM1 --teleop.id=my_leader
 ```
 
-## Tập dữ liệu
+## The dataset
 
 **`weeho/so101_pick_hold_place`** — các bản biểu diễn gắp/giữ/đặt.
 
@@ -105,13 +105,13 @@ Bố cục: `meta/` (info/episodes/tasks jsonl) · `data/chunk-000/episode_*.par
     Trên máy mới, cần có tập dữ liệu **cộng thêm** một bản cài LeRobot, PyTorch khớp
     GPU, và `ffmpeg` thì mới huấn luyện được.
 
-## Quy trình
+## Workflow
 
 Mọi lệnh đều chạy trong `conda activate lerobot`. Tên cờ chính xác thay đổi giữa
 các bản LeRobot — hãy kiểm tra `--help` trên bản 0.3.4 đã ghim nếu một cờ nào đó
 bị từ chối.
 
-### 1. Điều khiển từ xa (kiểm tra nhanh)
+### 1. Teleoperate (sanity check)
 
 Follower phải bắt chước leader mà không ghi lại gì:
 
@@ -121,7 +121,7 @@ lerobot-teleoperate \
   --teleop.type=so101_leader  --teleop.port=/dev/ttyACM1 --teleop.id=my_leader
 ```
 
-### 2. Ghi các bản biểu diễn
+### 2. Record demonstrations
 
 Thêm camera + nơi lưu tập dữ liệu vào chính vòng lặp teleop đó:
 
@@ -137,7 +137,7 @@ lerobot-record \
 (Khóa camera được khai báo qua `--robot.cameras=…`; dùng `lerobot-find-cameras`
 để liệt kê các thiết bị đang kết nối.)
 
-### 3. Huấn luyện một chính sách
+### 3. Train a policy
 
 Lệnh đã dùng cho mô hình được bàn giao (ACT, khoảng 0,35 giây/bước trên RTX 4060):
 
@@ -169,7 +169,7 @@ lerobot-train \
       **`--num_workers=0`** là cách an toàn để loại bỏ deadlock đa tiến trình mà
       gần như không mất tốc độ.
 
-## Mô hình đã huấn luyện
+## The trained model
 
 Một chính sách **ACT** đã hội tụ được lưu tại:
 
@@ -192,7 +192,7 @@ outputs/train/so101_pick_hold_place_act_100k/checkpoints/last/pretrained_model/
 > huấn luyện** từ checkpoint này. Hãy huấn luyện lại từ tập dữ liệu nếu cần đi
 > tiếp.
 
-### 4. Phát lại một episode đã ghi
+### 4. Replay a recorded episode
 
 Phát lại open-loop một bản demo trên follower (kiểm tra nhanh, không dùng chính
 sách):
@@ -202,7 +202,7 @@ lerobot-replay --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=
   --dataset.repo_id=weeho/so101_pick_hold_place --dataset.episode=0
 ```
 
-### 5. Triển khai chính sách đã huấn luyện lên cánh tay thật
+### 5. Deploy the trained policy on the real arm
 
 Việc chạy một chính sách trên phần cứng thật được thực hiện bằng
 **`lerobot-record --policy.path=…`** (chính sách thay thế cho leader/teleop và điều
@@ -237,7 +237,7 @@ Hãy thay các giá trị `index_or_path` của camera bằng giá trị thật 
     - **Khả năng tổng quát hóa rất hẹp** — 48 bản demo cho một chiếc cốc/một tác vụ;
       chỉ nên kỳ vọng thành công quanh đúng điều kiện đã được biểu diễn.
 
-## Quan hệ với stack ROS 2
+## Relationship to the ROS 2 stack
 
 | | Viết sẵn (MTC) | Imitation learning (LeRobot) |
 |---|---|---|

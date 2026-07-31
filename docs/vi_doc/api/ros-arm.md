@@ -1,4 +1,4 @@
-# Giao diện ROS 2 — Cánh tay robot
+# ROS 2 Interfaces — Robot Arm
 
 Topic, service và action cho SO-ARM 101. Pipeline chạy theo thứ tự
 **perception → chọn mục tiêu → lập kế hoạch chuyển động → bộ điều khiển**, và bạn
@@ -15,7 +15,7 @@ flowchart LR
     MTC -->|GripperCommand| HAND[hand_group_controller]
 ```
 
-## Đầu ra của perception
+## Perception outputs
 
 Được publish bởi `perception_node`. Đây là những topic mà phần lớn các đội sẽ dùng.
 
@@ -31,7 +31,7 @@ flowchart LR
 | `/perception/debug_image` | `sensor_msgs/msg/Image` | Ảnh có chú thích — hãy xem cái này đầu tiên khi gỡ lỗi |
 | `/perception/tray_debug_image` | `sensor_msgs/msg/Image` | Ảnh gỡ lỗi phần phân vùng khay |
 
-### Đầu vào camera mà node subscribe
+### Camera inputs it subscribes to
 
 Cho mỗi namespace camera (`top_cam` eye-to-hand, `arm_cam` eye-in-hand):
 
@@ -41,7 +41,7 @@ Cho mỗi namespace camera (`top_cam` eye-to-hand, `arm_cam` eye-in-hand):
 | `/<ns>/depth` | `sensor_msgs/msg/Image` |
 | `/<ns>/camera_info` | `sensor_msgs/msg/CameraInfo` |
 
-### Các tham số quan trọng
+### Key parameters
 
 | Tham số | Mặc định | Ý nghĩa |
 |---|---|---|
@@ -84,7 +84,7 @@ Cho mỗi namespace camera (`top_cam` eye-to-hand, `arm_cam` eye-in-hand):
 | `world_frame` | `world` | Frame đầu ra cho `/apriltag/pose` |
 | `target_id` | `-1` | ID tag cụ thể, hoặc `-1` để nhận mọi tag |
 
-## Nhận dạng quai cốc
+## Cup handle detection
 
 Được publish bởi `handle_detector` — tìm quai cốc để gripper tiếp cận từ góc có
 thể gắp được.
@@ -96,7 +96,7 @@ thể gắp được.
 | `/cup_handle/state` | `std_msgs/msg/Float32MultiArray` | Toàn bộ trạng thái bộ nhận dạng |
 | `/cup_handle/debug_image` | `sensor_msgs/msg/Image` | Ảnh có chú thích |
 
-## Chuyển động — `mtc_node`
+## Motion — `mtc_node`
 
 Pipeline gắp → rót → đặt của MoveIt Task Constructor.
 
@@ -173,7 +173,7 @@ một phần quãng đường tới lời giải.
     chạy [hiệu chuẩn camera](../ra_camera_calibration.md) và cung cấp giá trị thật
     trước khi tin vào vị trí đo được.
 
-## Xem thêm
+## See also
 
 - [Hiệu chuẩn camera](../ra_camera_calibration.md) — extrinsics và intrinsics
 - [Điểm khởi chạy](launch.md) — cách dựng cánh tay lên

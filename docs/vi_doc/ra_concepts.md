@@ -1,4 +1,4 @@
-# Cánh tay robot — Tổng quan
+# Robot Arm — Overview
 
 Một **SO-ARM 101** 5 bậc tự do kèm gripper 1 bậc tự do, chạy bằng **ROS 2 + MoveIt 2**,
 làm nhiệm vụ gắp một chiếc cốc rỗng, hứng nước tại máy lọc, rồi đặt lên khay để
@@ -6,7 +6,7 @@ AMR (JetRacer) mang đi.
 
 `5-DOF + gripper` · `ROS 2 Jazzy` · `MoveIt 2 + MTC` · `Isaac Sim` · `Chạy trên workstation`
 
-## Mục tiêu
+## Objectives
 
 - Phát hiện và định vị chính xác các cốc rỗng trên bàn từ camera phía trên.
 - Gắp từng cốc một cách tin cậy dù cánh tay chỉ có 5 bậc tự do và gripper một má.
@@ -14,7 +14,7 @@ AMR (JetRacer) mang đi.
 - Đặt cốc đã đầy vào đúng ô khay được phân cho AMR (JetRacer) tới lấy.
 - Lặp lại với nhiều cốc mà không gắp lại chiếc cốc đã đặt xong.
 
-## Các khớp
+## Joints
 
 Cánh tay có sáu khớp; cả sáu đều phát dữ liệu trên `/isaac_joint_states`.
 
@@ -27,7 +27,7 @@ Cánh tay có sáu khớp; cả sáu đều phát dữ liệu trên `/isaac_join
 | `Wrist_Roll` | Xoay cổ tay — lăn gripper quanh trục của nó |
 | `Jaw` | Gripper 1 bậc tự do — mở / đóng để gắp cốc |
 
-## Nền tảng công nghệ
+## Tech Stack
 
 | Lớp | Lựa chọn | Mục đích |
 |-------|--------|---------|
@@ -37,7 +37,7 @@ Cánh tay có sáu khớp; cả sáu đều phát dữ liệu trên `/isaac_join
 | Hệ thống build | colcon, rosdep | Build và quản lý phụ thuộc |
 | Tính toán | **Workstation x86 + GPU NVIDIA** | Chạy *toàn bộ* stack — bản thân cánh tay không có máy tính nào |
 
-### Thông số phần cứng
+### Hardware specifications
 
 !!! info "Cánh tay không có máy tính tích hợp"
     SO-ARM 101 là một **thiết bị ngoại vi USB**, không phải một node tính toán.
@@ -70,9 +70,9 @@ Cánh tay có sáu khớp; cả sáu đều phát dữ liệu trên `/isaac_join
     định trước — **hiệu chuẩn camera là công việc đang chặn tiến độ** (xem
     [Hiệu chuẩn camera](ra_camera_calibration.md)).
 
-## Gói và mô-đun
+## Packages & Modules
 
-Bốn gói tạo nên dự án cánh tay. Mọi thứ còn lại đều là phụ thuộc từ thượng nguồn
+Bốn gói tạo nên dự án cánh tay. Mọi thứ còn lại đều là phụ thuộc từ upstream
 (xem [Hướng dẫn cài đặt](ra_setup.md)).
 
 ??? package "1 · so_arm_description"
@@ -105,7 +105,7 @@ Bốn gói tạo nên dự án cánh tay. Mọi thứ còn lại đều là ph�
     - Các giai đoạn: gắp → servo (bám bằng thị giác) → hứng nước → đặt
     - Các launch file và định nghĩa tác vụ
 
-## Hợp đồng ROS (Isaac Sim)
+## The ROS Contract (Isaac Sim)
 
 ROS nói chuyện với Isaac Sim qua `topic_based_ros2_control`. Action graph của
 scene phải publish/subscribe đúng những topic sau.
@@ -122,7 +122,7 @@ Namespace camera là tham số của perception node (`camera_eth_ns` = `top_cam
 `camera_eih_ns` = `arm_cam`) — hãy chỉnh topic của Isaac cho khớp, hoặc ghi đè
 các tham số này.
 
-## Lộ trình
+## Roadmap
 
 **Giai đoạn 0 — Mô phỏng** (5/5) ✅
 
