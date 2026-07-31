@@ -92,7 +92,7 @@ ros2 launch mtc_tutorial real_all.launch.py
 | `obj_x`, `obj_y`, `obj_z` | Vị trí của vật giả |
 | `tag_x`, `tag_y`, `tag_z` | Vị trí của tag giả |
 
-**Hình học gắp**
+**Thế gắp**
 
 | Tham số | Ý nghĩa |
 |---|---|

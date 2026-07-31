@@ -1,20 +1,21 @@
 # RA Use Case — Visual Servoing
 
-Bên trong [pipeline gắp và đặt](ra_pick_and_place.md), cánh tay không dựa vào một
-pose gắp open-loop duy nhất. Sau bước di chuyển thô, nó chuyển sang **visual servoing
-dựa trên ảnh (IBVS)** dùng camera eye-in-hand `arm_cam`, đóng vòng phản hồi lên
-chiếc cốc cho tới khi hình học gắp đã đúng.
+Trong [pipeline gắp và đặt](ra_pick_and_place.md), cánh tay không tin vào một
+pose gắp open-loop duy nhất. Sau bước di chuyển thô, nó chuyển sang **visual
+servoing dựa trên ảnh (IBVS)** với camera eye-in-hand `arm_cam`: vừa nhìn cốc vừa
+chỉnh dần, tới khi gripper vào đúng thế gắp mới dừng.
 
 ## Objective
 
-Khép lại **khoảng cách vài centimét cuối cùng** giữa "cốc đại khái ở đâu" và "gripper phải ở chính xác chỗ nào" — bằng phản hồi camera trực tiếp thay vì tin vào
-pose open-loop.
+Xoá nốt **vài centimét cuối** giữa chỗ perception đoán cốc đang nằm và chỗ
+gripper thật sự phải tới — bằng ảnh camera thời gian thực, không phải bằng niềm
+tin vào pose open-loop.
 
 ## Why servo
 
-Pose của cốc lấy từ camera phía trên chỉ là gần đúng, còn gripper SO-ARM 101 là một
-càng một má với khe bắt hẹp. Visual servoing bằng camera trên tay sẽ sửa sai số của
-vài centimét cuối để cốc rơi vào khe kẹp một cách tin cậy.
+Camera trên cao chỉ cho pose gần đúng, mà gripper SO-ARM 101 lại chỉ có một má
+động, khe kẹp thì hẹp. Visual servoing bằng camera trên tay sửa nốt sai số vài
+centimét cuối để cốc lọt đúng khe.
 
 Cụ thể, pose open-loop mang theo ba sai số chồng lên nhau:
 
@@ -24,13 +25,13 @@ Cụ thể, pose open-loop mang theo ba sai số chồng lên nhau:
 | Hiệu chuẩn | extrinsics camera-sang-thế-giới không bao giờ hoàn hảo (và trên phần cứng thật thì tệ hơn nhiều) |
 | Động học | IK chỉ theo vị trí trên cánh tay 5 bậc tự do để lại sai lệch pose nhỏ |
 
-Từng cái thì nhỏ; cộng lại thì đủ để trượt khỏi một khe kẹp hẹp. Visual servoing loại
-bỏ chúng bằng cách **đo kết quả thay vì dự đoán nó**.
+Từng cái nhỏ, cộng lại đủ để trượt khỏi khe kẹp. Visual servoing xoá chúng bằng
+cách **đo kết quả thật thay vì dự đoán trước**.
 
 ## Why not MoveIt Servo
 
 !!! warning "Cánh tay cố ý **không** dùng `moveit_servo`"
-    `moveit_servo` hiện thực việc bám **Cartesian 6 bậc tự do**. SO-ARM 101 chỉ có
+    `moveit_servo` làm servo **Cartesian 6 bậc tự do**. SO-ARM 101 chỉ có
     **5 bậc tự do**, nên một lệnh Cartesian 6 bậc đầy đủ là bất khả thi — ma trận
     Jacobian suy biến và bộ servo **dừng lại tại điểm kỳ dị** thay vì hội tụ. Một
     nỗ lực áp dụng nó trước đây đã thất bại đúng vì lý do này.
@@ -40,17 +41,17 @@ bỏ chúng bằng cách **đo kết quả thay vì dự đoán nó**.
     `/arm_group_controller/joint_trajectory`.
 
     Trước đây launch file có khởi động một `servo_node` nhưng nó chẳng publish gì
-    hữu ích — nay đã bị **gỡ bỏ**. Gói `moveit_servo` không còn là phụ thuộc của dự
-    án này.
+    hữu ích — nay đã **gỡ**. Package `moveit_servo` không còn là dependency của
+    dự án.
 
-Đây cũng chính là khuôn mẫu mà [XLeRobot dùng trên SO-101](https://xlerobot.readthedocs.io/en/latest/software/getting_started/SO101.html)
-— kết hợp động học dạng đóng với một vòng lặp servo dựa trên ảnh thay vì một bộ
-servo Cartesian tổng quát. Đây là bằng chứng độc lập cho thấy vòng lặp tự viết là
-lựa chọn đúng trên cánh tay này, chứ không phải một cách chống chế.
+[XLeRobot trên SO-101](https://xlerobot.readthedocs.io/en/latest/software/getting_started/SO101.html)
+cũng làm hệt như vậy — closed-form kinematics ghép với một servo loop dựa trên
+ảnh, thay vì một bộ servo Cartesian tổng quát. Tức là vòng lặp tự viết ở đây là
+lựa chọn đúng cho cánh tay 5 bậc, không phải cách chống chế.
 
 ## How it works — two phases
 
-Vòng lặp được tách ra để **xoay và tịnh tiến không bao giờ cãi nhau**:
+Vòng lặp tách đôi để **xoay và tiến không giành nhau**:
 
 ```
 di chuyển thô → [ pha 0: căn giữa theo điểm ảnh ] → [ pha 1: tiến thẳng vào ] → đóng kẹp
@@ -61,14 +62,14 @@ di chuyển thô → [ pha 0: căn giữa theo điểm ảnh ] → [ pha 1: ti�
 | **0 — căn giữa** | phương vị đế (yaw) | sai số điểm ảnh theo phương ngang `dx` trên `arm_cam` | Đưa cốc về **giữa theo trái/phải** trước, trong khi vẫn giữ khoảng lùi. Vừa xoay vừa tiến khiến đường tiếp cận bị cong và cốc trôi khỏi khung hình. |
 | **1 — tiếp cận** | vị trí Cartesian | khoảng cách thế giới dọc theo đường tiếp cận | Khi đã căn giữa, hãy **tiến thẳng vào** dọc trục má kẹp ở tốc độ không đổi. Một đường thẳng thì dự đoán được và giữ cốc nằm trong khe. |
 
-Ba chi tiết khiến pha 0 hoạt động đúng mực:
+Ba chi tiết giữ cho pha 0 chạy ổn:
 
 - **Deadband** — bỏ qua sai số điểm ảnh dưới một ngưỡng, để cánh tay đứng yên
   thay vì cứ nhích mãi.
-- **Thu nhỏ dần** — bước xoay yaw mỗi nhịp nhỏ dần khi cốc tiến về giữa, nên đế
-  *chậm lại* khi vào đúng vị trí thay vì vọt lố.
-- **Anti-windup** — bộ tích phân phương vị bị giảm lại khi cánh tay đang trễ so
-  với lệnh, để điểm đặt không thể chạy trước cánh tay vật lý và gây vọt lố.
+- **Taper** — bước xoay yaw nhỏ dần khi cốc về gần giữa, nên đế *giảm tốc* khi
+  vào vị trí chứ không vọt qua.
+- **Anti-windup** — khi cánh tay chạy chậm hơn lệnh, bộ tích phân bị ghìm lại,
+  để setpoint không chạy trước cánh tay thật rồi gây vọt lố.
 
 ## IBVS vs PBVS — where each is used
 
@@ -87,8 +88,9 @@ Cả hai đều được dùng, một cách có chủ đích, cho những việc
     tránh khỏi.
 
     **PBVS xuống cấp theo sai số hiệu chuẩn; IBVS thì không.** Vì vậy dùng IBVS cho
-    pha gắp cuối vốn đòi hỏi độ chính xác cao chính là lựa chọn chuyển giao tốt
-    nhất sang cánh tay thật — PBVS được dành cho các chuyển động thô, neo vào fiducial, nơi pose tuyệt đối thực sự cần thiết.
+    pha gắp cuối là lựa chọn sống sót tốt nhất khi chuyển sang cánh tay thật.
+    PBVS chỉ dùng cho các chuyển động thô neo vào fiducial, nơi thật sự cần pose
+    tuyệt đối.
 
 ## Enabling it
 
@@ -120,7 +122,7 @@ ros2 launch mtc_tutorial bringup.launch.py skip_servo:=true
 ## Where it fits
 
 ```
-di chuyển thô → [ BÁM THỊ GIÁC (arm_cam, IBVS) ] → đóng kẹp → chở → hứng → đặt
+di chuyển thô → [ VISUAL SERVOING (arm_cam, IBVS) ] → đóng kẹp → chở → hứng → đặt
 ```
 
 Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và topic contract tại
@@ -131,9 +133,9 @@ Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và 
 ??? warning "Các hệ số được tinh chỉnh thủ công, và dấu của chúng phụ thuộc cách gắn camera"
     `servo_img_k_yaw` mã hóa số radian phương vị đế trên mỗi điểm ảnh sai số — và
     **dấu của nó phụ thuộc vào cách camera được gắn**. Đặt sai thì cánh tay sẽ đẩy
-    cốc *ra khỏi* khung hình thay vì căn giữa. Các hằng số thu nhỏ dần, deadband và
-    anti-windup cũng đều là kinh nghiệm. Gánh nặng tinh chỉnh này là điểm yếu
-    lớn nhất của cách tiếp cận.
+    cốc *ra khỏi* khung hình thay vì căn giữa. Các hằng số taper, deadband và
+    anti-windup cũng đều rút từ kinh nghiệm. Gánh nặng tinh chỉnh này là điểm yếu
+    lớn nhất của cách làm này.
 
 ??? warning "Không có timeout hay đường thoát"
     Nếu IK không với tới được, vòng lặp có thể **quay vô hạn** thay vì thất bại một
@@ -145,7 +147,7 @@ Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và 
     Servo dừng lại khi **đến nơi theo động học**, chứ không phải khi chạm vào cốc.
     Nó không thể phát hiện rằng mình đã va, đã trượt, hay đã làm đổ chiếc cốc.
 
-??? warning "Extrinsics tay-mắt vẫn là giá trị tạm"
+??? warning "Hand-eye extrinsics vẫn là giá trị tạm"
     Phép biến đổi gripper → `arm_cam` hiện là giá trị danh nghĩa `eih_z = 0.05`, chứ
     không phải giá trị đã hiệu chuẩn. IBVS chịu được điều này (đó chính là ưu điểm
     của nó), nhưng **khoảng cách tiếp cận theo mét ở pha 1 thì không** — hãy chuẩn
@@ -158,22 +160,20 @@ Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và 
 
 ## Future direction
 
-1. **Rào an toàn trước đã** — một **timeout** cho servo và một lối thoát khi thất
-   bại, cộng thêm cơ chế dừng theo tiếp xúc dựa trên lực/dòng. Đây là điều kiện
-   tiên quyết để chạm vào phần cứng thật, không phải thứ đánh bóng tùy chọn.
-2. **Hiệu chuẩn tay-mắt** — thay extrinsics eye-in-hand tạm thời bằng giá trị đã
-   đo; đây chính là thứ mà pha tiếp cận theo mét của pha 1 phụ thuộc vào.
-3. **Độ bền vững của depth** — lọc trung vị mảng độ sâu và loại bỏ các giá trị đọc
-   không hợp lệ trước khi chúng tới vòng lặp.
-4. **Thay các hệ số tinh chỉnh thủ công bằng một chính sách học được.** Giai đoạn
-   servo+gắp có chân trời ngắn và giàu tiếp xúc — đúng thứ mà imitation learning làm tốt,
-   và đúng chỗ mà gánh nặng tinh chỉnh thủ công đang nằm. Hãy thu thập các demo
-   teleop bàn phím trong Isaac Lab (LeIsaac) và huấn luyện một chính sách *chỉ cho
-   pha gắp*, giữ nguyên lập kế hoạch dạng script cho phần vận chuyển và cho máy lọc
-   neo theo fiducial.
+1. **An toàn trước đã** — thêm **timeout** cho servo và một lối thoát khi thất
+   bại, cộng cơ chế dừng theo lực/dòng khi chạm. Đây là điều kiện bắt buộc trước
+   khi động vào phần cứng thật, không phải thứ làm cho đẹp.
+2. **Hand-eye calibration** — thay extrinsics eye-in-hand tạm thời bằng giá trị
+   đo thật; pha 1 tính khoảng cách theo mét nên phụ thuộc trực tiếp vào nó.
+3. **Depth bền hơn** — lọc trung vị vùng depth và bỏ các giá trị không hợp lệ
+   trước khi đưa vào vòng lặp.
+4. **Thay hệ số chỉnh tay bằng policy học được.** Giai đoạn servo + gắp diễn ra
+   trong vài giây và nhiều tiếp xúc — đúng thứ imitation learning làm tốt, và cũng
+   đúng chỗ đang tốn công chỉnh tay nhất. Thu demo teleop bàn phím trong Isaac Lab
+   (LeIsaac) rồi huấn luyện policy *chỉ cho pha gắp*, còn phần vận chuyển và máy
+   lọc neo fiducial thì giữ nguyên script.
 
-    !!! note "Vì sao lai chứ không phải đầu-cuối"
-        Máy lọc được đánh dấu bằng AprilTag và hình học đã biết, nên lập kế hoạch
-        cổ điển ở đó **chính xác hơn và dễ gỡ lỗi hơn** một chính sách học được.
-        Việc học chỉ đáng giá đúng ở nơi tinh chỉnh thủ công đang chiếm ưu thế —
-        pha gắp — và không ở đâu khác.
+    !!! note "Vì sao hybrid chứ không phải end-to-end"
+        Máy lọc có AprilTag và hình học đã biết, nên planning cổ điển ở đó
+        **chính xác hơn và dễ debug hơn** một policy học được. Học chỉ đáng ở đúng
+        chỗ đang phải chỉnh tay nhiều nhất — pha gắp — chứ không phải mọi nơi.

@@ -77,18 +77,18 @@ một má kẹp, thay vì chống lại nó.
 | **Chiếu ngược tia–mặt phẳng từ camera trên** | Chiếu ngược bộ đệm độ sâu trên một bề mặt xiên mang theo sai lệch hệ thống. Thay vào đó, giao tia đi qua điểm ảnh nhận dạng với mặt phẳng chiều cao cốc đã biết đã giảm sai số camera trên từ **≈31 mm → ≈3 mm**. |
 | **AprilTag trên máy lọc** | Đích hứng nước phải thật chính xác. Một fiducial cho ra pose chính xác dưới milimét từ camera phía trên — đáng tin cậy hơn nhiều so với nhận dạng máy lọc bằng thị giác. |
 | **MoveIt Task Constructor (MTC)** | Tác vụ này vốn dĩ chia thành giai đoạn (tiếp cận → gắp → nâng → chở → đặt). MTC diễn đạt điều đó thành các giai đoạn ghép được, có lập kế hoạch nhận biết va chạm (OMPL / RRTConnect), thay vì một script khối duy nhất. |
-| **Visual servoing trước khi gắp** | Lập kế hoạch đưa gripper tới *gần*, nhưng pose open-loop mang theo sai số của perception + hiệu chuẩn. Đóng vòng phản hồi bằng camera trên tay sẽ sửa nốt vài centimét cuối — xem [Visual servoing](ra_visual_servoing.md). |
+| **Visual servoing trước khi gắp** | Lập kế hoạch đưa gripper tới *gần*, nhưng pose open-loop mang theo sai số của perception + hiệu chuẩn. Nhìn qua camera trên tay và chỉnh dần sẽ xoá nốt vài centimét cuối — xem [Visual servoing](ra_visual_servoing.md). |
 | **Phân ô khay + loại trừ** | Các cốc được rải đều trên khay, và những cốc đã đặt bị loại khỏi việc nhận dạng để cánh tay không gắp lại chiếc mình vừa đặt xuống. |
 | **Ưu tiên mô phỏng (Isaac + `topic_based_ros2_control`)** | Đúng topic contract ROS mà cánh tay thật sẽ dùng, với rủi ro phần cứng bằng không và một scene tái lập được. |
 
 !!! tip "Mạch xuyên suốt"
     Perception cho ra pose thế giới gần đúng → lập kế hoạch đưa tới gần →
-    **closed-loop vision sửa bước cuối** → hình học gripper (góc + độ cao) lo phần
+    **camera vòng kín sửa bước cuối** → thế gripper (góc + độ cao) lo phần
     còn lại. Mỗi lớp đều gỡ lỗi được độc lập.
 
 ## Tuning
 
-Hình học gắp/hứng được điều khiển bằng các tham số launch (giá trị mặc định hiển
+Thế gắp và thế hứng chỉnh bằng các tham số launch (giá trị mặc định hiển
 thị bên dưới) — bảng đầy đủ ở [Hướng dẫn cài đặt §7](ra_setup.md):
 
 ```bash
@@ -183,7 +183,7 @@ Xếp theo thứ tự việc nào tháo gỡ được nhiều nút thắt nhất
    vì phỏng đoán**. Một cơ chế dừng theo tiếp xúc/lực (mục 2) cũng sẽ cho phép phát
    hiện và thử lại một cú gắp hụt thay vì âm thầm đi tiếp.
 2. **Đưa lên phần cứng thật (sim-to-real)** — driver SO-ARM 101 thật,
-   **hiệu chuẩn tay-mắt** (extrinsics eye-in-hand hiện vẫn là giá trị tạm), dừng
+   **hand-eye calibration** (extrinsics eye-in-hand hiện vẫn là giá trị tạm), dừng
    gắp dựa trên lực/dòng, và một timeout cho servo để vòng lặp thoát ra thay vì
    quay mãi trên một mục tiêu IK không với tới được.
 3. **Tích hợp hệ thống** — phơi bày các topic tác vụ của RA và hiện thực việc
@@ -195,7 +195,7 @@ Xếp theo thứ tự việc nào tháo gỡ được nhiều nút thắt nhất
 5. **Gắp bằng học máy (lai)** — các giai đoạn vận chuyển và máy lọc đều có hình học
    chính xác dựa trên fiducial, nên tốt nhất cứ để viết script. **Cú gắp** mới là
    giai đoạn tinh chỉnh thủ công, giàu tiếp xúc, và là ứng viên tự nhiên để thay
-   bằng một chính sách imitation learning (demo teleop bàn phím trong Isaac Lab /
+   bằng một policy imitation learning (demo teleop bàn phím trong Isaac Lab /
    LeIsaac).
 6. **Độ bền vững** — domain randomization cho perception; tổng quát hóa vượt ra
    ngoài một màu và một kích cỡ cốc duy nhất; đưa các asset Isaac từ xa về máy để

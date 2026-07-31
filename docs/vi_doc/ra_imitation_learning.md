@@ -4,7 +4,7 @@ Một lựa chọn thay thế cho pipeline gắp-và-đặt viết sẵn bằng 
 năng **gắp → giữ → đặt** bằng *biểu diễn mẫu*. Một người điều khiển cánh tay
 **leader**, cánh tay **follower** bắt chước theo, và từng khung hình (trạng thái
 khớp + ảnh camera) được ghi vào một tập dữ liệu
-[LeRobot](https://github.com/huggingface/lerobot). Sau đó một chính sách (ACT /
+[LeRobot](https://github.com/huggingface/lerobot). Sau đó một policy (ACT /
 diffusion / v.v.) được huấn luyện bằng behavior cloning rồi phát lại trên
 follower.
 
@@ -13,9 +13,9 @@ qua LeRobot trên cặp SO-101 leader+follower vật lý. Không có gì ở đ�
 vào Isaac Sim hay `move_group`.
 
 !!! note "Trạng thái bàn giao"
-    Một **chính sách ACT đã huấn luyện và đã hội tụ** — xem
+    Một **policy ACT đã huấn luyện và đã hội tụ** — xem
     [Mô hình đã huấn luyện](#the-trained-model) bên dưới. **Tập dữ liệu đã ghi**
-    mới là tài sản tái sử dụng chính (bạn có thể huấn luyện lại bất kỳ chính sách
+    mới là tài sản tái sử dụng chính (bạn có thể huấn luyện lại bất kỳ policy
     nào từ nó). Mọi thứ cần để ghi lại, huấn luyện lại, triển khai hay phát lại đều
     nằm trên trang này. Bản thân thư viện LeRobot là một bản cài từ upstream
     (`~/lerobot`, chế độ editable) và **không** được vendored vào repo này.
@@ -171,18 +171,18 @@ lerobot-train \
 
 ## The trained model
 
-Một chính sách **ACT** đã hội tụ được lưu tại:
+Một policy **ACT** đã hội tụ được lưu tại:
 
 ```
 outputs/train/so101_pick_hold_place_act_100k/checkpoints/last/pretrained_model/
-├── model.safetensors     # ~198 MB — trọng số của chính sách
-├── config.json           # đặc tả chính sách + đặc trưng
+├── model.safetensors     # ~198 MB — trọng số của policy
+├── config.json           # đặc tả policy + đặc trưng
 └── train_config.json
 ```
 
 | Thuộc tính | Giá trị |
 |----------|-------|
-| Chính sách | ACT |
+| Policy | ACT |
 | Số bước huấn luyện | 50.000 (mất mát L1 cuối ~0,05) |
 | **Đầu vào** | `observation.state` (6 khớp) + **2 camera**: `observation.images.wrist`, `observation.images.top` (mỗi cái 640×480 @ 30 fps) |
 | **Đầu ra** | `action` — 6 giá trị vị trí khớp mục tiêu |
@@ -204,8 +204,8 @@ lerobot-replay --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=
 
 ### 5. Deploy the trained policy on the real arm
 
-Việc chạy một chính sách trên phần cứng thật được thực hiện bằng
-**`lerobot-record --policy.path=…`** (chính sách thay thế cho leader/teleop và điều
+Việc chạy một policy trên phần cứng thật được thực hiện bằng
+**`lerobot-record --policy.path=…`** (policy thay thế cho leader/teleop và điều
 khiển follower; `lerobot-eval` dành cho môi trường gym *mô phỏng*, không phải cánh
 tay vật lý). **Không cần leader.**
 
@@ -224,11 +224,11 @@ Hãy thay các giá trị `index_or_path` của camera bằng giá trị thật 
 `lerobot-find-cameras`.
 
 !!! danger "Điều gì quyết định thành bại khi triển khai"
-    - **Tên camera phải đúng là `wrist` và `top`** — đó là cách chính sách ánh xạ
+    - **Tên camera phải đúng là `wrist` và `top`** — đó là cách policy ánh xạ
       hai đầu vào ảnh của nó (`observation.images.wrist` / `.top`). Sai tên là
       không chạy được.
     - **Góc nhìn phải khớp với lúc ghi** — camera cổ tay trên gripper, camera top ở
-      phía trên. Chính sách đã học đúng những góc nhìn đó; xê dịch một camera là
+      phía trên. Policy đã học đúng những góc nhìn đó; xê dịch một camera là
       hỏng.
     - **Cùng bản hiệu chuẩn** (`my_follower.json`) và **30 fps** như khi huấn luyện.
     - Cánh tay chuyển động **tự động** ngay khi khởi chạy — hãy để tay sẵn trên nút
@@ -242,7 +242,7 @@ Hãy thay các giá trị `index_or_path` của camera bằng giá trị thật 
 | | Viết sẵn (MTC) | Imitation learning (LeRobot) |
 |---|---|---|
 | Ở đâu | `ra_ws` (ROS 2 Jazzy, MoveIt) | LeRobot, không có ROS |
-| Perception | YOLO + tia–mặt phẳng, AprilTag | Khung hình camera thô đưa thẳng vào chính sách |
+| Perception | YOLO + tia–mặt phẳng, AprilTag | Khung hình camera thô đưa thẳng vào policy |
 | Điều khiển | IK + quỹ đạo đã lập kế hoạch | Hành động học được = vị trí khớp mục tiêu |
 | Điểm mạnh | Tất định, xem xét được | Chịu được biến thiên mà không cần tinh chỉnh thủ công |
 
