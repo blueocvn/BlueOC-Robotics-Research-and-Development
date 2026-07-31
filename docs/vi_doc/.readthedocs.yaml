@@ -1,0 +1,39 @@
+# Read the Docs build config -- VIETNAMESE translation.
+#
+# NOTE ON THE FILENAME: Read the Docs only accepts a config file literally named
+# ".readthedocs.yaml". The path is configurable, the name is not -- which is why
+# this lives in a subdirectory instead of being called ".readthedocs.vi.yaml".
+# The repo root's ".readthedocs.yaml" remains the ENGLISH config.
+#
+# All paths BELOW are relative to the REPOSITORY ROOT, not to this file's
+# directory. That is Read the Docs behaviour, not a mistake.
+#
+# This file is NOT used by the main (English) project. It belongs to a second
+# Read the Docs project that:
+#   1. points at this same Git repository,
+#   2. has Settings > Language set to "Vietnamese",
+#   3. has Settings > "Build configuration file" set to
+#      "docs/vi_doc/.readthedocs.yaml"  (that is what makes RTD read this file),
+#   4. has Settings > Default branch set to the branch carrying these files,
+#   5. is registered on the ENGLISH project under Admin > Translations.
+#
+# Once linked, RTD serves it at /vi/ under the main project's domain and adds
+# the language selector to the flyout menu.
+#
+# No pre_build job here: the Vietnamese API page points readers at the running
+# server's own FastAPI docs rather than rendering a spec, so there is nothing
+# to generate.
+
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+
+mkdocs:
+  configuration: docs/mkdocs.vi.yml
+
+python:
+  install:
+    - requirements: docs/requirements.txt
