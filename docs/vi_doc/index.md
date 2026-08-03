@@ -16,15 +16,15 @@ hành**, xe chạy qua phòng và giao tới bàn. Cốc cạn thì vòng lặp 
 
 Hầu hết demo robot chỉ làm tốt một việc. Phần khó — và thú vị — là bài toán phối
 hợp: làm sao để một cánh tay robot và một xe tự hành cùng hoàn thành nhiệm vụ mà
-riêng từng cái đều không làm được, khởi nguồn từ đơn hàng thật của user chứ không
+riêng từng cái đều không làm được, khởi nguồn từ order thật của user chứ không
 phải một kịch bản dựng sẵn.
 
 Dự án này xây dựng trọn vẹn hệ thống đó:
 
 - **Giao diện thật cho user.** User quét QR, đặt đồ uống và theo dõi tiến trình
-  ngay trên điện thoại — đơn đến từ người dùng thật, không phải từ một lệnh gõ
+  ngay trên điện thoại — order đến từ người dùng thật, không phải từ một lệnh gõ
   trong terminal.
-- **Một bộ não trung tâm.** Orchestrator giữ hàng đợi đơn, chia mỗi lượt giao
+- **Một bộ não trung tâm.** Orchestrator giữ hàng đợi order, chia mỗi lượt giao
   thành từng chặng, rồi ra lệnh cho cả hai robot qua ROS 2.
 - **Hai robot hoàn toàn khác nhau.** Cánh tay 5 bậc tự do phải *nhìn*, *gắp*,
   *đặt*; xe tự hành phải *dựng bản đồ*, *định vị*, *điều hướng*. Chúng gặp nhau ở
@@ -54,7 +54,7 @@ Dự án này xây dựng trọn vẹn hệ thống đó:
 
 -   **Orchestrator — bộ não**
 
-    Server FastAPI + HTMX. Nó chạy trang QR cho user, giữ hàng đợi đơn, và ra
+    Server FastAPI + HTMX. Nó chạy trang QR cho user, giữ hàng đợi order, và ra
     lệnh cho cả hai robot qua ROS 2 — thành phần duy nhất nắm được *toàn bộ quy
     trình*, thay vì chỉ điều khiển *một con robot*.
 
@@ -66,7 +66,7 @@ Dự án này xây dựng trọn vẹn hệ thống đó:
 
 ## How a delivery works
 
-1. **Đặt đơn** — user quét QR tại bàn và gọi nước.
+1. **Đặt order** — user quét QR tại bàn và gọi nước.
 2. **Vào hàng đợi** — orchestrator nhận việc và giữ chỗ một robot.
 3. **Hứng nước** — cánh tay nhận cốc, gắp lên, hứng đầy tại máy lọc.
 4. **Chuyền** — cánh tay đặt cốc lên khay của xe tự hành tại trạm.

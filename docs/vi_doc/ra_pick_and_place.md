@@ -6,7 +6,7 @@ lọc để "hứng nước", rồi đặt vào khay. Trang này đi qua kịch 
 
 ## Objective
 
-Tự động hoàn thành một đơn đồ uống từ đầu tới cuối: **nhận dạng → gắp → hứng →
+Tự động hoàn thành một order đồ uống từ đầu tới cuối: **nhận dạng → gắp → hứng →
 đặt**, lặp lại cho mọi chiếc cốc mà camera phía trên nhìn thấy, không cần con
 người can thiệp.
 

@@ -1,11 +1,11 @@
 # Robotic Solution — Pick and Deliver (RA + AMR)
 
-Vòng lặp hoàn thành đơn hàng đầy đủ kết hợp cả hai robot và một orchestrator web:
+Vòng lặp hoàn thành order đầy đủ kết hợp cả hai robot và một orchestrator web:
 user gọi nước từ điện thoại, **cánh tay** hứng đầy cốc và đặt lên khay, còn
 **AMR** mang nó từ máy lọc tới chỗ user.
 
 ```
-   Điện thoại (đơn từ QR)                  RA (SO-ARM 101)
+   Điện thoại (order từ QR)                RA (SO-ARM 101)
         │                                       │
         ▼                                       ▼
   ┌─────────────┐   /dock_robot        gắp → hứng → đặt lên khay
@@ -61,4 +61,4 @@ Cho tới khi cánh tay được đấu vào vòng lặp, hãy chạy từng l�
 2. **Điều hướng AMR** — [AMR Điều hướng & Giao hàng](amr_pick_and_place.md)
 3. **Giao diện web orchestrator** — xem [Orchestrator](orchestrator.md); nó có thể
    chạy ở chế độ `SimBackend` (không cần ROS, mỗi chặng hoàn tất theo bộ đếm thời
-   gian) để demo luồng đặt hàng.
+   gian) để demo luồng đặt order.

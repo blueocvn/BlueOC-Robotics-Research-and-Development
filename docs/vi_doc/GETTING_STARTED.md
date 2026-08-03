@@ -90,7 +90,7 @@ Xem `CALIBRATION.md` — độ chính xác docking phụ thuộc vào TF camera 
 ## 4. Robot Web Bridge (ordering app)
 
 Lớp ứng dụng — một giao diện web di động FastAPI + HTMX kèm API HTTP để ra lệnh
-cho robot (luồng đặt hàng "Get Water" / "Refill" qua mã QR). Nó nằm ở một
+cho robot (luồng đặt order "Get Water" / "Refill" qua mã QR). Nó nằm ở một
 workspace riêng, **`orchestrator/`**, và nói chuyện với stack này qua đồ thị ROS:
 nó publish `/dock_robot`, `/abort_docking`, `/cmd_vel`, `/initialpose` và
 subscribe `/docking_state` + `/chassis/odom`. Vì vậy stack robot ở §3 (phần cứng +
@@ -111,7 +111,7 @@ cổng bằng `ROBOT_WEB_BRIDGE_PORT=9000`, và đặt mã PIN vận hành qua
 ### Expose it for phones (QR codes)
 
 Ở một shell khác, tạo tunnel cổng này ra một URL công khai để điện thoại quét và
-đặt hàng:
+đặt order:
 
 ```bash
 ./run_tunnel.sh              # in ra một URL https://<...>.trycloudflare.com

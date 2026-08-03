@@ -79,7 +79,7 @@ phải tên thư mục. Bảng đầy đủ kèm thư mục và mẫu vendored n
 | **P0** | Scene Isaac Sim + bridge ROS 2 | ✅ Hoàn thành |
 | **P1** | Dựng bản đồ bằng SLAM | ✅ Hoàn thành |
 | **P2** | Định vị bằng Nav2 + điều hướng theo goal | ✅ Hoàn thành |
-| **P3** | Giao tiếp lái + vòng lặp hoàn thành đơn | 🟡 Một phần |
+| **P3** | Giao tiếp lái + vòng lặp hoàn thành order | 🟡 Một phần |
 | **P4** | Sim-to-real / firmware trên thiết bị | ⚪ Dự kiến |
 
 - **P3** — `cmd_vel` → Ackermann đã xong, và AMR **có** đọc giao thức

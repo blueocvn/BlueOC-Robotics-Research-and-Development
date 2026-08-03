@@ -11,7 +11,7 @@ API chia làm ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
 
     ---
 
-    Điều khiển JetRacer qua HTTP thuần — đặt đơn, docking, teleop, dừng khẩn cấp.
+    Điều khiển JetRacer qua HTTP thuần — đặt order, docking, teleop, dừng khẩn cấp.
     Không cần cài ROS trên máy của bạn.
 
     [:octicons-arrow-right-24: Tham khảo HTTP](http.md)
@@ -58,7 +58,7 @@ API chia làm ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
 
     API HTTP là con đường nhanh nhất để có một demo chạy được — nó hoạt động mà
     hoàn toàn không cần ROS. Nếu không import được `rclpy`, bridge sẽ tự động
-    chuyển sang **backend mô phỏng**, đẩy tiến trình đơn hàng theo bộ đếm thời
+    chuyển sang **backend mô phỏng**, đẩy tiến trình order theo bộ đếm thời
     gian. Nhờ vậy bạn có thể dựng và kiểm thử toàn bộ front end trước khi chạm
     vào robot thật. `GET /state` cho biết bạn đang ở chế độ nào.
 

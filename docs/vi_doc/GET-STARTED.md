@@ -1,7 +1,7 @@
 # Getting Started
 
 **Robot Fulfillment** là một orchestrator web điều một xe tự hành (AMR) và một
-cánh tay robot (RA) để hoàn thành đơn đồ uống. Chạy được hết trên NVIDIA Isaac
+cánh tay robot (RA) để hoàn thành order đồ uống. Chạy được hết trên NVIDIA Isaac
 Sim, không cần phần cứng thật.
 
 Trang này là bản đồ tổng quan. Hãy chọn workspace bạn muốn dựng, và lướt qua phần
@@ -88,7 +88,7 @@ Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn 
 
 - Chỉ muốn xem **cánh tay gắp cốc**? → [ra_setup.md](ra_setup.md) (độc lập, chỉ cần Isaac Sim + Jazzy).
 - Muốn **AMR dựng bản đồ và điều hướng**? → [amr_setup.md](amr_setup.md).
-- Muốn luồng trọn vẹn **đơn hàng web → robot**? Hãy dựng `orchestrator` cộng thêm ít nhất AMR, và giữ chung một `ROS_DOMAIN_ID`. → [orchestrator.md](orchestrator.md).
+- Muốn luồng trọn vẹn **order web → robot**? Hãy dựng `orchestrator` cộng thêm ít nhất AMR, và giữ chung một `ROS_DOMAIN_ID`. → [orchestrator.md](orchestrator.md).
 
 > **Trạng thái hệ thống:** cả hai robot đều chạy **mô phỏng**; chưa có firmware
 > trên thiết bị. Mối nối docking orchestrator ↔ AMR và phần tích hợp orchestrator

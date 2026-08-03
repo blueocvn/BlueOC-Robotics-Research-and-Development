@@ -23,7 +23,7 @@ uvicorn robot_web_bridge.app:app --reload --port 8088
 ```bash
 curl -s localhost:8088/state | jq .mode
 # "ros"          -> lệnh đi tới robot thật
-# "simulation"   -> đơn hàng chỉ chạy theo bộ đếm, không có gì chuyển động
+# "simulation"   -> order chỉ chạy theo bộ đếm, không có gì chuyển động
 ```
 
 !!! warning "Chế độ mô phỏng diễn ra âm thầm"
@@ -34,20 +34,20 @@ curl -s localhost:8088/state | jq .mode
 
 ## Quick start
 
-Đặt một đơn hàng và theo dõi tiến trình:
+Đặt một order và theo dõi tiến trình:
 
 ```bash
 # 1. có những bàn nào?
 curl -s localhost:8088/docks | jq
 
-# 2. đặt đơn cho dock0
+# 2. đặt order cho dock0
 curl -s -X POST localhost:8088/orders \
      -d 'dock=dock0' -d 'kind=water'
 
 # 3. theo dõi trạng thái trực tiếp
 curl -s localhost:8088/state | jq
 
-# 4. dừng khẩn cấp — hủy đơn đang chạy và xóa hàng đợi
+# 4. dừng khẩn cấp — hủy order đang chạy và xóa hàng đợi
 curl -s -X POST localhost:8088/abort
 ```
 

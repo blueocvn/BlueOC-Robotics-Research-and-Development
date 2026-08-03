@@ -6,7 +6,7 @@ hợp để chạy sau tunnel rồi quét QR tại từng bàn).
 
 Package này hiện thực **các trang user công khai**, **bridge ROS + dispatcher**,
 và **API admin** (các endpoint vận hành có chắn mã PIN). Phần *giao diện*
-admin và nhật ký đơn hàng bằng SQLite thì vẫn còn ở phía trước.
+admin và nhật ký order bằng SQLite thì vẫn còn ở phía trước.
 
 !!! tip "Phần tham khảo route nằm trong Sổ tay API"
     Mọi route, tham số và phản hồi của nó đều được **sinh tự động từ định nghĩa
@@ -25,8 +25,8 @@ Ba mảnh, mỗi mảnh một việc:
 |---|---|
 | `app.py` | Các route FastAPI — trang user, API JSON, endpoint admin |
 | `ros_node.py` | Một node rclpy duy nhất chạy trên luồng daemon — mối nối với ROS |
-| `dispatcher.py` | **Vòng lặp bất đồng bộ duy nhất sở hữu robot** — mỗi lúc một đơn |
-| `store.py` | Sổ đơn hàng trong bộ nhớ (tạm thay cho nhật ký SQLite) |
+| `dispatcher.py` | **Vòng lặp bất đồng bộ duy nhất sở hữu robot** — mỗi lúc một order |
+| `store.py` | Sổ order trong bộ nhớ (tạm thay cho nhật ký SQLite) |
 | `auth.py` | Chắn mã PIN vận hành — cookie phiên đã ký, có hạn |
 
 ### The ROS seam
@@ -45,16 +45,16 @@ topic contract đầy đủ nằm ở [Sổ tay API](api/ros-jetracer.md).
 
 ### The dispatcher
 
-`dispatcher.py` đưa đơn hàng cũ nhất trong hàng đợi lên, publish `/dock_robot`,
+`dispatcher.py` đưa order cũ nhất trong hàng đợi lên, publish `/dock_robot`,
 rồi ánh xạ `/docking_state` trực tiếp sang trạng thái hiển thị cho user
 (chuẩn bị → đang trên đường → đã giao / thất bại). `store.py` là nguồn của các
-thông tin "robot đang bận / còn N đơn phía trước / ~thời gian dự kiến".
+thông tin "robot đang bận / còn N order phía trước / ~thời gian dự kiến".
 
 ## No ROS? It still runs
 
 Nếu không import được `rclpy` (một venv thuần để phát triển cục bộ, hoặc bản demo
 qua tunnel), ứng dụng sẽ tự động lùi về một **backend mô phỏng**, đẩy tiến trình
-đơn hàng theo bộ đếm thời gian.
+order theo bộ đếm thời gian.
 
 ```bash
 curl -s localhost:8088/state | jq .mode   # "ros" | "simulation"
@@ -82,7 +82,7 @@ biệt hoa thường):
 export ROBOT_WEB_BRIDGE_INPROGRESS_STATES="docking,navigating"
 export ROBOT_WEB_BRIDGE_SUCCESS_STATES="docked,arrived"
 export ROBOT_WEB_BRIDGE_ERROR_STATES="failed,aborted"
-export ROBOT_WEB_BRIDGE_ORDER_TIMEOUT=180   # đánh dấu đơn bị kẹt là thất bại sau N giây
+export ROBOT_WEB_BRIDGE_ORDER_TIMEOUT=180   # đánh dấu order bị kẹt là thất bại sau N giây
 ```
 
 ## Run it

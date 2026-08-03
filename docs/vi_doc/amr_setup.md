@@ -1,7 +1,7 @@
 # AMR Setup (`jetracer_ws`) — JetRacer SLAM + Nav2 in Isaac Sim
 
 Xe tự hành lái kiểu Ackermann: dựng bản đồ căn phòng, tự định vị, rồi chạy giữa
-các dock để hoàn thành đơn từ orchestrator web.
+các dock để hoàn thành order từ orchestrator web.
 Mọi thứ ở đây chạy trên **workstation** và điều khiển **Isaac Sim** — repo này chưa
 có firmware chạy trên chính chiếc JetRacer, nên cùng stack đó sau này sẽ điều khiển
 khung xe thật khi đã có driver đọc `/ackermann_cmd`.
