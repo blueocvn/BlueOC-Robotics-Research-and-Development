@@ -1,8 +1,8 @@
 # Robotic Solution — Pick and Deliver (RA + AMR)
 
 Vòng lặp hoàn thành đơn hàng đầy đủ kết hợp cả hai robot và một orchestrator web:
-một người gọi nước từ điện thoại, **cánh tay** hứng đầy cốc và đặt lên khay, còn
-**AMR** mang nó từ máy lọc tới chỗ người dùng.
+user gọi nước từ điện thoại, **cánh tay** hứng đầy cốc và đặt lên khay, còn
+**AMR** mang nó từ máy lọc tới chỗ user.
 
 ```
    Điện thoại (đơn từ QR)                  RA (SO-ARM 101)
@@ -21,7 +21,7 @@ một người gọi nước từ điện thoại, **cánh tay** hứng đầy c
 | Thành phần | Vai trò | Tài liệu |
 |------|------|------|
 | **RA — SO-ARM 101** | Gắp cốc, hứng nước tại máy lọc, đặt lên khay | [Cánh tay robot](ra_concepts.md) |
-| **AMR — JetRacer** | Di chuyển từ dock này sang dock khác, chở khay tới người dùng | [JetRacer](amr_concepts.md) |
+| **AMR — JetRacer** | Di chuyển từ dock này sang dock khác, chở khay tới chỗ user | [JetRacer](amr_concepts.md) |
 | **Orchestrator** | Giao diện web FastAPI + HTMX kèm dispatcher serialize AMR | [Orchestrator](orchestrator.md) |
 
 Hai workspace chạy trên **các bản phân phối ROS khác nhau** (RA dùng Jazzy native,
@@ -39,8 +39,7 @@ nhất, điều khiển AMR đi từ dock này sang dock khác. ROS contract c�
 ## Integration status
 
 Mối nối orchestrator ↔ AMR đã đấu xong ở cả hai đầu. Phần việc còn để ngỏ là
-**chuyển giao RA (cánh tay) ↔ AMR** — cánh tay vẫn chưa được tích hợp vào bộ điều
-phối.
+**chuyển giao RA (cánh tay) ↔ AMR** — cánh tay vẫn chưa được tích hợp vào orchestrator.
 
 | Hợp đồng | Trạng thái |
 |----------|-------|
@@ -52,11 +51,11 @@ phối.
 Docking chạy qua **`opennav_docking`** (một action server docking của Nav2) được
 kích hoạt bởi topic `/dock_robot`; `jetracer_docker.py` cũng xử lý `/undock_robot`
 và `/abort_docking`. Việc còn để ngỏ là kết nối **cánh tay**: phát tín hiệu "khay
-sẵn sàng" để orchestrator điều phái AMR sau khi cánh tay xong một cốc.
+sẵn sàng" để orchestrator điều AMR đi sau khi cánh tay xong một cốc.
 
 ## Running the pieces today
 
-Cho tới khi cánh tay được đấu vào vòng lặp, hãy chạy các lớp một cách độc lập:
+Cho tới khi cánh tay được đấu vào vòng lặp, hãy chạy từng lớp riêng:
 
 1. **Rót nước bằng cánh tay** — [RA Gắp và đặt](ra_pick_and_place.md)
 2. **Điều hướng AMR** — [AMR Điều hướng & Giao hàng](amr_pick_and_place.md)

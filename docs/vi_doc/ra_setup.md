@@ -1,8 +1,8 @@
 # Robotic Arm Setup (`ra_ws`) — SO-ARM 101 Isaac Sim Refill Demo
 
 Một SO-ARM 101 5 bậc tự do gắp chiếc cốc có lòng màu xanh lá trong NVIDIA Isaac
-Sim, visual servoing tới nó bằng camera gắn trên tay, mang tới máy lọc được đánh dấu
-bằng AprilTag để "hứng nước", rồi đặt vào khay hồng. Perception, MoveIt 2 / MoveIt
+Sim, bám sát bằng visual servoing với camera trên tay, mang tới máy lọc có
+AprilTag để "hứng nước", rồi đặt vào khay hồng. Perception, MoveIt 2 / MoveIt
 Task Constructor (MTC) và vòng lặp visual servoing chạy ở phía ROS 2; Isaac Sim cung
 cấp vật lý, robot và camera.
 
@@ -42,10 +42,10 @@ Hướng dẫn này giả định bạn đã **cài sẵn Isaac Sim** và bắt 
 
 ### 2. Workspace layout
 
-Chỉ bốn gói sau thuộc về dự án cánh tay — mọi thứ còn lại là phụ thuộc thượng
-nguồn tiêu chuẩn mà bạn cài riêng (xem §3):
+Chỉ bốn package sau thuộc về dự án cánh tay — mọi thứ còn lại là phụ thuộc
+upstream tiêu chuẩn mà bạn cài riêng (xem §3):
 
-| Gói | Là gì |
+| Package | Là gì |
 |---|---|
 | `ra_ws/src/so_arm_description` | URDF + mesh của SO-ARM 101 |
 | `ra_ws/src/so_arm_moveit_config` | Cấu hình MoveIt 2 (SRDF, động học, OMPL, bộ điều khiển, `ros2_control`) |
@@ -69,7 +69,7 @@ sudo apt install ros-jazzy-desktop ros-jazzy-moveit \
 ```
 
 #### 3.2 MoveIt Task Constructor (MTC)
-MTC dẫn dắt pipeline gắp. Nếu có sẵn gói nhị phân cho Jazzy:
+MTC dẫn dắt pipeline gắp. Nếu có sẵn package nhị phân cho Jazzy:
 ```bash
 sudo apt install ros-jazzy-moveit-task-constructor-core
 ```
@@ -86,7 +86,7 @@ python3 -m pip install "numpy>=1.24" "opencv-python>=4.8" "ultralytics>=8.3" \
 `cv_bridge` lấy từ apt: `sudo apt install ros-jazzy-cv-bridge`.
 Trọng số YOLO (`yolo11n.pt`) tự tải về ở lần chạy đầu tiên; không cần bước thủ
 công nào. `pupil-apriltags` cung cấp bộ nhận dạng AprilTag mà `apriltag_node` dùng
-để định vị fiducial trên máy lọc — gói này là bắt buộc (launch perception luôn khởi
+để định vị fiducial trên máy lọc — package này là bắt buộc (launch perception luôn khởi
 động node đó).
 
 #### 3.4 Resolve the rest with rosdep

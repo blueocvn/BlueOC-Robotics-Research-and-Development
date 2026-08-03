@@ -11,7 +11,7 @@ không có robot nào hiện diện.
 # có ROS, chạy bên trong container
 ros2 run robot_web_bridge server
 
-# không có ROS — trang người dùng + backend mô phỏng
+# không có ROS — trang user + backend mô phỏng
 pip install fastapi "uvicorn[standard]" jinja2 pyyaml python-multipart
 uvicorn robot_web_bridge.app:app --reload --port 8088
 ```
@@ -78,7 +78,7 @@ Mọi route trừ `login`, `logout` và `session` sẽ trả về **401** nếu 
 
     Mã PIN mặc định là `1234`, còn khóa ký mặc định là một **giá trị ngẫu nhiên
     được sinh lại mỗi lần tiến trình khởi động** — nghĩa là mỗi lần restart sẽ âm
-    thầm đăng xuất toàn bộ người vận hành. Hãy đặt cả hai một cách tường minh
+    thầm đăng xuất toàn bộ người vận hành. Hãy đặt rõ cả hai
     trước khi sàn hackathon mở cửa.
 
 ## Route reference

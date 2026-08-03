@@ -92,7 +92,7 @@ Bố cục: `meta/` (info/episodes/tasks jsonl) · `data/chunk-000/episode_*.par
 · `videos/chunk-000/<cam>/episode_*.mp4`. Có một bản sao anh em `.bak`.
 
 !!! danger "Tập dữ liệu KHÔNG nằm trong git"
-    Nó nặng 1,6 GB gồm parquet + mp4 và chỉ tồn tại trong bộ nhớ đệm HF nói trên.
+    Nó nặng 1,6 GB gồm parquet + mp4 và chỉ nằm trong cache HF nói trên.
     Để bàn giao, hãy làm **một** trong các cách sau:
 
     - **Đẩy lên Hub:** `huggingface-cli login` rồi
@@ -194,8 +194,7 @@ outputs/train/so101_pick_hold_place_act_100k/checkpoints/last/pretrained_model/
 
 ### 4. Replay a recorded episode
 
-Phát lại open-loop một bản demo trên follower (kiểm tra nhanh, không dùng chính
-sách):
+Phát lại open-loop một bản demo trên follower (kiểm tra nhanh, không dùng policy):
 
 ```bash
 lerobot-replay --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=my_follower \

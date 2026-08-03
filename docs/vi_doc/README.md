@@ -41,7 +41,7 @@ docs/vi_doc/
   Ackermann, visual servoing, eye-to-hand / eye-in-hand, intrinsics / extrinsics,
   open-loop / closed-loop, fiducial, deadband, anti-windup, footprint,
   imitation learning, behavior cloning, domain randomization, gripper.
-- **Giữ nguyên** mọi tên topic, kiểu message, tên tham số, tên gói và lệnh —
+- **Giữ nguyên** mọi tên topic, kiểu message, tên tham số, tên package và lệnh —
   đó là những gì bạn thực sự gõ vào terminal.
 - **Không chú thích trong ngoặc**: chỉ dùng thuật ngữ tiếng Anh, không kèm bản
   dịch tiếng Việt phía sau.

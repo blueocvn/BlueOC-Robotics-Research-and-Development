@@ -9,7 +9,7 @@ AMR (JetRacer) mang đi.
 ## Objectives
 
 - Phát hiện và định vị chính xác các cốc rỗng trên bàn từ camera phía trên.
-- Gắp từng cốc một cách tin cậy dù cánh tay chỉ có 5 bậc tự do và gripper một má.
+- Gắp chắc từng cốc dù cánh tay chỉ có 5 bậc tự do và gripper chỉ một má động.
 - Tự động đưa cốc tới máy lọc nước và hứng đầy.
 - Đặt cốc đã đầy vào đúng ô khay được phân cho AMR (JetRacer) tới lấy.
 - Lặp lại với nhiều cốc mà không gắp lại chiếc cốc đã đặt xong.
@@ -72,7 +72,7 @@ Cánh tay có sáu khớp; cả sáu đều phát dữ liệu trên `/isaac_join
 
 ## Packages & Modules
 
-Bốn gói tạo nên dự án cánh tay. Mọi thứ còn lại đều là phụ thuộc từ upstream
+Bốn package tạo nên dự án cánh tay. Mọi thứ còn lại đều là phụ thuộc từ upstream
 (xem [Hướng dẫn cài đặt](ra_setup.md)).
 
 ??? package "1 · so_arm_description"

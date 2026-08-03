@@ -2,10 +2,10 @@
 
 API HTTP + giao diện web di động để ra lệnh cho JetRacer. Xây bằng **FastAPI +
 HTMX + Tailwind** (cả hai đều nạp từ CDN nên không có bước build front-end — rất
-hợp để phục vụ sau một tunnel và quét mã QR tại từng bàn).
+hợp để chạy sau tunnel rồi quét QR tại từng bàn).
 
-Gói này hiện thực **các trang người dùng công khai**, **bridge ROS + bộ điều
-phái**, và **API admin** (các endpoint vận hành có chắn mã PIN). Phần *giao diện*
+Package này hiện thực **các trang user công khai**, **bridge ROS + dispatcher**,
+và **API admin** (các endpoint vận hành có chắn mã PIN). Phần *giao diện*
 admin và nhật ký đơn hàng bằng SQLite thì vẫn còn ở phía trước.
 
 !!! tip "Phần tham khảo route nằm trong Sổ tay API"
@@ -23,7 +23,7 @@ Ba mảnh, mỗi mảnh một việc:
 
 | Module | Vai trò |
 |---|---|
-| `app.py` | Các route FastAPI — trang người dùng, API JSON, endpoint admin |
+| `app.py` | Các route FastAPI — trang user, API JSON, endpoint admin |
 | `ros_node.py` | Một node rclpy duy nhất chạy trên luồng daemon — mối nối với ROS |
 | `dispatcher.py` | **Vòng lặp bất đồng bộ duy nhất sở hữu robot** — mỗi lúc một đơn |
 | `store.py` | Sổ đơn hàng trong bộ nhớ (tạm thay cho nhật ký SQLite) |
@@ -38,7 +38,7 @@ Ba mảnh, mỗi mảnh một việc:
   latch `/virtual_obstacles` và `/dock_registry` (String, JSON) và
   `/relocalize_at_dock` (String);
 - **subscribe** `/docking_state` (String), `/odometry/filtered` và
-  `/chassis/odom` (Odometry), lưu đệm giá trị mới nhất một cách an toàn giữa các
+  `/chassis/odom` (Odometry), cache giá trị mới nhất, an toàn giữa các
   luồng.
 
 topic contract đầy đủ nằm ở [Sổ tay API](api/ros-jetracer.md).
@@ -46,7 +46,7 @@ topic contract đầy đủ nằm ở [Sổ tay API](api/ros-jetracer.md).
 ### The dispatcher
 
 `dispatcher.py` đưa đơn hàng cũ nhất trong hàng đợi lên, publish `/dock_robot`,
-rồi ánh xạ `/docking_state` trực tiếp sang trạng thái hiển thị cho người dùng
+rồi ánh xạ `/docking_state` trực tiếp sang trạng thái hiển thị cho user
 (chuẩn bị → đang trên đường → đã giao / thất bại). `store.py` là nguồn của các
 thông tin "robot đang bận / còn N đơn phía trước / ~thời gian dự kiến".
 
@@ -94,7 +94,7 @@ ros2 run robot_web_bridge server          # http://localhost:8088
 # hoặc: orchestrator/run_web_bridge.sh
 ```
 
-Python thuần (các trang người dùng không cần ROS):
+Python thuần (các trang user không cần ROS):
 
 ```bash
 pip install fastapi "uvicorn[standard]" jinja2 pyyaml python-multipart
@@ -109,7 +109,7 @@ Rồi mở <http://localhost:8088/?dock=dock0>.
 | Thiết lập | Mặc định | Mục đích |
 |---|---|---|
 | `config/docks.yaml` | — | Danh bạ dock (`dock_id → nhãn, pose`) |
-| `ROBOT_WEB_BRIDGE_CONFIG` | thư mục `config/` của gói | Ghi đè thư mục cấu hình |
+| `ROBOT_WEB_BRIDGE_CONFIG` | thư mục `config/` của package | Ghi đè thư mục cấu hình |
 | `ROBOT_WEB_BRIDGE_HOST` / `_PORT` | `0.0.0.0:8088` | Địa chỉ lắng nghe |
 | `ROBOT_WEB_BRIDGE_ADMIN_PIN` | `1234` | Mã PIN vận hành — **hãy đổi nó** |
 | `ROBOT_WEB_BRIDGE_SECRET` | ngẫu nhiên mỗi tiến trình | Khóa ký cookie |
@@ -118,7 +118,7 @@ Rồi mở <http://localhost:8088/?dock=dock0>.
 !!! danger "Hai giá trị mặc định cần đổi trước một sự kiện thật"
     Mã PIN mặc định là `1234`, và khóa ký được **sinh lại mỗi lần tiến trình khởi
     động** — nên mỗi lần restart sẽ âm thầm đăng xuất toàn bộ người vận hành. Hãy
-    đặt cả hai một cách tường minh.
+    đặt rõ cả hai.
 
 ## See also
 

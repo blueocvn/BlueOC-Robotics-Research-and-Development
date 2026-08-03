@@ -1,9 +1,8 @@
 # AMR Use Case — Navigate & Deliver
 
-Nhiệm vụ của AMR trong vòng lặp hoàn thành đơn: dựng bản đồ một không gian, tự
-định vị trong đó, rồi chạy từ dock này sang dock khác để chở khay từ máy lọc tới
-người dùng. (Một bệ di động không gắp — phần "gắp" do [cánh tay](ra_pick_and_place.md)
-đảm nhiệm; AMR lo vận chuyển.) Về cài đặt/build, xem
+Việc của AMR trong vòng lặp: dựng bản đồ căn phòng, tự định vị, rồi chạy từ dock
+này sang dock khác để chở khay từ máy lọc tới chỗ user. (Xe không gắp — phần gắp
+là của [cánh tay](ra_pick_and_place.md); AMR chỉ lo chở.) Về cài đặt/build, xem
 [Hướng dẫn cài đặt](amr_setup.md).
 
 ## Prerequisites

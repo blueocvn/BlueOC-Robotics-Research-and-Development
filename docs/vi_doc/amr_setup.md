@@ -1,7 +1,7 @@
 # AMR Setup (`jetracer_ws`) — JetRacer SLAM + Nav2 in Isaac Sim
 
-Một xe tự hành kiểu ô tô (Ackermann) có khả năng dựng bản đồ không gian, tự
-định vị, và di chuyển giữa các dock để hoàn thành đơn hàng từ orchestrator web.
+Xe tự hành lái kiểu Ackermann: dựng bản đồ căn phòng, tự định vị, rồi chạy giữa
+các dock để hoàn thành đơn từ orchestrator web.
 Mọi thứ ở đây chạy trên **workstation** và điều khiển **Isaac Sim** — repo này chưa
 có firmware chạy trên chính chiếc JetRacer, nên cùng stack đó sau này sẽ điều khiển
 khung xe thật khi đã có driver đọc `/ackermann_cmd`.
@@ -28,11 +28,11 @@ khung xe thật khi đã có driver đọc `/ackermann_cmd`.
 
 ### 2. Workspace layout
 
-Các gói của riêng dự án AMR. Lưu ý rằng **tên gói** mới là thứ bạn truyền cho
-`ros2 launch` / `ros2 run` — một số gói nằm trong các thư mục gom nhóm
-(`navigation/`, `ackermann_control/`), nên tên thư mục và tên gói khác nhau.
+Các package của riêng dự án AMR. Lưu ý rằng **tên package** mới là thứ bạn truyền cho
+`ros2 launch` / `ros2 run` — một số package nằm trong các thư mục gom nhóm
+(`navigation/`, `ackermann_control/`), nên tên thư mục và tên package khác nhau.
 
-| Gói (dùng tên này) | Thư mục | Là gì |
+| Package (dùng tên này) | Thư mục | Là gì |
 |---|---|---|
 | `carter_navigation` | `navigation/carter_navigation` | Dựng Nav2, tham số, bản đồ, chuyển đổi lidar→scan (phỏng theo mẫu Isaac carter) |
 | `slam_custom` | `navigation/slam_custom` | Dựng SLAM — bọc `slam_toolbox` online-async + một cấu hình rviz sẵn có |
@@ -42,8 +42,8 @@ Các gói của riêng dự án AMR. Lưu ý rằng **tên gói** mới là th�
 | `isaac_ros2_messages` | `isaac_ros2_messages` | các kiểu message cho bridge Isaac |
 | `isaac_compressed_image_decoder` | `isaac_compressed_image_decoder` | luồng ảnh nén của Isaac → `sensor_msgs/Image` thô (exec `decoder_node`) |
 
-`src/slam_toolbox/` **không phải một gói** — đó là nơi các bản đồ đã serialize
-được lưu về (`map_*.pgm` / `map_*.yaml`). Bản thân gói `slam_toolbox` là một phụ
+`src/slam_toolbox/` **không phải một package** — đó là nơi các bản đồ đã serialize
+được lưu về (`map_*.pgm` / `map_*.yaml`). Bản thân package `slam_toolbox` là một phụ
 thuộc upstream do `rosdep` giải quyết.
 
 | Vendored (chỉ để tham khảo, không phải phần lõi) | Ghi chú |
@@ -108,7 +108,7 @@ ros2 topic echo /front_3d_lidar/lidar_points --once
 > Isaac chạy và phát những topic đó.
 
 `slam_custom` chạy `slam_toolbox` chế độ online-async kèm một cấu hình rviz sẵn có.
-Nó nhận biết thời gian mô phỏng và chờ `startup_delay` giây để đồng hồ ổn định.
+Nó tự nhận sim time và chờ `startup_delay` giây để đồng hồ ổn định.
 
 ```bash
 source install/setup.bash

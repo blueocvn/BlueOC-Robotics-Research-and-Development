@@ -76,7 +76,7 @@ một má kẹp, thay vì chống lại nó.
 | **Tiếp cận chéo góc (`grasp_yaw_bias`)** | SO-ARM 101 ép cốc vào một má **cố định**. Tiếp cận thẳng chính giữa sẽ khiến má đó gạt văng chiếc cốc. Quay lệch trục khoảng 29° (`-0.5 rad`) đưa cốc **vào đúng khe** giữa hai má. |
 | **Chiếu ngược tia–mặt phẳng từ camera trên** | Chiếu ngược bộ đệm độ sâu trên một bề mặt xiên mang theo sai lệch hệ thống. Thay vào đó, giao tia đi qua điểm ảnh nhận dạng với mặt phẳng chiều cao cốc đã biết đã giảm sai số camera trên từ **≈31 mm → ≈3 mm**. |
 | **AprilTag trên máy lọc** | Đích hứng nước phải thật chính xác. Một fiducial cho ra pose chính xác dưới milimét từ camera phía trên — đáng tin cậy hơn nhiều so với nhận dạng máy lọc bằng thị giác. |
-| **MoveIt Task Constructor (MTC)** | Tác vụ này vốn dĩ chia thành giai đoạn (tiếp cận → gắp → nâng → chở → đặt). MTC diễn đạt điều đó thành các giai đoạn ghép được, có lập kế hoạch nhận biết va chạm (OMPL / RRTConnect), thay vì một script khối duy nhất. |
+| **MoveIt Task Constructor (MTC)** | Việc này tự nó đã chia thành từng giai đoạn (tiếp cận → gắp → nâng → chở → đặt). MTC diễn đạt điều đó thành các giai đoạn ghép được, có lập kế hoạch nhận biết va chạm (OMPL / RRTConnect), thay vì một script dài duy nhất. |
 | **Visual servoing trước khi gắp** | Lập kế hoạch đưa gripper tới *gần*, nhưng pose open-loop mang theo sai số của perception + hiệu chuẩn. Nhìn qua camera trên tay và chỉnh dần sẽ xoá nốt vài centimét cuối — xem [Visual servoing](ra_visual_servoing.md). |
 | **Phân ô khay + loại trừ** | Các cốc được rải đều trên khay, và những cốc đã đặt bị loại khỏi việc nhận dạng để cánh tay không gắp lại chiếc mình vừa đặt xuống. |
 | **Ưu tiên mô phỏng (Isaac + `topic_based_ros2_control`)** | Đúng topic contract ROS mà cánh tay thật sẽ dùng, với rủi ro phần cứng bằng không và một scene tái lập được. |
@@ -109,14 +109,13 @@ Thêm nữa ở [Hướng dẫn cài đặt §8](ra_setup.md).
 
 ## Challenges & limitations
 
-Các ràng buộc đã biết, xếp theo thứ tự mà một lập trình viên mới có khả năng vấp
-phải.
+Các ràng buộc đã biết, xếp theo thứ tự người mới dễ vấp phải nhất.
 
 ??? warning "Phần cứng — thiếu truyền động ở 5 bậc tự do"
     Chỉ ra lệnh được vị trí, không phải hướng đầy đủ. Các pose gắp bị giới hạn ở
     kiểu gắp ngang bằng, và **gắp từ trên xuống là bất khả thi** (chiều dài má kẹp
-    so với chiều cao cốc). Mọi ý tưởng thao tác mới đều phải được kiểm tra khả năng
-    với tới trước, chứ không chỉ lập kế hoạch.
+    so với chiều cao cốc). Mọi ý tưởng thao tác mới đều phải kiểm tra xem cánh
+    tay có với tới được không, chứ không chỉ lập kế hoạch.
 
 ??? warning "Gripper — một má cố định"
     Cốc bị ép vào một má cố định thay vì bị bóp bởi hai má cùng chuyển động. Điều
@@ -137,9 +136,9 @@ phải.
     - **Không có phản hồi tiếp xúc** — gripper đóng chỉ dựa vào động học, nên một cú
       gắp hụt không được phát hiện cũng không được thử lại.
 
-    Cho tới khi điều này được mô tả rõ, hãy xem thành công khi gắp là
+    Chừng nào chưa khoanh được nguyên nhân, hãy coi việc gắp thành công là
     **có xác suất, không được đảm bảo**. Xem [Visual servoing](ra_visual_servoing.md)
-    để biết các núm tinh chỉnh.
+    để biết có những tham số nào chỉnh được.
 
 ??? warning "Calibration — an unexplained bias"
     Cốc luôn rơi lệch về một phía ở **cả** x và y. Hai giá trị bù đã đo được dùng
@@ -189,7 +188,7 @@ Xếp theo thứ tự việc nào tháo gỡ được nhiều nút thắt nhất
 3. **Tích hợp hệ thống** — phơi bày các topic tác vụ của RA và hiện thực việc
    chuyển giao AMR ↔ RA để cánh tay trở thành một node trong
    [giải pháp Gắp và giao](solution_pick_and_deliver.md).
-4. **Xoay lại quai cốc** — bộ nhận dạng quai đã tồn tại nhưng chưa được đấu vào.
+4. **Xoay lại quai cốc** — bộ nhận dạng quai đã có sẵn nhưng chưa đấu vào.
    Vì cánh tay không thể gắp từ trên xuống, việc xoay lại chiếc cốc theo quai phải
    là thao tác **đẩy-để-xoay** chứ không phải gắp lại.
 5. **Gắp bằng học máy (lai)** — các giai đoạn vận chuyển và máy lọc đều có hình học

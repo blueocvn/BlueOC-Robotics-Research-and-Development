@@ -1,7 +1,7 @@
 # jetracer_ws third-party setup
 
-`src/` trộn lẫn **các gói của chính dự án** (được commit vào repo này) với **các
-gói ROS 2 Humble của bên thứ ba** *không* được commit. Mã nguồn bên thứ ba được
+`src/` trộn lẫn **các package của chính dự án** (được commit vào repo này) với **các
+package ROS 2 Humble của bên thứ ba** *không* được commit. Mã nguồn bên thứ ba được
 khôi phục từ các bản phát hành upstream đã ghim bằng [vcstool], giúp repo gọn
 nhẹ mà vẫn tái tạo được chính xác từng byte.
 
@@ -10,7 +10,7 @@ nhẹ mà vẫn tái tạo được chính xác từng byte.
 ```bash
 cd amr/jetracer_ws
 
-# 1. Khôi phục các gói bên thứ ba đã ghim theo tag  (cần: sudo apt install python3-vcstool)
+# 1. Khôi phục các package bên thứ ba đã ghim theo tag  (cần: sudo apt install python3-vcstool)
 vcs import src < thirdparty.repos
 
 # 2. Áp lại các bản vá cục bộ lên mã nguồn vừa khôi phục
@@ -32,7 +32,7 @@ colcon build --symlink-install
   - `apriltag` — bản đang dùng mới hơn `v3.4.5` (bổ sung aruco + ước lượng pose của tag)
   - `rplidar_ros` — nhánh ROS 2 có hỗ trợ C1; các tag upstream đều là ROS 1
 
-**Được khôi phục qua `thirdparty.repos`** (mỗi gói ghim theo một tag phát hành và
+**Được khôi phục qua `thirdparty.repos`** (mỗi package ghim theo một tag phát hành và
 được kiểm chứng từng byte so với tag đó; xem file ấy để biết URL/phiên bản chính
 xác): `navigation2` 1.1.5, `robot_localization` 3.5.4, `angles`, `apriltag_msgs`,
 `BehaviorTree.CPP`, `bond_core`, `diagnostics`, `geographic_info`,

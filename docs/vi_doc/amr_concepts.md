@@ -45,8 +45,8 @@ phải tên thư mục. Bảng đầy đủ kèm thư mục và mẫu vendored n
     chỉnh riêng cho JetRacer.
 
 ??? package "slam_custom — Dựng SLAM"
-    Bọc `slam_toolbox` chế độ online-async kèm một cấu hình RViz sẵn có. Có nhận
-    biết thời gian mô phỏng.
+    Bọc `slam_toolbox` chế độ online-async kèm một cấu hình RViz sẵn có. Tự
+    nhận sim time.
 
 ??? package "cmdvel_to_ackermann — Giao tiếp lái"
     Chuyển `/cmd_vel` (Twist) của Nav2 → `/ackermann_cmd`
@@ -56,8 +56,9 @@ phải tên thư mục. Bảng đầy đủ kèm thư mục và mẫu vendored n
     Gửi goal `NavigateToPose` và publish `/initialpose`.
 
 !!! note
-    `src/slam_toolbox/` **không phải là một gói** — đó là nơi các bản đồ đã tuần
-    tự hóa được lưu về (`map_*.pgm` / `map_*.yaml`). Bản thân gói `slam_toolbox`
+    `src/slam_toolbox/` **không phải là một package** — đó là nơi các bản đồ đã
+    serialize được lưu về (`map_*.pgm` / `map_*.yaml`). Bản thân package
+    `slam_toolbox`
     là một dependency từ upstream qua `rosdep`.
 
 ## The ROS Contract (Isaac Sim)

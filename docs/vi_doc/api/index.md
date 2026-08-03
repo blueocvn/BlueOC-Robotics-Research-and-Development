@@ -3,7 +3,7 @@
 Toàn bộ những gì bạn có thể gọi, publish hoặc subscribe trong hackathon — cho cả
 **JetRacer** (AMR) và **SO-ARM 101** (cánh tay robot).
 
-Bề mặt API chia thành ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
+API chia làm ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
 
 <div class="grid cards" markdown>
 

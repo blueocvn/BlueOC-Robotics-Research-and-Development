@@ -35,6 +35,12 @@ nav:
       - Pick and Deliver (RA + AMR):
           - Overview: solution_pick_and_deliver.md
           - Orchestrator: orchestrator.md
+  - API Book:
+      - Overview: api/index.md
+      - HTTP API: api/http.md
+      - ROS 2 — JetRacer: api/ros-jetracer.md
+      - ROS 2 — Robot Arm: api/ros-arm.md
+      - Launch Entry Points: api/launch.md
   - Reference:
       - Calibration: CALIBRATION.md
       - Third-party Setup: THIRDPARTY_SETUP.md

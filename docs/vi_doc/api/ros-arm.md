@@ -62,7 +62,7 @@ Cho mỗi namespace camera (`top_cam` eye-to-hand, `arm_cam` eye-in-hand):
     mặt phẳng tại `eth_plane_z` — **không phải** từ ảnh độ sâu. Nếu chiều cao gắp
     thực tế của vật khác `0.05986 m`, mọi kết quả nhận dạng đều bị lệch ngang, và
     sai số tăng dần theo khoảng cách tới trục quang. Các tham số `eth_*_correction`
-    tồn tại để che lấp sai số hiệu chuẩn; nếu bạn thấy mình dùng chúng quá nhiều,
+    sinh ra để che sai số hiệu chuẩn; nếu bạn thấy mình dùng chúng quá nhiều,
     hãy chạy lại [hiệu chuẩn camera](../ra_camera_calibration.md) thay vì tiếp tục.
 
 ## AprilTag

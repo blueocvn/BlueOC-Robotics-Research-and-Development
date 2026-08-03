@@ -1,7 +1,7 @@
 # JetRacer Calibration Guide
 
-Tất cả những thứ trên robot này cần được đo/tinh chỉnh thay vì phỏng đoán. Nhiều
-giá trị được ship sẵn chỉ là **giá trị tạm hoặc ước lượng** — chúng đủ tốt để dựng
+Những thứ trên robot phải đo hoặc chỉnh tay, không đoán được. Nhiều giá trị ship
+sẵn chỉ là **giá trị tạm hoặc ước lượng** — chúng đủ tốt để dựng
 stack lên, nhưng độ chính xác docking, đường cong S của Smac, và việc định vị đều
 kém đi cho tới khi có số liệu thật.
 
@@ -175,7 +175,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 
 ## 12. cmd_vel → speed scaling 🟡 (verify, may be fine)
 
-- **Đường đi:** [`cmd_vel_to_serial.py`][cmd-vel] đóng gói `linear.x` thành mm/s
+- **Đường đi:** [`cmd_vel_to_serial.py`][cmd-vel] đóng package `linear.x` thành mm/s
   gửi xuống firmware.
 - **Kiểm tra:** ra lệnh một `linear.x` đã biết (ví dụ 0,2 m/s) trong một lần chạy
   có bấm giờ; tốc độ đo được phải khớp. Nếu lệnh và thực tế lệch nhau, các giả định
@@ -195,7 +195,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 ## Suggested bring-up sequence
 
 1. **Intrinsics camera** (#1) — hãy bắt đầu bằng việc kiểm tra *file YAML nào* đang
-   thật sự được nạp; có thể đã tồn tại sẵn một bản đã đo.
+   thật sự được nạp; có thể đã có sẵn bản đo rồi.
 2. **Tỉ lệ odometry bánh xe** (#2) + **bán kính quay tối thiểu** (#3) — cần cho cả
    EKF lẫn đường cong S của Smac.
 3. **TF lidar** (#4) — dẹp phần trùng lặp, kiểm chứng trong RViz với một bức tường.

@@ -8,8 +8,8 @@ docking bằng AprilTag.
 
 ## 1. Build
 
-Các script `start_*.sh` nạp **`ws_setup.bash`**, file này nạp ROS cùng từng gói đã
-cài một cách riêng lẻ. Đây là cách đi vòng có chủ đích cho một
+Các script `start_*.sh` nạp **`ws_setup.bash`**, file này nạp ROS cùng từng package đã
+cài riêng từng cái. Đây là cách đi vòng có chủ đích cho một
 `install/setup.bash` hợp nhất bị thiếu sót trên thiết bị này — hãy dùng nó thay
 cho `source install/setup.bash`.
 
@@ -144,7 +144,7 @@ Mặc định: cổng bệ xe `/dev/ttyACM0`, cổng lidar `/dev/ttyACM1`.
 
 ## Troubleshooting
 
-- **Thiếu `ros2` hoặc các gói (nav2, robot_localization, jetracer_bringup)** →
+- **Thiếu `ros2` hoặc các package (nav2, robot_localization, jetracer_bringup)** →
   bạn đã nạp setup hợp nhất. Hãy dùng `source ws_setup.bash`.
 - **Odometry trôi ngay từ đầu** → robot đã di chuyển trong lúc hiệu chuẩn con quay
   ~2 giây. Khởi động lại driver và giữ nó đứng yên.

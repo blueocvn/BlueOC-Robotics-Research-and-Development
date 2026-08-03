@@ -61,7 +61,7 @@ ros2 launch mtc_tutorial real_all.launch.py
 
 !!! important "Vì sao dùng vị trí định sẵn"
     Trên phần cứng thật, các camera **chưa được hiệu chuẩn đủ chính xác** để định
-    vị vật một cách tin cậy, nên việc gắp dựa trên perception vẫn chưa đáng tin —
+    vị vật đủ chắc, nên gắp dựa trên perception vẫn chưa đáng tin —
     **hiệu chuẩn camera là công việc đang chặn tiến độ** (xem
     [Hiệu chuẩn camera](ra_camera_calibration.md)). Để có bản demo trực tiếp lặp
     lại được, hãy chạy open-loop với vật và đích đến **định sẵn**, cách này bỏ qua

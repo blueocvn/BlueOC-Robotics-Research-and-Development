@@ -33,13 +33,13 @@ driver bệ xe, RPLidar, odometry EKF, Nav2, và docking bằng AprilTag.
 
 ### 2. Restore third-party sources & build
 
-`src/` trộn các gói của chính dự án (được commit) với các gói ROS 2 bên thứ ba đã
+`src/` trộn các package của chính dự án (được commit) với các package ROS 2 bên thứ ba đã
 ghim (không commit, khôi phục qua `vcstool`). Trên một thiết bị mới:
 
 ```bash
 cd amr/jetracer_ws
 
-# 1. Khôi phục các gói bên thứ ba đã ghim theo tag
+# 1. Khôi phục các package bên thứ ba đã ghim theo tag
 vcs import src < thirdparty.repos
 
 # 2. Áp lại các bản vá cục bộ (nav2 bond shared_ptr; tinh chỉnh EKF cho robot_localization)
@@ -50,8 +50,8 @@ patch -p1 -d src/robot_localization < patches/robot_localization-ekf-jetracer-tu
 colcon build --symlink-install
 ```
 
-Các gói của chính dự án là `jetracer_bringup`, `jetracer_description`,
-`jetracer_driver`. Một vài gói bên thứ ba được vendored có chủ đích (ví dụ
+Các package của chính dự án là `jetracer_bringup`, `jetracer_description`,
+`jetracer_driver`. Một vài package bên thứ ba được vendored có chủ đích (ví dụ
 `apriltag` mới hơn `v3.4.5` để ước lượng pose của tag, nhánh ROS 2 của
 `rplidar_ros` có hỗ trợ C1). Xem
 [`THIRDPARTY_SETUP.md`](https://github.com/blueocvn/robotic-arm/blob/main/amr/jetracer_ws/THIRDPARTY_SETUP.md)
@@ -66,14 +66,14 @@ source ws_setup.bash
 ```
 
 > **Vì sao:** file `install/setup.bash` hợp nhất trên thiết bị này bị **thiếu sót**.
-> Quyền sở hữu file lẫn lộn (một số gói thuộc root, một số thuộc user) khiến
-> `colcon` bỏ qua những gói nó không ghi đè được khi sinh lại `setup.bash`, nên
+> Quyền sở hữu file lẫn lộn (một số package thuộc root, một số thuộc user) khiến
+> `colcon` bỏ qua những package nó không ghi đè được khi sinh lại `setup.bash`, nên
 > `robot_localization`, `nav2_*` và `jetracer_bringup` biến mất khỏi môi trường dù
 > chúng vẫn nằm trên đĩa. `ws_setup.bash` né được điều đó bằng cách nạp trực tiếp
-> `local_setup.bash` của từng gói đã cài. Các script `start_*.sh` đã tự nạp nó giúp
+> `local_setup.bash` của từng package đã cài. Các script `start_*.sh` đã tự nạp nó giúp
 > bạn.
 >
-> Nếu `ros2` hay một gói nào đó (nav2, robot_localization, jetracer_bringup) báo
+> Nếu `ros2` hay một package nào đó (nav2, robot_localization, jetracer_bringup) báo
 > "not found", nghĩa là bạn đã nạp setup hợp nhất — hãy dùng `ws_setup.bash`.
 
 ### 4. DDS networking — static unicast peers

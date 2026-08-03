@@ -57,7 +57,7 @@ ros2 topic pub --once /abort_docking std_msgs/msg/Bool "{data: true}"
     ros2 topic echo /docking_state
     ```
 
-    Bridge ánh xạ chúng sang trạng thái hiển thị cho người dùng qua các biến môi
+    Bridge ánh xạ chúng sang trạng thái hiển thị cho user qua các biến môi
     trường (`ROBOT_WEB_BRIDGE_INPROGRESS_STATES`, `_SUCCESS_STATES`,
     `_ERROR_STATES`).
 
@@ -82,8 +82,7 @@ hiện tại.
 | `/local_costmap/clear_entirely_local_costmap` | `nav2_msgs/srv/ClearEntireCostmap` | Gieo lại costmap cục bộ sau khi rời dock |
 | `/global_costmap/clear_entirely_global_costmap` | `nav2_msgs/srv/ClearEntireCostmap` | Gieo lại costmap toàn cục sau khi rời dock |
 
-Việc xóa costmap tồn tại để cái dock vừa rời khỏi không bị giữ lại như một vật
-cản cũ.
+Xóa costmap là để cái dock vừa rời không còn bị giữ lại như một vật cản cũ.
 
 ## Node parameters
 

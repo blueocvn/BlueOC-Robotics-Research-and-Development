@@ -73,7 +73,7 @@ Ba chi tiết giữ cho pha 0 chạy ổn:
 
 ## IBVS vs PBVS — where each is used
 
-Cả hai đều được dùng, một cách có chủ đích, cho những việc khác nhau.
+Cả hai đều được dùng, mỗi cái cho một việc khác nhau, và đó là chủ đích.
 
 | | **IBVS** (dựa trên ảnh) | **PBVS** (dựa trên vị trí) |
 |---|---|---|
@@ -137,9 +137,9 @@ Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và 
     anti-windup cũng đều rút từ kinh nghiệm. Gánh nặng tinh chỉnh này là điểm yếu
     lớn nhất của cách làm này.
 
-??? warning "Không có timeout hay đường thoát"
-    Nếu IK không với tới được, vòng lặp có thể **quay vô hạn** thay vì thất bại một
-    cách gọn gàng. Không có timeout cho servo, không có giới hạn số lần thử lại, và
+??? warning "Không có timeout, không có lối thoát"
+    Nếu IK không với tới được, vòng lặp có thể **quay vô hạn** thay vì thất bại
+    gọn gàng. Không có timeout cho servo, không có giới hạn số lần thử lại, và
     không có đường bỏ cuộc. Điều này phải được sửa trước khi chạy trên phần cứng
     thật.
 

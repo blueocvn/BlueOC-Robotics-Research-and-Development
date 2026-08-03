@@ -39,8 +39,8 @@ Dự án này xây dựng trọn vẹn hệ thống đó:
 
 -   **Robot Arm (RA) — SO-ARM 101**
 
-    Cánh tay 5 bậc tự do, gripper một má. Nó nhận cốc bằng camera trên cao, bám
-    thị giác tới từng chiếc, mang tới máy lọc hứng nước rồi đặt lên khay.
+    Cánh tay 5 bậc tự do, gripper một má. Nó nhận cốc bằng camera trên cao,
+    visual servoing tới từng chiếc, mang tới máy lọc hứng nước rồi đặt lên khay.
 
     [**Tổng quan →**](ra_concepts.md) · [Cài đặt](ra_setup.md) · [Gắp & Đặt](ra_pick_and_place.md)
 

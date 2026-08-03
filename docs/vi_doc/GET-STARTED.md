@@ -1,8 +1,8 @@
 # Getting Started
 
-Chào mừng bạn đến với hệ thống **Robot Fulfillment** — một orchestrator web điều
-phái một xe tự hành (AMR) và một cánh tay robot (RA) để hoàn thành các đơn đồ
-uống, tất cả đều chạy được trên NVIDIA Isaac Sim mà không cần phần cứng vật lý.
+**Robot Fulfillment** là một orchestrator web điều một xe tự hành (AMR) và một
+cánh tay robot (RA) để hoàn thành đơn đồ uống. Chạy được hết trên NVIDIA Isaac
+Sim, không cần phần cứng thật.
 
 Trang này là tấm bản đồ. Hãy chọn workspace bạn muốn dựng, và lướt qua phần
 **Khái niệm** trước nếu các thuật ngữ còn mới — mỗi mục đều dẫn tới tài liệu gốc
@@ -20,7 +20,7 @@ DDS chung), không dùng chung không gian build. **Hãy dùng cùng một
 |---|---|---|---|
 | `ra_ws` | Cánh tay robot SO-ARM 101 — perception, MoveIt 2 / MTC, visual servoing, gắp → hứng → đặt | **Jazzy** (native) | **[Cài đặt cánh tay robot →](ra_setup.md)** |
 | `jetracer_ws` | JetRacer AMR — SLAM, Nav2, Ackermann | **Humble** (Docker) | **[Cài đặt AMR →](amr_setup.md)** |
-| `orchestrator` | `robot_web_bridge` — giao diện web FastAPI + HTMX + dispatcher | Humble | xem README của gói |
+| `orchestrator` | `robot_web_bridge` — giao diện web FastAPI + HTMX + dispatcher | Humble | xem README của package |
 
 > **⚠️ Hai bản phân phối ROS là có chủ đích.** `ra_ws` chạy **Jazzy (Ubuntu 24.04)**
 > native; `jetracer_ws` / `orchestrator` chạy **Humble** bên trong `Dockerfile.dev`.
@@ -56,7 +56,7 @@ Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn 
 | Khái niệm | Ở đây nghĩa là gì | Đọc thêm |
 |---|---|---|
 | **MoveIt 2** | Framework lập kế hoạch chuyển động — `move_group`, động học, kiểm tra va chạm | [moveit.ai](https://moveit.picknik.ai/main/index.html) |
-| **MoveIt Task Constructor (MTC)** | Chia tác vụ gắp → nâng → đặt thành các giai đoạn; là xương sống của `mtc_node` | [Tài liệu MTC](https://moveit.picknik.ai/main/doc/examples/moveit_task_constructor/moveit_task_constructor_tutorial.html) |
+| **MoveIt Task Constructor (MTC)** | Chia tác vụ gắp → nâng → đặt thành các giai đoạn; `mtc_node` dựng trên nó | [Tài liệu MTC](https://moveit.picknik.ai/main/doc/examples/moveit_task_constructor/moveit_task_constructor_tutorial.html) |
 | **OMPL / RRTConnect** | Bộ lập kế hoạch chuyển động theo lấy mẫu, dùng cho các chuyển động lớn | [OMPL](https://ompl.kavrakilab.org/) |
 | **Động học ngược (chỉ vị trí, 5 bậc tự do)** | Giải góc khớp cho một mục tiêu; cánh tay chỉ có 5 bậc tự do nên hướng chỉ điều khiển được một phần | [MoveIt IK](https://moveit.picknik.ai/main/doc/examples/kinematics_configuration/kinematics_configuration_tutorial.html) |
 | **`ros2_control` / `topic_based_ros2_control`** | Lớp bộ điều khiển; biến thể dựa trên topic làm bridge tới Isaac Sim | [ros2_control](https://control.ros.org/) |
