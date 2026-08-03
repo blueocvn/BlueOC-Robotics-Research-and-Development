@@ -54,13 +54,11 @@ API chia làm ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
 | Ra lệnh cho cánh tay gắp vật | [Giao diện cánh tay](ros-arm.md) | Có |
 | Khởi động một stack từ đầu | [Tham khảo launch](launch.md) | Có |
 
-!!! tip "Hãy bắt đầu với HTTP"
+!!! tip "API HTTP không cần ROS"
 
-    API HTTP là con đường nhanh nhất để có một demo chạy được — nó hoạt động mà
-    hoàn toàn không cần ROS. Nếu không import được `rclpy`, bridge sẽ tự động
-    chuyển sang **backend mô phỏng**, đẩy tiến trình order theo bộ đếm thời
-    gian. Nhờ vậy bạn có thể dựng và kiểm thử toàn bộ front end trước khi chạm
-    vào robot thật. `GET /state` cho biết bạn đang ở chế độ nào.
+    Nếu không import được `rclpy`, bridge tự chuyển sang **backend mô phỏng**,
+    đẩy tiến trình order theo bộ đếm thời gian. `GET /state` cho biết bạn đang ở
+    chế độ nào.
 
 ## Conventions used in this book
 

@@ -12,28 +12,6 @@ hành**, xe chạy qua phòng và giao tới bàn. Cốc cạn thì vòng lặp 
 
 ---
 
-## The vision
-
-Hầu hết demo robot chỉ làm tốt một việc. Phần khó — và thú vị — là bài toán phối
-hợp: làm sao để một cánh tay robot và một xe tự hành cùng hoàn thành nhiệm vụ mà
-riêng từng cái đều không làm được, khởi nguồn từ order thật của user chứ không
-phải một kịch bản dựng sẵn.
-
-Dự án này xây dựng trọn vẹn hệ thống đó:
-
-- **Giao diện thật cho user.** User quét QR, đặt đồ uống và theo dõi tiến trình
-  ngay trên điện thoại — order đến từ người dùng thật, không phải từ một lệnh gõ
-  trong terminal.
-- **Một bộ não trung tâm.** Orchestrator giữ hàng đợi order, chia mỗi lượt giao
-  thành từng chặng, rồi ra lệnh cho cả hai robot qua ROS 2.
-- **Hai robot hoàn toàn khác nhau.** Cánh tay 5 bậc tự do phải *nhìn*, *gắp*,
-  *đặt*; xe tự hành phải *dựng bản đồ*, *định vị*, *điều hướng*. Chúng gặp nhau ở
-  trạm để chuyền cốc.
-- **Mô phỏng trước, phần cứng sau.** Toàn bộ chạy trên NVIDIA Isaac Sim, nên cả
-  pipeline được phát triển và kiểm chứng xong trước khi lắp phần cứng thật.
-
----
-
 ## The three pieces
 
 <div class="grid cards" markdown>
@@ -88,9 +66,6 @@ Chi tiết luồng message xem ở [Pick and Deliver](solution_pick_and_deliver.
     Phần đang làm dở là tích hợp orchestrator ↔ robot: điểm nối docking của xe tự
     hành và các topic công việc của cánh tay đã đặc tả xong, mới đấu được một
     phần.
-
-Trang của mỗi robot đều nói thẳng cái gì **đã xong**, cái gì **chưa kiểm chứng**,
-cái gì **còn trong kế hoạch** — đọc từ hai trang tổng quan phía trên.
 
 ---
 

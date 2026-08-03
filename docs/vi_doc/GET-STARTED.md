@@ -4,10 +4,6 @@
 cánh tay robot (RA) để hoàn thành order đồ uống. Chạy được hết trên NVIDIA Isaac
 Sim, không cần phần cứng thật.
 
-Trang này là bản đồ tổng quan. Hãy chọn workspace bạn muốn dựng, và lướt qua phần
-**Khái niệm** trước nếu các thuật ngữ còn mới — mỗi mục đều dẫn tới tài liệu gốc
-để bạn đọc thêm trước khi động vào mã.
-
 ---
 
 ## Setup guides

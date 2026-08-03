@@ -1,8 +1,7 @@
 # HTTP API
 
-Dịch vụ `robot_web_bridge` mở JetRacer ra qua HTTP. Đây là cách nhanh nhất để có
-một demo chạy được: **không cần cài ROS trên máy bạn**, và nó vẫn chạy được khi
-không có robot nào hiện diện.
+Dịch vụ `robot_web_bridge` mở JetRacer ra qua HTTP. **Không cần cài ROS trên
+máy**, và nó vẫn chạy khi không có robot nào.
 
 Địa chỉ mặc định là `0.0.0.0:8088` — ghi đè bằng `ROBOT_WEB_BRIDGE_HOST` và
 `ROBOT_WEB_BRIDGE_PORT`.
