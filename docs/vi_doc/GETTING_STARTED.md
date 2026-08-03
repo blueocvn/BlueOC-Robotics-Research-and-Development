@@ -1,7 +1,7 @@
 # JetRacer — Getting Started
 
 Stack chạy trên robot vật lý. Chạy **trên chính chiếc JetRacer** (Waveshare
-JetRacer, ROS 2 Humble): driver bệ xe, RPLidar, odometry EKF, điều hướng Nav2, và
+JetRacer, ROS 2 Humble): driver chassis, RPLidar, odometry EKF, điều hướng Nav2, và
 docking bằng AprilTag.
 
 ---
@@ -30,7 +30,7 @@ Stack được tách ra để bạn chỉ dựng đúng phần mình cần:
 
 | Script                | Khởi động cái gì                                                   | Publish                                        |
 | --------------------- | ----------------------------------------------------------------- | ---------------------------------------------- |
-| `./start_driver.sh`   | Chỉ driver bệ xe (`/cmd_vel` → serial)                            | `/odom`, `/imu`                                |
+| `./start_driver.sh`   | Chỉ driver chassis (`/cmd_vel` → serial)                            | `/odom`, `/imu`                                |
 | `./start_lidar.sh`    | RPLidar A1 + TF `base_footprint→laser_frame`                      | `/scan`                                        |
 | `./start_hardware.sh` | **driver + lidar + EKF + TF tĩnh + camera/AprilTag** (không Nav2)  | `/odom`, `/imu`, `/scan`, `/odometry/filtered` |
 | `./start_nav2.sh`     | Nav2 (map_server, AMCL, controller, planner, BT nav)              | điều khiển `/cmd_vel`                          |
@@ -138,7 +138,7 @@ Các tham số thêm được truyền thẳng xuống launch file:
 ./start_nav2.sh     map:=/ros2_ws/maps/my_map.yaml
 ```
 
-Mặc định: cổng bệ xe `/dev/ttyACM0`, cổng lidar `/dev/ttyACM1`.
+Mặc định: cổng chassis `/dev/ttyACM0`, cổng lidar `/dev/ttyACM1`.
 
 ---
 

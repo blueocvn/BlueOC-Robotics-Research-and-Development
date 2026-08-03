@@ -1,7 +1,7 @@
 # BlueOC Robot Fulfillment
 
-**Hai robot và một web server giao một cốc nước từ đầu đến cuối, không cần ai
-can thiệp.**
+**Hệ thống robot giao đồ uống tự động: một robot arm rót nước, một xe tự hành
+mang tới tận bàn, một web server điều phối cả hai.**
 
 User quét QR tại bàn và gọi đồ uống. Một orchestrator trung tâm xếp việc vào
 hàng đợi rồi điều hai robot: **cánh tay robot** hứng đầy cốc và đặt lên **xe tự
@@ -22,14 +22,15 @@ phải một kịch bản dựng sẵn.
 Dự án này xây dựng trọn vẹn hệ thống đó:
 
 - **Giao diện thật cho user.** User quét QR, đặt đồ uống và theo dõi tiến trình
-  ngay trên điện thoại — đơn hàng đến từ con người, không phải từ terminal.
+  ngay trên điện thoại — đơn đến từ người dùng thật, không phải từ một lệnh gõ
+  trong terminal.
 - **Một bộ não trung tâm.** Orchestrator giữ hàng đợi đơn, chia mỗi lượt giao
   thành từng chặng, rồi ra lệnh cho cả hai robot qua ROS 2.
 - **Hai robot hoàn toàn khác nhau.** Cánh tay 5 bậc tự do phải *nhìn*, *gắp*,
   *đặt*; xe tự hành phải *dựng bản đồ*, *định vị*, *điều hướng*. Chúng gặp nhau ở
   trạm để chuyền cốc.
 - **Mô phỏng trước, phần cứng sau.** Toàn bộ chạy trên NVIDIA Isaac Sim, nên cả
-  pipeline được phát triển và kiểm chứng trước khi có động cơ nào quay.
+  pipeline được phát triển và kiểm chứng xong trước khi lắp phần cứng thật.
 
 ---
 
@@ -53,9 +54,9 @@ Dự án này xây dựng trọn vẹn hệ thống đó:
 
 -   **Orchestrator — bộ não**
 
-    Server FastAPI + HTMX. Nó phục vụ trang QR cho user, giữ hàng đợi đơn, và ra
-    lệnh cho cả hai robot qua ROS 2 — thành phần duy nhất hiểu *công việc* thay
-    vì hiểu *robot*.
+    Server FastAPI + HTMX. Nó chạy trang QR cho user, giữ hàng đợi đơn, và ra
+    lệnh cho cả hai robot qua ROS 2 — thành phần duy nhất nắm được *toàn bộ quy
+    trình*, thay vì chỉ điều khiển *một con robot*.
 
     [**Tổng quan →**](orchestrator.md) · [Giải pháp kết hợp](solution_pick_and_deliver.md)
 

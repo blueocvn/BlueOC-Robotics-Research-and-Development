@@ -1,10 +1,10 @@
 # AMR Setup (`jetracer_ws`) — JetRacer SLAM + Nav2 on device
 
-Một chiếc Waveshare JetRacer kiểu ô tô (Ackermann) chạy ROS 2 Humble, có khả
-năng dựng bản đồ không gian, tự định vị, điều hướng và docking. Trang này nói về
+Waveshare JetRacer kiểu ô tô (Ackermann) chạy ROS 2 Humble: dựng bản đồ không
+gian, tự định vị, điều hướng và docking. Trang này nói về
 robot thật trong
 [`amr/jetracer_ws/`](https://github.com/blueocvn/robotic-arm/tree/main/amr/jetracer_ws):
-driver bệ xe, RPLidar, odometry EKF, Nav2, và docking bằng AprilTag.
+driver chassis, RPLidar, odometry EKF, Nav2, và docking bằng AprilTag.
 
 > **Phạm vi:** chỉ robot chạy trên phần cứng. Quy trình Isaac Sim
 > (`carter_navigation` / `slam_custom` trên workstation) là một stack riêng nằm
@@ -21,12 +21,12 @@ driver bệ xe, RPLidar, odometry EKF, Nav2, và docking bằng AprilTag.
 |---|---|
 | Khung xe | Waveshare **JetRacer** (Ackermann), máy tính Jetson tích hợp |
 | HĐH / ROS | JetPack + **ROS 2 Humble** cài native trên Jetson |
-| MCU bệ xe | Serial (mặc định `/dev/ttyACM0`) — động cơ + IMU/con quay; do `jetracer_driver` đọc |
+| MCU chassis | Serial (mặc định `/dev/ttyACM0`) — động cơ + IMU/con quay; do `jetracer_driver` đọc |
 | Lidar | **RPLidar A1** trên `/dev/ttyACM1`, baud 115200, gắn **lộn ngược** (`laser_frame`, yaw π, z ≈ 0,18 m) |
 | Camera | CSI **IMX219** ở 640×360 (qua `gscam2`) → bộ nhận dạng AprilTag cho docking |
 | Công cụ build | `colcon`, `rosdep`, `vcstool` (`sudo apt install python3-vcstool`), `git`, `tmux` |
 
-> Thứ tự thiết bị serial không được đảm bảo qua các lần khởi động lại. Nếu bệ xe và
+> Thứ tự thiết bị serial không được đảm bảo qua các lần khởi động lại. Nếu chassis và
 > lidar hoán đổi cổng, hãy ghi đè chúng (§7). Giữ robot **đứng yên khoảng 2 giây**
 > lúc driver khởi động — con quay hiệu chuẩn khi đó, và chuyển động sẽ làm hỏng
 > odometry.
@@ -131,7 +131,7 @@ Stack được tách ra để bạn chỉ dựng đúng phần mình cần. Mọ
 
 | Script | Khởi động | Publish / làm gì |
 |---|---|---|
-| `./start_driver.sh [port]` | Chỉ driver bệ xe (`/cmd_vel` → serial) | `/odom`, `/imu` |
+| `./start_driver.sh [port]` | Chỉ driver chassis (`/cmd_vel` → serial) | `/odom`, `/imu` |
 | `./start_lidar.sh` | RPLidar A1 + TF `base_footprint→laser_frame` | `/scan` |
 | `./start_hardware.sh` | **driver + lidar + EKF + TF tĩnh + camera/AprilTag** (không Nav2) | `/odom`, `/imu`, `/scan`, `/odometry/filtered` |
 | `./start_nav2.sh` | Nav2 (map_server, AMCL, controller, planner, BT nav) | điều khiển `/cmd_vel` |
@@ -195,7 +195,7 @@ Các tham số thêm được truyền thẳng xuống launch file:
 ./start_nav2.sh     map:=/ros2_ws/maps/my_map.yaml
 ```
 
-Mặc định: cổng bệ xe `/dev/ttyACM0`, cổng lidar `/dev/ttyACM1`.
+Mặc định: cổng chassis `/dev/ttyACM0`, cổng lidar `/dev/ttyACM1`.
 
 ### 8. Calibration
 

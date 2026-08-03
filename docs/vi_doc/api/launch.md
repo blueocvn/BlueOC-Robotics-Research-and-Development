@@ -1,7 +1,7 @@
 # Launch Entry Points
 
-Chạy launch file nào, và mỗi file giả định sẵn có những gì. Nhầm chỗ này là cách
-phổ biến nhất để mất một giờ trong hackathon.
+Chạy launch file nào, và mỗi file giả định sẵn có những gì. Chạy nhầm launch
+file là lý do phổ biến nhất khiến các đội mất cả tiếng đồng hồ trong hackathon.
 
 ## JetRacer
 
