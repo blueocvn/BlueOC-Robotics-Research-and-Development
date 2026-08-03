@@ -9,9 +9,9 @@ docking bằng AprilTag.
 ## 1. Build
 
 Các script `start_*.sh` nạp **`ws_setup.bash`**, file này nạp ROS cùng từng package đã
-cài riêng từng cái. Đây là cách đi vòng có chủ đích cho một
-`install/setup.bash` hợp nhất bị thiếu sót trên thiết bị này — hãy dùng nó thay
-cho `source install/setup.bash`.
+cài riêng từng cái. Đây là cách đi vòng có chủ đích, vì `install/setup.bash`
+hợp nhất trên thiết bị này bị lỗi — hãy dùng nó thay cho
+`source install/setup.bash`.
 
 ```bash
 cd jetracer_ws
@@ -104,7 +104,7 @@ cd ../orchestrator
 ```
 
 Script này nạp `network.env` + ROS, rồi chạy `ros2 run robot_web_bridge server`.
-Nó cần được chạy bên trong container Humble (hoặc một shell đã nạp ROS). Ghi đè
+Phải chạy nó trong container Humble (hoặc một shell đã nạp ROS). Ghi đè
 cổng bằng `ROBOT_WEB_BRIDGE_PORT=9000`, và đặt mã PIN vận hành qua
 `ROBOT_WEB_BRIDGE_ADMIN_PIN` cho các route admin.
 

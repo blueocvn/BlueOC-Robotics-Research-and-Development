@@ -66,7 +66,7 @@ ros2 launch mtc_tutorial bringup.launch.py
 
 ## Proposed solution — and why
 
-Mỗi giai đoạn được chọn để làm việc *quanh* giới hạn của phần cứng 5 bậc tự do,
+Mỗi giai đoạn đều chọn cách đi *vòng* qua giới hạn của phần cứng 5 bậc tự do,
 một má kẹp, thay vì chống lại nó.
 
 | Quyết định | Lý do |
@@ -83,7 +83,7 @@ một má kẹp, thay vì chống lại nó.
 
 !!! tip "Mạch xuyên suốt"
     Perception cho ra pose thế giới gần đúng → lập kế hoạch đưa tới gần →
-    **camera vòng kín sửa bước cuối** → thế gripper (góc + độ cao) lo phần
+    **closed-loop camera sửa bước cuối** → thế gripper (góc + độ cao) lo phần
     còn lại. Mỗi lớp đều gỡ lỗi được độc lập.
 
 ## Tuning
@@ -124,8 +124,8 @@ Các ràng buộc đã biết, xếp theo thứ tự người mới dễ vấp p
 
 ??? warning "Độ tin cậy khi gắp — lỗi không liên tục"
     Pipeline **chạy trọn vẹn trong mô phỏng**, nhưng **cú gắp không thành công mọi
-    lần** — thỉnh thoảng gripper không bắt được cốc. Nguyên nhân gốc vẫn chưa được
-    khoanh vùng. Các nghi phạm khả dĩ, theo thứ tự:
+    lần** — thỉnh thoảng gripper không bắt được cốc. Chưa khoanh được nguyên nhân
+    gốc. Các nghi phạm khả dĩ, theo thứ tự:
 
     - **Góc tiếp cận** — `grasp_yaw_bias` nhắm cốc vào khe kẹp. Nếu cốc lệch phương
       vị một chút, má **cố định** sẽ gạt nó thay vì bắt được.
@@ -178,8 +178,8 @@ Xếp theo thứ tự việc nào tháo gỡ được nhiều nút thắt nhất
 1. **Chẩn đoán lỗi gắp không liên tục** — pipeline vốn đã chạy trọn vẹn, nên
    *độ tin cậy* chính là khoảng cách giữa nó và một bản demo đáng tin. Hãy đo đạc
    khoảnh khắc bàn giao servo (ghi lại sai số điểm ảnh `dx` tại thời điểm chuyển từ
-   pha 0 → 1) và ghi nhận kết quả từng cú gắp, để chế độ hỏng được **mô tả rõ thay
-   vì phỏng đoán**. Một cơ chế dừng theo tiếp xúc/lực (mục 2) cũng sẽ cho phép phát
+   pha 0 → 1) và ghi nhận kết quả từng cú gắp, để **mô tả rõ chế độ hỏng thay vì
+   phỏng đoán**. Một cơ chế dừng theo tiếp xúc/lực (mục 2) cũng sẽ cho phép phát
    hiện và thử lại một cú gắp hụt thay vì âm thầm đi tiếp.
 2. **Đưa lên phần cứng thật (sim-to-real)** — driver SO-ARM 101 thật,
    **hand-eye calibration** (extrinsics eye-in-hand hiện vẫn là giá trị tạm), dừng

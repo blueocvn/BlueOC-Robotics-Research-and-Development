@@ -11,8 +11,8 @@ admin và log order bằng SQLite thì vẫn còn ở phía trước.
 !!! tip "Phần tham khảo route nằm trong Sổ tay API"
     Mọi route, tham số và phản hồi của nó đều được **sinh tự động từ định nghĩa
     FastAPI của chính ứng dụng này** — xem **[API HTTP](api/http.md)**. Phần tham
-    khảo đó không thể lỗi thời; một bảng bảo trì thủ công đặt ở đây thì có (và
-    thực tế đã từng bị).
+    khảo đó không thể lỗi thời; bảng viết tay đặt ở đây thì có — và thực tế đã
+    từng lỗi thời.
 
     Trang này nói về **kiến trúc** — cách bridge, dispatcher và các backend
     khớp với nhau.
@@ -63,7 +63,7 @@ curl -s localhost:8088/state | jq .mode   # "ros" | "simulation"
 !!! warning "Cơ chế lùi này diễn ra âm thầm"
     Thiếu `rclpy` **không** gây lỗi — ứng dụng vẫn tiếp tục phục vụ dù chẳng nói
     chuyện với ai. Hãy kiểm tra `mode` trong mọi bài test tích hợp, nếu không một
-    lần chạy test xanh mướt có thể chẳng chứng minh được điều gì về robot.
+    lượt test xanh cũng chẳng chứng minh được gì về robot.
 
 ### Matching the real robot's `/docking_state`
 

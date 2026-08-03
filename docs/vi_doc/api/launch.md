@@ -51,8 +51,8 @@ IMX219, có thể ghi đè qua `$GSCAM_CONFIG`.
 
 !!! warning "gscam2 từ chối `bgr8`"
 
-    Pipeline phải kết thúc bằng `format=RGB`. `gscam2` publish `rgb8`, và một
-    pipeline BGR đơn giản là không liên kết được với appsink của nó — kèm theo một
+    Pipeline phải kết thúc bằng `format=RGB`. `gscam2` publish `rgb8`, nên
+    pipeline BGR sẽ không link được với appsink — kèm theo một
     thông báo lỗi không hề chỉ rõ nguyên nhân là định dạng. Nếu bạn ghi đè
     `$GSCAM_CONFIG`, hãy giữ phần kết RGB, hoặc bỏ hẳn biến này để dùng mặc định.
 
@@ -108,7 +108,7 @@ ros2 launch mtc_tutorial real_all.launch.py
 | `eth_plane_z` | Độ cao mặt phẳng giao tia |
 | `eth_x_correction`, `eth_y_correction` | Hiệu chỉnh extrinsics thủ công |
 
-**Bám bằng thị giác**
+**Visual servoing**
 
 | Tham số | Ý nghĩa |
 |---|---|

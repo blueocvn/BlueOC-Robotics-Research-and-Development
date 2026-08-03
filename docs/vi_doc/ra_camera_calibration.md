@@ -7,8 +7,8 @@ Cánh tay dùng **hai** camera, và chỉ một trong số đó là *eye-to-hand
 | `top_cam` | **cố định phía trên**, nhìn xuống bàn | `top_sim_camera` | **eye-to-hand** — định vị cốc trong hệ thế giới cho pha vươn thô |
 | `arm_cam` | trên gripper | `arm_cam` | eye-in-hand — pha tiếp cận sát bằng visual servoing |
 
-Trang này nói về việc hiệu chuẩn **`top_cam` eye-to-hand**. Đây là công việc
-đang chặn tiến độ của việc gắp dựa trên perception (xem ghi chú trong
+Trang này nói về việc hiệu chuẩn **`top_cam` eye-to-hand**. Đây là việc đang
+chặn tiến độ gắp dựa trên perception (xem ghi chú trong
 [Khởi chạy phần cứng thật](ra_hardware_bringup.md#deterministic-demo-mode-predefined-positions));
 cho tới khi nó đủ chặt chẽ, hãy chạy bản demo tất định với `fake_object:=true`.
 
@@ -102,7 +102,7 @@ toán từ **một AprilTag nằm phẳng tại một pose thế giới đã bi�
     Extrinsics cần một bia duy nhất tại một **pose thế giới đã biết**; một AprilTag
     phẳng với tâm đã đo cho ra pose 6 bậc tự do đầy đủ chỉ từ một lần nhận dạng, và
     quy ước frame của nó không gây nhập nhằng. Bộ giải cũng xử lý luôn phép lật
-    frame quang học OpenCV→Isaac, thứ khiến một extrinsics `solvePnP` ngây thơ bị
+    frame quang học OpenCV→Isaac — làm `solvePnP` thẳng tuột thì extrinsics sẽ bị
     lộn gương.
 
 **1.** Đặt một AprilTag `tag36h11` **nằm phẳng trên bàn, mặt hướng lên**, cạnh trên
@@ -161,8 +161,8 @@ export ROS_DOMAIN_ID=10 RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ros2 topic echo /detected_object/position
 ```
 
-Giá trị `x, y` báo về phải khớp với số đo thước trong khoảng ~1–2 cm. Một độ lệch
-không đổi có thể được tỉa bằng các tham số launch `eth_x_correction` /
+Giá trị `x, y` báo về phải khớp với số đo thước trong khoảng ~1–2 cm. Độ lệch không đổi thì
+tỉa bằng các tham số launch `eth_x_correction` /
 `eth_y_correction` (trong `ra_ws/src/mtc_tutorial/launch/real_all.launch.py`) thay
 vì phải giải lại; còn sai số về *tỉ lệ* hay *góc xoay* nghĩa là Giai đoạn 2 (hoặc
 intrinsics của Giai đoạn 1) cần làm lại.

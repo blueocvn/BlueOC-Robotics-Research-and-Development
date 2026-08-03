@@ -17,7 +17,7 @@ uvicorn robot_web_bridge.app:app --reload --port 8088
 
 ## Are you talking to a real robot?
 
-`GET /state` cho biết chế độ backend. Hãy kiểm tra trước khi tin vào bất cứ điều gì.
+`GET /state` cho biết chế độ backend. Hãy kiểm tra trước đã.
 
 ```bash
 curl -s localhost:8088/state | jq .mode
@@ -28,8 +28,8 @@ curl -s localhost:8088/state | jq .mode
 !!! warning "Chế độ mô phỏng diễn ra âm thầm"
 
     Bridge **không** báo lỗi khi thiếu `rclpy` — nó chuyển sang backend mô phỏng
-    và tiếp tục phục vụ. Một demo "chạy tốt" trên laptop của bạn có thể đang nói
-    chuyện với hư không. Hãy luôn kiểm tra `mode` trong các bài test tích hợp.
+    và tiếp tục phục vụ. Một demo "chạy tốt" trên laptop có thể chẳng điều khiển
+    gì cả. Hãy luôn kiểm tra `mode` trong các bài test tích hợp.
 
 ## Quick start
 
@@ -82,8 +82,8 @@ Mọi route trừ `login`, `logout` và `session` sẽ trả về **401** nếu 
 
 ## Route reference
 
-FastAPI tự sinh sẵn tài liệu tương tác cho chính nó, nên danh sách route luôn
-khớp với mã nguồn đang chạy — không cần bảng viết tay nào cả. Khi bridge đang
+FastAPI tự sinh tài liệu tương tác, nên danh sách route luôn khớp với mã nguồn
+đang chạy — không cần bảng viết tay. Khi bridge đang
 chạy, hãy mở:
 
 | Địa chỉ | Là gì |

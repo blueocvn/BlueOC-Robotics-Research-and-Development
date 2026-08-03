@@ -54,7 +54,7 @@ lerobot-find-port          # rút/cắm lại để nhận diện từng cánh t
 
 ## Calibration
 
-Hiệu chuẩn động cơ cho từng cánh tay nằm trong bộ nhớ đệm của LeRobot (**không**
+Hiệu chuẩn động cơ cho từng cánh tay nằm trong cache của LeRobot (**không**
 nằm trong repo này):
 
 ```
@@ -203,7 +203,7 @@ lerobot-replay --robot.type=so101_follower --robot.port=/dev/ttyACM0 --robot.id=
 
 ### 5. Deploy the trained policy on the real arm
 
-Việc chạy một policy trên phần cứng thật được thực hiện bằng
+Chạy policy trên phần cứng thật thì dùng
 **`lerobot-record --policy.path=…`** (policy thay thế cho leader/teleop và điều
 khiển follower; `lerobot-eval` dành cho môi trường gym *mô phỏng*, không phải cánh
 tay vật lý). **Không cần leader.**

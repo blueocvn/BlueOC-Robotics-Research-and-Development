@@ -175,8 +175,8 @@ Bản đồ nằm trong `jetracer_ws/maps/` (`test_map_outer_v6.yaml` là mặc 
 #### Docking (AprilTag)
 
 `start_hardware.sh` cũng dựng luôn camera CSI + detector AprilTag.
-`jetracer_bringup/scripts/jetracer_docker.py` chạy máy trạng thái dock/undock, được
-sắp trình tự bởi topic `/docking_state`. Khi toàn bộ stack (phần cứng + Nav2 +
+`jetracer_bringup/scripts/jetracer_docker.py` chạy máy trạng thái dock/undock, lấy topic
+`/docking_state` làm mốc trình tự. Khi toàn bộ stack (phần cứng + Nav2 +
 docker) đang chạy, một bản demo khứ hồi:
 
 ```bash
@@ -236,7 +236,7 @@ chính xác thấy rõ cho tới khi được đo thật. Hãy làm theo thứ t
   nằm trong `ros2_docker_v3.sh` trên thiết bị (§4). Thêm một máy vào đồ thị nghĩa là
   phải thêm IP của nó vào đó (và vào mọi peer khác).
 - Odometry: driver publish `/odom` thô, EKF hợp nhất nó thành `/odometry/filtered`
-  (thứ mà Nav2 đọc) và sở hữu TF `odom→base_footprint`.
+  (Nav2 đọc topic này) và sở hữu TF `odom→base_footprint`.
 - Docking là một **topic contract** (`/dock_robot`, `/undock_robot`,
   `/docking_state`) do `jetracer_docker.py` điều khiển, không phải một Nav2 docking
   server.

@@ -32,7 +32,7 @@ ros2 topic pub --once /abort_docking std_msgs/msg/Bool "{data: true}"
 !!! danger "`/cmd_vel` không có cơ chế phân xử"
 
     Bridge, `jetracer_docker`, Nav2 và node của chính bạn đều publish tới
-    `/cmd_vel`, và không có gì đứng ra hòa giải. Nếu bạn publish trong khi một
+    `/cmd_vel`, và không có cơ chế nào phân xử. Nếu bạn publish trong khi một
     lượt docking đang chạy, cả hai luồng đều tới động cơ và robot sẽ hành xử
     khó lường. Hãy hủy trước, rồi mới điều khiển.
 
@@ -50,8 +50,8 @@ ros2 topic pub --once /abort_docking std_msgs/msg/Bool "{data: true}"
 
 !!! warning "Các chuỗi `/docking_state` do robot định nghĩa"
 
-    Các chuỗi mô tả pha không được API này cố định — hãy xác nhận với robot thật
-    trước khi so khớp:
+    API này không cố định các chuỗi mô tả pha — hãy xác nhận với robot thật trước
+    khi so khớp:
 
     ```bash
     ros2 topic echo /docking_state

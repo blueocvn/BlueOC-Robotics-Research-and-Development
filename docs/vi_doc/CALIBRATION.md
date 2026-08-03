@@ -19,15 +19,15 @@ Thứ tự ưu tiên (tác động lớn nhất trước): **1 → 2 → 3 → 4
 
 - **Các file:** [`imx219_measured.yaml`][measured] (kết quả hiệu chuẩn oST thật) và
   [`imx219_inferred.yaml`][inferred] (thô, suy ra từ thông số kỹ thuật).
-- **Được chọn bởi:** dòng `camera_info_url` trong
+- **Chọn ở đâu:** dòng `camera_info_url` trong
   [`hardware.launch.py`][hardware-launch].
 
 !!! danger "Đã có một bản hiệu chuẩn tốt nhưng nó không phải bản đang được nạp"
     `imx219_measured.yaml` chứa một kết quả `camera_calibration` **thật**
     (`fx ≈ 521,7`, `fy ≈ 525,5`, độ méo plumb_bob thật). Nhưng
     `hardware.launch.py` hiện đang trỏ `camera_info_url` tới
-    **`imx219_inferred.yaml`** — file suy ra từ thông số, mà chính phần chú thích
-    đầu file của nó đã cảnh báo:
+    **`imx219_inferred.yaml`** — file suy ra từ thông số, mà chính header của nó
+    đã cảnh báo:
 
     > *plumb_bob không mô hình hóa nổi độ méo thùng nặng của ống kính này, nên ảnh
     > đã khử méo vẫn còn méo thấy rõ và độ chính xác pose AprilTag bị giảm, đặc
@@ -58,7 +58,7 @@ Thứ tự ưu tiên (tác động lớn nhất trước): **1 → 2 → 3 → 4
 - **File:** [`cmd_vel_to_serial.py`][cmd-vel] — `ENCODER_SCALE = 0.001 * 10`
 - **Vì sao quan trọng:** EKF suy vị trí bằng phép dead-reckoning từ vận tốc tiến
   này. Quá nhỏ → odom tưởng xe đi được ít hơn thực tế → các khoảng cách của
-  planner/docking bị lệch; AMCL phải vật lộn với nó.
+  planner/docking bị lệch; AMCL cũng khó hội tụ.
 - **Cách làm:** kẻ một vạch 1,0 m. Cho xe chạy thẳng dọc theo nó. Đọc độ dịch
   chuyển x trên `/odometry/filtered` (hoặc `/odom`).
   `tỉ_lệ_mới = tỉ_lệ_cũ × (1.0 / x_đo_được)`. Lặp lại cho tới khi chạy 1 m đọc ra
@@ -93,11 +93,11 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
       **yaw=π** (gắn lộn ngược).
     - Driver publish các bản quét với `frame_id:=laser_frame`.
 - **Vì sao quan trọng:** frame của bản quét là `laser_frame`, nên link `laser`
-  trong URDF là thừa/chết, và phép biến đổi thật lại là cái gõ tay trong shell
-  script (cả độ cao lẫn phép lật 180° đều là phỏng đoán). Yaw sai sẽ xoay toàn bộ
+  trong URDF là thừa/chết, còn phép biến đổi thật lại nằm ở dòng gõ tay trong
+  shell script (cả độ cao lẫn phép lật 180° đều là phỏng đoán). Yaw sai sẽ xoay toàn bộ
   bản quét → SLAM/AMCL nhìn thấy tường ở sai vị trí.
 - **Cách làm:**
-  1. Chọn **một** nguồn chân lý duy nhất (khuyến nghị URDF; hãy đổi tên link của nó
+  1. Chọn **một** nơi duy nhất làm chuẩn (khuyến nghị URDF; hãy đổi tên link của nó
      thành `laser_frame` và xóa bộ publish tĩnh trong `start_lidar.sh`).
   2. Đo **độ cao** lidar so với sàn và độ lệch **x/y** so với `base_footprint`.
   3. Xác nhận **yaw**: cho xe chạy về phía một bức tường phẳng, xem `/scan` trong
@@ -129,11 +129,10 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 
 - **File:** [`jetracer_docking.yaml`][docking-yaml]
 - **`external_detection_translation_x: -0.20`**, `rotation_yaw/pitch/roll` —
-  chuyển pose quang học của tag sang frame tiếp cận dock. Được ghi chú là "tinh
-  chỉnh trên phần cứng."
+  chuyển pose quang học của tag sang frame tiếp cận dock. File ghi rõ đây là giá
+  trị "tinh chỉnh trên phần cứng".
 - **`staging_x_offset: -0.7`** — nơi Smac lái tới trước khi bàn giao cho docking controller. Nó quy định điểm kết thúc của đường cong S.
-- **`docking_threshold: 0.15`** — khoảng cách mà tại đó trạng thái "đã dock" được
-  công bố.
+- **`docking_threshold: 0.15`** — tới khoảng cách này thì xe báo "đã dock".
 - **Pose các dock** `dock0/1/2` đều là giá trị tạm `[0,0,0]` — hãy **khảo sát pose
   thật của từng tag trên bản đồ** rồi điền vào.
 - **Cách làm:** thực hiện một lần dock thủ công, quan sát xe dừng ở đâu so với tag;
@@ -185,9 +184,10 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 ## 13. Localization (AMCL) — note, not a calibration 🟡
 
 - **File:** [`jetracer_nav2.yaml`][nav2-yaml] —
-  `robot_model_type: DifferentialMotionModel` dùng cho một chiếc xe hơi. Chấp nhận
-  được vì hướng lấy từ EKF đã hợp nhất con quay, nhưng hãy ý thức rằng đó không
-  phải mô hình chuyển động ackermann chính xác. Chỉ xem lại nếu AMCL hội tụ kém.
+  AMCL đang chạy `robot_model_type: DifferentialMotionModel` cho một chiếc xe lái
+  kiểu ô tô. Tạm chấp nhận được vì hướng lấy từ EKF đã hợp nhất con quay, nhưng
+  đây không phải mô hình chuyển động ackermann đúng nghĩa. Chỉ xem lại nếu AMCL
+  hội tụ kém.
 
 ---
 

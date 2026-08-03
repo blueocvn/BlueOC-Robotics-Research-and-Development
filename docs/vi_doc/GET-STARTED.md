@@ -33,8 +33,8 @@ DDS chung), không dùng chung không gian build. **Hãy dùng cùng một
 
 ## Concepts & topics for new learners
 
-Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn được xây trên đó. Hãy
-đọc tài liệu được dẫn cho những khái niệm bạn chưa quen trước khi lao vào.
+Mới làm quen với stack này? Đây là các khái niệm nền của mã nguồn. Khái niệm nào
+chưa quen thì đọc link đính kèm trước.
 
 ### Shared foundations (both robots)
 

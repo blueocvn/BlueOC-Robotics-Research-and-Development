@@ -8,15 +8,15 @@ cản dọc đường. Chạy trên **ROS 2 Humble, SLAM và Nav2**.
 
 !!! warning "Hiện tại mới chỉ chạy mô phỏng"
     Mọi thứ chạy trên **workstation**, điều khiển **Isaac Sim**. Repo chưa có
-    firmware nào chạy trên chính chiếc JetRacer. Vẫn stack đó sẽ lái xe thật khi
-    nào có driver đọc `/ackermann_cmd`.
+    firmware nào chạy trên chính chiếc JetRacer. Chính stack này sẽ lái xe thật,
+    khi nào có driver đọc `/ackermann_cmd`.
 
 ## Objectives
 
 - Xác định đúng vị trí của user vừa gọi đồ.
 - Tự chở cốc nước đầy từ máy lọc tới chỗ user.
 - Né vật cản — bàn ghế, đồ đạc — trong lúc chạy.
-- Giao khay tới nơi mà không làm sánh nước.
+- Giao khay tới nơi mà nước không sánh ra ngoài.
 
 ## Technical Stack
 

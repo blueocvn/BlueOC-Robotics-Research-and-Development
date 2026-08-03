@@ -26,7 +26,7 @@ uv run mkdocs serve     # → http://127.0.0.1:8000 (tự tải lại khi lưu)
 | `uv run mkdocs build --strict` | Coi cảnh báo là lỗi (liên kết hỏng) — dùng trong CI |
 | `uv add <package>` | Thêm một phụ thuộc (ví dụ một plugin MkDocs) |
 
-Việc xuất bản diễn ra tự động: đẩy lên `main` sẽ kích hoạt
+Xuất bản diễn ra tự động: đẩy lên `main` sẽ kích hoạt
 `.github/workflows/docs.yml`, workflow này build trang và triển khai lên GitHub
 Pages (nguồn Pages phải được đặt thành **GitHub Actions**).
 

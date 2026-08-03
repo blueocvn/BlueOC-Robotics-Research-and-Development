@@ -17,7 +17,7 @@ flowchart LR
 
 ## Perception outputs
 
-Được publish bởi `perception_node`. Đây là những topic mà phần lớn các đội sẽ dùng.
+Do `perception_node` publish. Đây là những topic mà phần lớn các đội sẽ dùng.
 
 | Topic | Kiểu | Ý nghĩa |
 |---|---|---|
@@ -67,7 +67,7 @@ Cho mỗi namespace camera (`top_cam` eye-to-hand, `arm_cam` eye-in-hand):
 
 ## AprilTag
 
-Được publish bởi `apriltag_node`.
+Do `apriltag_node` publish.
 
 | Topic | Kiểu | Ý nghĩa |
 |---|---|---|
@@ -86,7 +86,7 @@ Cho mỗi namespace camera (`top_cam` eye-to-hand, `arm_cam` eye-in-hand):
 
 ## Cup handle detection
 
-Được publish bởi `handle_detector` — tìm quai cốc để gripper tiếp cận từ góc có
+Do `handle_detector` publish — tìm quai cốc để gripper tiếp cận từ góc có
 thể gắp được.
 
 | Topic | Kiểu | Ý nghĩa |
@@ -144,10 +144,10 @@ một phần quãng đường tới lời giải.
 !!! danger "`tracking_node` và `mtc_node` cùng điều khiển cánh tay"
 
     Cả hai đều publish tới `/arm_group_controller/joint_trajectory`, và không có
-    gì phân xử giữa chúng. Hãy chạy **từng cái một**. `gain` và `max_joint_step`
-    chính là vùng an toàn cho việc bám bằng thị giác — tăng chúng lên sẽ khiến
-    cánh tay giật mạnh về phía lời giải IK, và một kết quả nhận dạng sai sẽ trở
-    thành một chuyển động nhanh ngoài ý muốn.
+    cơ chế nào phân xử. Hãy chạy **từng cái một**. `gain` và `max_joint_step` là
+    hai tham số giữ an toàn cho visual servoing — tăng lên thì cánh tay giật
+    mạnh về phía lời giải IK, và một kết quả nhận dạng sai sẽ thành cú vung tay
+    ngoài ý muốn.
 
 ## Camera — `usb_camera_node`
 

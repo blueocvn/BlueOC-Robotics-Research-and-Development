@@ -12,7 +12,7 @@ API chia làm ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
     ---
 
     Điều khiển JetRacer qua HTTP thuần — đặt order, docking, teleop, dừng khẩn cấp.
-    Không cần cài ROS trên máy của bạn.
+    Không cần cài ROS.
 
     [:octicons-arrow-right-24: Tham khảo HTTP](http.md)
 
@@ -71,6 +71,5 @@ API chia làm ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
 ## Reporting drift
 
 Phần tham khảo HTTP được sinh tự động từ ứng dụng FastAPI đang chạy, nên nó không
-thể lỗi thời. Các trang ROS được bảo trì thủ công dựa trên mã nguồn. Nếu bạn thấy
-một topic không khớp thực tế, đó là một lỗi đáng báo cáo — hãy mở issue thay vì
-âm thầm tìm cách đi vòng.
+thể lỗi thời. Các trang ROS được bảo trì thủ công dựa trên mã nguồn. Nếu thấy topic nào
+không khớp thực tế thì đó là bug — hãy mở issue, đừng tự lách.

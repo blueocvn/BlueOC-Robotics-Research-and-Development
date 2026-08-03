@@ -23,12 +23,12 @@ khung xe thật khi đã có driver đọc `/ackermann_cmd`.
 | Dependency thêm | `slam_toolbox`, `nav2`, `pointcloud_to_laserscan` (qua `rosdep`) |
 
 > Stack AMR được thiết kế để build bên trong container nhằm ghim chặt bộ công cụ
-> Humble và các dependency. Bản thân Isaac Sim chạy trên máy chủ (hoặc trong
-> container riêng của nó) và nói chuyện với workspace qua đồ thị ROS 2.
+> Humble và các dependency. Isaac Sim thì chạy trên máy host (hoặc trong container
+> riêng) và nói chuyện với workspace qua đồ thị ROS 2.
 
 ### 2. Workspace layout
 
-Các package của riêng dự án AMR. Lưu ý rằng **tên package** mới là thứ bạn truyền cho
+Các package của riêng dự án AMR. **Tên package** mới là thứ bạn truyền cho
 `ros2 launch` / `ros2 run` — một số package nằm trong các thư mục gom nhóm
 (`navigation/`, `ackermann_control/`), nên tên thư mục và tên package khác nhau.
 

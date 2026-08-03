@@ -143,7 +143,7 @@ chính xác của camera. Khi hiệu chuẩn đã chặt chẽ hơn, hãy bỏ
 ## Known gotcha — home the arm before the first plan
 
 !!! warning "Start state out of bounds"
-    Bộ điều hợp `CheckStartStateBounds` của MoveIt sẽ **từ chối lập kế hoạch** nếu
+    Adapter `CheckStartStateBounds` của MoveIt sẽ **từ chối lập kế hoạch** nếu
     cánh tay bắt đầu ngoài giới hạn khớp trong URDF. Tư thế nghỉ gập lại có thể
     khiến một khớp dừng hơi quá giới hạn (ví dụ `Pitch ≈ −1.84` so với giới hạn
     `−1.745`), sinh ra:

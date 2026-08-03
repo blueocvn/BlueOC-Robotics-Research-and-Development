@@ -40,8 +40,8 @@ xác): `navigation2` 1.1.5, `robot_localization` 3.5.4, `angles`, `apriltag_msgs
 
 ## Local patches
 
-Cả hai đều đã được xác nhận là thay đổi thật, bằng cách so sánh từng byte giữa cây
-làm việc và tag upstream đã ghim:
+So sánh từng byte giữa cây làm việc và tag upstream đã ghim xác nhận cả hai đều
+là thay đổi thật:
 
 - `patches/nav2_util-bond-shared_ptr.patch` — thay đổi cục bộ duy nhất của nav2
   1.1.5: thành viên `bond_` của nav2_util đổi từ `unique_ptr` -> `shared_ptr`.
@@ -51,7 +51,7 @@ làm việc và tag upstream đã ghim:
 
 Các sửa đổi lạc lối do IDE "optimize imports" (đường dẫn import tuyệt đối trong
 `nav2_smac_planner/lattice_primitives`, `bond_core/bondpy`,
-`geographic_info/geodesy`) **không phải** thay đổi thật và được cố ý loại bỏ —
+`geographic_info/geodesy`) **không phải** thay đổi thật, nên đã bị loại bỏ có chủ đích —
 chạy lại `vcs import` sẽ khôi phục đúng các import upstream.
 
 [vcstool]: https://github.com/dirk-thomas/vcstool

@@ -41,7 +41,7 @@ Cánh tay có sáu khớp; cả sáu đều phát dữ liệu trên `/isaac_join
 
 !!! info "Cánh tay không có máy tính tích hợp"
     SO-ARM 101 là một **thiết bị ngoại vi USB**, không phải một node tính toán.
-    Các servo của nó nhận lệnh vị trí qua bus serial từ một **workstation chủ**,
+    Các servo của nó nhận lệnh vị trí qua bus serial từ một **workstation host**,
     và máy này lo toàn bộ việc lập kế hoạch, perception và điều khiển:
 
     ```
@@ -49,7 +49,7 @@ Cánh tay có sáu khớp; cả sáu đều phát dữ liệu trên `/isaac_join
     ```
 
     Khác với JetRacer (AMR) vốn mang sẵn một Jetson trên xe, cánh tay không có
-    năng lực tính toán biên nào của riêng nó.
+    tính toán biên của riêng nó.
 
 | Phần cứng | Thông số | Ghi chú |
 |----------|------|-------|
@@ -102,7 +102,7 @@ Bốn package tạo nên dự án cánh tay. Mọi thứ còn lại đều là p
     Điều phối toàn bộ pipeline gắp và đặt.
 
     - MTC Node (MoveIt Task Constructor) dẫn dắt pipeline từ đầu đến cuối
-    - Các giai đoạn: gắp → servo (bám bằng thị giác) → hứng nước → đặt
+    - Các giai đoạn: gắp → servo (visual servoing) → hứng nước → đặt
     - Các launch file và định nghĩa tác vụ
 
 ## The ROS Contract (Isaac Sim)
