@@ -41,7 +41,7 @@ Thứ tự ưu tiên (tác động lớn nhất trước): **1 → 2 → 3 → 4
     phải khớp với đầu ra 640×360 thật của pipeline.
 
 - **Vì sao quan trọng:** pose AprilTag được chiếu ngược qua chính các intrinsics này.
-  Intrinsics sai → khoảng cách/góc tới dock sai → bộ điều khiển docking nhắm sai chỗ.
+  Intrinsics sai → khoảng cách/góc tới dock sai → docking controller nhắm sai chỗ.
 - **Nếu bạn cần hiệu chuẩn lại:**
   1. Dựng camera ở đầu ra pipeline **640×360** (phải khớp `image_width/height`).
   2. Thu khung hình bằng [`grab_frames.py`][grab-frames] (`--cols 8 --rows 6`,
@@ -76,7 +76,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 
 - **Vì sao quan trọng:** `R_min` chi phối đường cong S của Smac Hybrid-A*. Quá nhỏ
   → planner vẽ ra những đường cong mà xe không thể bám nổi về mặt vật lý → xe cắt
-  cua / văng rộng. `L` và `δ_max` quy định giới hạn ω của bộ lọc ackermann ở pha
+  cua / văng rộng. `L` và `δ_max` quy định giới hạn ω của ackermann filter ở pha
   tiếp cận docking cuối cùng.
 - **Cách làm (phép đo thật duy nhất):** cho xe chạy ở **góc lái hết cỡ**, ga đều ở
   mức thấp, ít nhất 1 vòng tròn trọn vẹn. Đo **đường kính vòng tròn ÷ 2 = R_min**.
@@ -131,8 +131,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 - **`external_detection_translation_x: -0.20`**, `rotation_yaw/pitch/roll` —
   chuyển pose quang học của tag sang frame tiếp cận dock. Được ghi chú là "tinh
   chỉnh trên phần cứng."
-- **`staging_x_offset: -0.7`** — nơi Smac lái tới trước khi bàn giao cho bộ điều
-  khiển docking. Nó quy định điểm kết thúc của đường cong S.
+- **`staging_x_offset: -0.7`** — nơi Smac lái tới trước khi bàn giao cho docking controller. Nó quy định điểm kết thúc của đường cong S.
 - **`docking_threshold: 0.15`** — khoảng cách mà tại đó trạng thái "đã dock" được
   công bố.
 - **Pose các dock** `dock0/1/2` đều là giá trị tạm `[0,0,0]` — hãy **khảo sát pose
@@ -164,7 +163,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
 - **File:** [`cmd_vel_to_serial.py`][cmd-vel] — lấy trung bình 100 mẫu (khoảng 2
   giây) lúc khởi động.
 - **Việc bắt buộc:** giữ robot **hoàn toàn đứng yên** trong khoảng 2 giây đầu sau
-  khi khởi chạy driver, nếu không yaw sẽ trôi suốt cả phiên làm việc. Hãy theo dõi
+  khi khởi chạy driver, nếu không yaw sẽ trôi suốt cả session làm việc. Hãy theo dõi
   log tìm dòng "Gyro calibrated."
 
 ## 11. IMU covariances 🟡
@@ -179,7 +178,7 @@ Các đại lượng này xuất hiện ở **ba** nơi và phải khớp nhau:
   gửi xuống firmware.
 - **Kiểm tra:** ra lệnh một `linear.x` đã biết (ví dụ 0,2 m/s) trong một lần chạy
   có bấm giờ; tốc độ đo được phải khớp. Nếu lệnh và thực tế lệch nhau, các giả định
-  về tốc độ của bộ điều khiển (và giới hạn ω của ackermann) đều sai. Odometry
+  về tốc độ của controller (và giới hạn ω của ackermann) đều sai. Odometry
   encoder (mục 2) bù được một phần, nhưng tỉ lệ lệnh open-loop vẫn quan trọng với
   firmware.
 

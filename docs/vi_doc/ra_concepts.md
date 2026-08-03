@@ -88,14 +88,14 @@ Bốn package tạo nên dự án cánh tay. Mọi thứ còn lại đều là p
     - Cấu hình SRDF (Semantic Robot Description Format)
     - Bộ giải động học: IK chỉ theo vị trí, phù hợp tầm với của cánh tay 5 bậc tự do
     - Lập kế hoạch chuyển động: OMPL dùng RRTConnect
-    - Tích hợp: `ros2_control` + bộ điều khiển để điều khiển khớp
+    - Tích hợp: `ros2_control` + controller để điều khiển khớp
 
 ??? package "3 · so_arm_perception"
     Nhận dạng cốc, khay và máy lọc nước từ camera trên và camera trên tay.
 
     - Nhận dạng cốc: YOLO (`yolo11n`) kèm phương án dự phòng theo không gian màu HSV cho mô phỏng
-    - Nhận dạng khay: bộ nhận dạng khay hồng (định vị dựa trên AprilTag)
-    - Nhận dạng máy lọc: bộ nhận dạng AprilTag để định vị máy lọc nước
+    - Nhận dạng khay: detector khay hồng (định vị dựa trên AprilTag)
+    - Nhận dạng máy lọc: detector AprilTag để định vị máy lọc nước
     - Đầu vào camera: `top_cam` (phía trên), `arm_cam` (gắn trên tay)
 
 ??? package "4 · mtc_tutorial"

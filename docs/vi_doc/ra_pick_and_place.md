@@ -34,7 +34,7 @@ như mọi quyết định thiết kế dưới đây đều bắt nguồn từ 
 
 ## Run it
 
-Một lệnh duy nhất dựng MoveIt (`move_group` + bộ điều khiển + RViz), perception và
+Một lệnh duy nhất dựng MoveIt (`move_group` + controller + RViz), perception và
 `mtc_node`, xếp lệch nhau để phụ thuộc của mỗi lớp lên trước:
 
 ```bash
@@ -44,10 +44,10 @@ ros2 launch mtc_tutorial bringup.launch.py
 
 ## What happens
 
-1. `move_group`, `ros2_control`, và các bộ điều khiển `arm_group` / `hand_group`
+1. `move_group`, `ros2_control`, và các controller `arm_group` / `hand_group`
    khởi động.
-2. Perception khởi động — bộ nhận dạng cốc YOLO (`yolo11n`), bộ nhận dạng khay
-   hồng, bộ nhận dạng AprilTag của máy lọc.
+2. Perception khởi động — detector cốc YOLO (`yolo11n`), detector khay
+   hồng, detector AprilTag của máy lọc.
 3. `mtc_node` chờ `/detected_object/position`, rồi **với mỗi cốc**:
 
     | Bước | Hành động |
@@ -74,7 +74,7 @@ một má kẹp, thay vì chống lại nó.
 | **Gắp ngang, không gắp từ trên xuống** | Má kẹp dài khoảng 0,17 m. Chĩa thẳng xuống một chiếc cốc thấp sẽ đâm má kẹp vào **mặt bàn** trước khi bắt được cốc. Gắp từ trên xuống không phải bài toán tinh chỉnh — nó **bất khả thi về mặt hình học** trên cánh tay này. Gắp ngang bằng mới là phương án với tới được. |
 | **IK chỉ theo vị trí** | Với 5 bậc tự do, bạn không thể ra lệnh đồng thời cả vị trí *và* hướng bất kỳ. Chỉ giải theo vị trí, còn cổ tay cố định theo cấu tạo (`Wrist_Roll = −90°`, `Wrist_Pitch = −(Pitch + Elbow)`), giúp gripper luôn nằm ngang và bài toán IK giải được. |
 | **Tiếp cận chéo góc (`grasp_yaw_bias`)** | SO-ARM 101 ép cốc vào một má **cố định**. Tiếp cận thẳng chính giữa sẽ khiến má đó gạt văng chiếc cốc. Quay lệch trục khoảng 29° (`-0.5 rad`) đưa cốc **vào đúng khe** giữa hai má. |
-| **Chiếu ngược tia–mặt phẳng từ camera trên** | Chiếu ngược bộ đệm độ sâu trên một bề mặt xiên mang theo sai lệch hệ thống. Thay vào đó, giao tia đi qua điểm ảnh nhận dạng với mặt phẳng chiều cao cốc đã biết đã giảm sai số camera trên từ **≈31 mm → ≈3 mm**. |
+| **Chiếu ngược tia–mặt phẳng từ camera trên** | Chiếu ngược depth buffer trên một bề mặt xiên mang theo sai lệch hệ thống. Thay vào đó, giao tia đi qua điểm ảnh nhận dạng với mặt phẳng chiều cao cốc đã biết đã giảm sai số camera trên từ **≈31 mm → ≈3 mm**. |
 | **AprilTag trên máy lọc** | Đích hứng nước phải thật chính xác. Một fiducial cho ra pose chính xác dưới milimét từ camera phía trên — đáng tin cậy hơn nhiều so với nhận dạng máy lọc bằng thị giác. |
 | **MoveIt Task Constructor (MTC)** | Việc này tự nó đã chia thành từng giai đoạn (tiếp cận → gắp → nâng → chở → đặt). MTC diễn đạt điều đó thành các giai đoạn ghép được, có lập kế hoạch nhận biết va chạm (OMPL / RRTConnect), thay vì một script dài duy nhất. |
 | **Visual servoing trước khi gắp** | Lập kế hoạch đưa gripper tới *gần*, nhưng pose open-loop mang theo sai số của perception + hiệu chuẩn. Nhìn qua camera trên tay và chỉnh dần sẽ xoá nốt vài centimét cuối — xem [Visual servoing](ra_visual_servoing.md). |
@@ -188,7 +188,7 @@ Xếp theo thứ tự việc nào tháo gỡ được nhiều nút thắt nhất
 3. **Tích hợp hệ thống** — phơi bày các topic tác vụ của RA và hiện thực việc
    chuyển giao AMR ↔ RA để cánh tay trở thành một node trong
    [giải pháp Gắp và giao](solution_pick_and_deliver.md).
-4. **Xoay lại quai cốc** — bộ nhận dạng quai đã có sẵn nhưng chưa đấu vào.
+4. **Xoay lại quai cốc** — detector quai đã có sẵn nhưng chưa đấu vào.
    Vì cánh tay không thể gắp từ trên xuống, việc xoay lại chiếc cốc theo quai phải
    là thao tác **đẩy-để-xoay** chứ không phải gắp lại.
 5. **Gắp bằng học máy (lai)** — các giai đoạn vận chuyển và máy lọc đều có hình học

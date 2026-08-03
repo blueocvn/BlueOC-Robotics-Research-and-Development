@@ -6,7 +6,7 @@ hợp để chạy sau tunnel rồi quét QR tại từng bàn).
 
 Package này hiện thực **các trang user công khai**, **bridge ROS + dispatcher**,
 và **API admin** (các endpoint vận hành có chắn mã PIN). Phần *giao diện*
-admin và nhật ký order bằng SQLite thì vẫn còn ở phía trước.
+admin và log order bằng SQLite thì vẫn còn ở phía trước.
 
 !!! tip "Phần tham khảo route nằm trong Sổ tay API"
     Mọi route, tham số và phản hồi của nó đều được **sinh tự động từ định nghĩa
@@ -26,8 +26,8 @@ Ba mảnh, mỗi mảnh một việc:
 | `app.py` | Các route FastAPI — trang user, API JSON, endpoint admin |
 | `ros_node.py` | Một node rclpy duy nhất chạy trên luồng daemon — mối nối với ROS |
 | `dispatcher.py` | **Vòng lặp bất đồng bộ duy nhất sở hữu robot** — mỗi lúc một order |
-| `store.py` | Sổ order trong bộ nhớ (tạm thay cho nhật ký SQLite) |
-| `auth.py` | Chắn mã PIN vận hành — cookie phiên đã ký, có hạn |
+| `store.py` | Sổ order trong bộ nhớ (tạm thay cho log SQLite) |
+| `auth.py` | Chắn mã PIN vận hành — cookie session đã ký, có hạn |
 
 ### The ROS seam
 
@@ -54,7 +54,7 @@ thông tin "robot đang bận / còn N order phía trước / ~thời gian dự 
 
 Nếu không import được `rclpy` (một venv thuần để phát triển cục bộ, hoặc bản demo
 qua tunnel), ứng dụng sẽ tự động lùi về một **backend mô phỏng**, đẩy tiến trình
-order theo bộ đếm thời gian.
+order theo timer.
 
 ```bash
 curl -s localhost:8088/state | jq .mode   # "ros" | "simulation"
@@ -113,7 +113,7 @@ Rồi mở <http://localhost:8088/?dock=dock0>.
 | `ROBOT_WEB_BRIDGE_HOST` / `_PORT` | `0.0.0.0:8088` | Địa chỉ lắng nghe |
 | `ROBOT_WEB_BRIDGE_ADMIN_PIN` | `1234` | Mã PIN vận hành — **hãy đổi nó** |
 | `ROBOT_WEB_BRIDGE_SECRET` | ngẫu nhiên mỗi tiến trình | Khóa ký cookie |
-| `ROBOT_WEB_BRIDGE_ADMIN_TTL` | `28800` | Thời hạn phiên, tính bằng giây |
+| `ROBOT_WEB_BRIDGE_ADMIN_TTL` | `28800` | Thời hạn session, tính bằng giây |
 
 !!! danger "Hai giá trị mặc định cần đổi trước một sự kiện thật"
     Mã PIN mặc định là `1234`, và khóa ký được **sinh lại mỗi lần tiến trình khởi

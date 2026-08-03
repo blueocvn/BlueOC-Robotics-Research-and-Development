@@ -1,7 +1,7 @@
 # ROS 2 Interfaces — Robot Arm
 
 Topic, service và action cho SO-ARM 101. Pipeline chạy theo thứ tự
-**perception → chọn mục tiêu → lập kế hoạch chuyển động → bộ điều khiển**, và bạn
+**perception → chọn mục tiêu → lập kế hoạch chuyển động → controller**, và bạn
 có thể can thiệp ở bất kỳ giai đoạn nào.
 
 ```mermaid
@@ -93,7 +93,7 @@ thể gắp được.
 |---|---|---|
 | `/cup_handle/bearing` | `std_msgs/msg/Float32` | Phương vị của quai, radian |
 | `/cup_handle/required_turn` | `std_msgs/msg/Float32` | Góc cần xoay để đối diện quai |
-| `/cup_handle/state` | `std_msgs/msg/Float32MultiArray` | Toàn bộ trạng thái bộ nhận dạng |
+| `/cup_handle/state` | `std_msgs/msg/Float32MultiArray` | Toàn bộ trạng thái detector |
 | `/cup_handle/debug_image` | `sensor_msgs/msg/Image` | Ảnh có chú thích |
 
 ## Motion — `mtc_node`

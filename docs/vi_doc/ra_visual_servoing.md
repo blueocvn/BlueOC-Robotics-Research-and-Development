@@ -154,7 +154,7 @@ Xem trình tự đầy đủ tại [Gắp và đặt](ra_pick_and_place.md) và 
     bị tinh thần là chỗ này cần hiệu chuẩn thật.
 
 ??? warning "Được tinh chỉnh dựa trên hình ảnh mô phỏng"
-    Bộ nhận dạng cấp dữ liệu cho servo được tinh chỉnh cho mô phỏng. Ánh sáng thật,
+    Detector cấp dữ liệu cho servo được tinh chỉnh cho mô phỏng. Ánh sáng thật,
     nhòe chuyển động, và một chiếc cốc thật sẽ làm thay đổi tín hiệu điểm ảnh mà
     vòng lặp đọc.
 

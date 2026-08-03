@@ -160,7 +160,7 @@ Bạn cũng có thể đặt một **2D Pose Estimate** (publish `/initialpose`)
 
 ### 7. Drive interface (Ackermann)
 
-Bộ điều khiển của Nav2 phát `/cmd_vel` (Twist); JetRacer kiểu ô tô, nên
+Controller của Nav2 phát `/cmd_vel` (Twist); JetRacer kiểu ô tô, nên
 `cmdvel_to_ackermann` chuyển nó thành `/ackermann_cmd`:
 
 ```bash

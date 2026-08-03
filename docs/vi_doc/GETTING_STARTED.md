@@ -73,7 +73,7 @@ Bản đồ nằm trong `jetracer_ws/maps/` (`test_map_outer_v6.yaml` là mặc 
 
 ### Docking (AprilTag)
 
-`start_hardware.sh` cũng dựng luôn camera CSI + bộ nhận dạng AprilTag.
+`start_hardware.sh` cũng dựng luôn camera CSI + detector AprilTag.
 `jetracer_bringup/scripts/jetracer_docker.py` chạy máy trạng thái dock/undock
 (trình tự do `/docking_state` dẫn dắt). Demo một vòng khứ hồi, khi toàn bộ stack
 đã chạy sẵn:

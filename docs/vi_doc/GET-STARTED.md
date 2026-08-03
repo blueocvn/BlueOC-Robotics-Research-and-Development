@@ -55,9 +55,9 @@ Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn 
 | **MoveIt Task Constructor (MTC)** | Chia tác vụ gắp → nâng → đặt thành các giai đoạn; `mtc_node` dựng trên nó | [Tài liệu MTC](https://moveit.picknik.ai/main/doc/examples/moveit_task_constructor/moveit_task_constructor_tutorial.html) |
 | **OMPL / RRTConnect** | Bộ lập kế hoạch chuyển động theo lấy mẫu, dùng cho các chuyển động lớn | [OMPL](https://ompl.kavrakilab.org/) |
 | **Động học ngược (chỉ vị trí, 5 bậc tự do)** | Giải góc khớp cho một mục tiêu; cánh tay chỉ có 5 bậc tự do nên hướng chỉ điều khiển được một phần | [MoveIt IK](https://moveit.picknik.ai/main/doc/examples/kinematics_configuration/kinematics_configuration_tutorial.html) |
-| **`ros2_control` / `topic_based_ros2_control`** | Lớp bộ điều khiển; biến thể dựa trên topic làm bridge tới Isaac Sim | [ros2_control](https://control.ros.org/) |
+| **`ros2_control` / `topic_based_ros2_control`** | Lớp controller; biến thể dựa trên topic làm bridge tới Isaac Sim | [ros2_control](https://control.ros.org/) |
 | **Visual servoing (IBVS / PBVS)** | Dùng ảnh camera để chỉnh dần cho tới khi gripper vào đúng thế gắp (vòng lặp tự viết, *không phải* `moveit_servo`) | [Tổng quan visual servo](https://visp.inria.fr/visual-servoing/) · [XLeRobot SO-101 servoing](https://xlerobot.readthedocs.io/en/latest/software/getting_started/SO101.html) |
-| **YOLO (YOLO11n)** | Bộ nhận dạng vật thể bằng mạng nơ-ron, dùng để tìm cốc | [Ultralytics YOLO](https://docs.ultralytics.com/) |
+| **YOLO (YOLO11n)** | Detector vật thể bằng mạng nơ-ron, dùng để tìm cốc | [Ultralytics YOLO](https://docs.ultralytics.com/) |
 | **AprilTag** | Fiducial trên máy lọc nước cho độ chính xác pose dưới milimét | [AprilTag](https://april.eecs.umich.edu/software/apriltag) |
 | **Phân vùng HSV + ray-plane unprojection** | Lọc màu cốc/khay, rồi chiếu điểm ảnh lên một mặt phẳng nền đã biết để ra tọa độ thế giới | [Không gian màu OpenCV](https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html) |
 
@@ -69,7 +69,7 @@ Mới làm quen với stack này? Đây là những ý tưởng mà mã nguồn 
 |---|---|---|
 | **SLAM (`slam_toolbox`)** | Dựng bản đồ không gian đồng thời tự định vị trong đó | [slam_toolbox](https://github.com/SteveMacenski/slam_toolbox) |
 | **Nav2** | Stack điều hướng — planner, controller, behavior tree, costmap | [Tài liệu Nav2](https://docs.nav2.org/) |
-| **AMCL** | Định vị bằng bộ lọc hạt dựa trên bản đồ đã lưu | [Nav2 AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) |
+| **AMCL** | Định vị bằng particle filter dựa trên bản đồ đã lưu | [Nav2 AMCL](https://docs.nav2.org/configuration/packages/configuring-amcl.html) |
 | **Costmap** | Lưới chiếm dụng mà Nav2 dùng để lập kế hoạch và né vật cản | [Costmap Nav2](https://docs.nav2.org/configuration/packages/configuring-costmaps.html) |
 | **Behavior Tree** | Cách Nav2 sắp xếp trình tự các hành vi điều hướng | [Nav2 BT](https://docs.nav2.org/behavior_trees/index.html) |
 | **Action `NavigateToPose`** | Action mà bên gửi goal gọi để đưa robot tới một pose | [Action Nav2](https://docs.nav2.org/commander_api/index.html) |

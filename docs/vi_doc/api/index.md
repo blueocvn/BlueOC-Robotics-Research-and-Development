@@ -57,7 +57,7 @@ API chia làm ba lớp. Phần lớn các đội chỉ cần lớp đầu tiên.
 !!! tip "API HTTP không cần ROS"
 
     Nếu không import được `rclpy`, bridge tự chuyển sang **backend mô phỏng**,
-    đẩy tiến trình order theo bộ đếm thời gian. `GET /state` cho biết bạn đang ở
+    đẩy tiến trình order theo timer. `GET /state` cho biết bạn đang ở
     chế độ nào.
 
 ## Conventions used in this book

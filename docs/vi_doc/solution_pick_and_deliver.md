@@ -60,5 +60,4 @@ Cho tới khi cánh tay được đấu vào vòng lặp, hãy chạy từng l�
 1. **Rót nước bằng cánh tay** — [RA Gắp và đặt](ra_pick_and_place.md)
 2. **Điều hướng AMR** — [AMR Điều hướng & Giao hàng](amr_pick_and_place.md)
 3. **Giao diện web orchestrator** — xem [Orchestrator](orchestrator.md); nó có thể
-   chạy ở chế độ `SimBackend` (không cần ROS, mỗi chặng hoàn tất theo bộ đếm thời
-   gian) để demo luồng đặt order.
+   chạy ở chế độ `SimBackend` (không cần ROS, mỗi chặng hoàn tất theo timer) để demo luồng đặt order.

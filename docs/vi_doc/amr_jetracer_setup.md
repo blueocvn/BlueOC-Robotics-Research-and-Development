@@ -23,7 +23,7 @@ driver chassis, RPLidar, odometry EKF, Nav2, và docking bằng AprilTag.
 | HĐH / ROS | JetPack + **ROS 2 Humble** cài native trên Jetson |
 | MCU chassis | Serial (mặc định `/dev/ttyACM0`) — động cơ + IMU/con quay; do `jetracer_driver` đọc |
 | Lidar | **RPLidar A1** trên `/dev/ttyACM1`, baud 115200, gắn **lộn ngược** (`laser_frame`, yaw π, z ≈ 0,18 m) |
-| Camera | CSI **IMX219** ở 640×360 (qua `gscam2`) → bộ nhận dạng AprilTag cho docking |
+| Camera | CSI **IMX219** ở 640×360 (qua `gscam2`) → detector AprilTag cho docking |
 | Công cụ build | `colcon`, `rosdep`, `vcstool` (`sudo apt install python3-vcstool`), `git`, `tmux` |
 
 > Thứ tự thiết bị serial không được đảm bảo qua các lần khởi động lại. Nếu chassis và
@@ -174,7 +174,7 @@ Bản đồ nằm trong `jetracer_ws/maps/` (`test_map_outer_v6.yaml` là mặc 
 
 #### Docking (AprilTag)
 
-`start_hardware.sh` cũng dựng luôn camera CSI + bộ nhận dạng AprilTag.
+`start_hardware.sh` cũng dựng luôn camera CSI + detector AprilTag.
 `jetracer_bringup/scripts/jetracer_docker.py` chạy máy trạng thái dock/undock, được
 sắp trình tự bởi topic `/docking_state`. Khi toàn bộ stack (phần cứng + Nav2 +
 docker) đang chạy, một bản demo khứ hồi:

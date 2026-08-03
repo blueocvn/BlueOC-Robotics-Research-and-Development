@@ -15,7 +15,7 @@ trình mô phỏng, xem [Hướng dẫn cài đặt](ra_setup.md).
 | Khớp | Isaac Sim qua `topic_based_ros2_control` | **`feetech_ros2_driver`** — giao diện phần cứng `ros2_control` qua serial |
 | Cổng follower | — | `/dev/ttyACM0` |
 | Camera | Render product của Isaac | **`usb_camera_node`** → `/arm_cam/rgb` (+ camera phía trên) |
-| Đấu nối khớp | bộ điều khiển mô phỏng | `config/follower_joints.yaml`, `*.ros2_control.xacro`, `ros2_controllers.yaml` |
+| Đấu nối khớp | controller mô phỏng | `config/follower_joints.yaml`, `*.ros2_control.xacro`, `ros2_controllers.yaml` |
 | Khởi chạy | `bringup.launch.py` | **`real_all.launch.py`** / `bringup_real.launch.py` |
 
 ## Packages involved
@@ -25,7 +25,7 @@ trình mô phỏng, xem [Hướng dẫn cài đặt](ra_setup.md).
   chỉnh sửa cục bộ).
 - **`mtc_tutorial`** — `mtc_node` (pipeline gắp→hứng→đặt) + `real_all.launch.py`.
 - **`so_arm_perception`** — `usb_camera_node` + `top_cam_view.launch.py` cho camera thật.
-- **`so_arm_moveit_config`** — cấu hình bộ điều khiển/khớp cho phần cứng thật.
+- **`so_arm_moveit_config`** — cấu hình controller/khớp cho phần cứng thật.
 
 ## Build
 
@@ -38,7 +38,7 @@ source install/setup.bash
 
 ## Bring it up
 
-Một lệnh launch khởi động MoveIt + bộ điều khiển + driver Feetech + perception +
+Một lệnh launch khởi động MoveIt + controller + driver Feetech + perception +
 `mtc_node`:
 
 ```bash
@@ -69,10 +69,10 @@ ros2 launch mtc_tutorial real_all.launch.py
 
 ### From a fresh terminal — step by step
 
-**1. Điều kiện tiên quyết (một lần mỗi phiên đăng nhập / khởi động máy).**
+**1. Điều kiện tiên quyết (một lần mỗi session đăng nhập / khởi động máy).**
 
 ```bash
-# Bạn phải thuộc nhóm dialout TRONG PHIÊN NÀY, không chỉ trong /etc/group.
+# Bạn phải thuộc nhóm dialout TRONG SESSION NÀY, không chỉ trong /etc/group.
 id -nG | grep -q dialout && echo "dialout OK" || echo "HÃY ĐĂNG XUẤT RỒI ĐĂNG NHẬP LẠI"
 # Không có môi trường conda nào đang bật (Python 3.13 của nó làm hỏng bản build colcon
 # của so_arm_perception; ROS Jazzy build dựa trên 3.12). Chạy 'conda deactivate' cho tới
@@ -81,7 +81,7 @@ echo "conda: ${CONDA_DEFAULT_ENV:-none}"
 ```
 
 Nếu thiếu `dialout`, hãy **đăng xuất rồi đăng nhập lại** (mở terminal mới là chưa
-đủ — tư cách thành viên nhóm được cố định khi phiên desktop bắt đầu). Nếu cánh tay
+đủ — tư cách thành viên nhóm được cố định khi session desktop bắt đầu). Nếu cánh tay
 vừa được cắm vào, hãy xác nhận nó hiện ra là `/dev/ttyACM0`.
 
 **2. Nạp ROS, rồi nạp lớp phủ workspace** (thứ tự rất quan trọng):
@@ -102,8 +102,7 @@ ros2 launch mtc_tutorial real_all.launch.py \
   place_z:=0.04 bridge_standoff:=0.08
 ```
 
-Thành công trông như thế này sau khoảng 10 giây (khi `move_group` và các bộ điều
-khiển đã lên):
+Thành công trông như thế này sau khoảng 10 giây (khi `move_group` và các controller đã lên):
 
 ```
 [bridge] standoff joints R=0.013 P=0.993 E=0.629 WP=-1.620 WR=-1.571 (residual 0.00 mm)
@@ -115,7 +114,7 @@ Cách này cho một chu trình gắp → chở → đặt đáng tin cậy mà 
 chính xác của camera. Khi hiệu chuẩn đã chặt chẽ hơn, hãy bỏ
 `fake_object`/`skip_servo` để quay lại pipeline dựa trên perception.
 
-!!! danger "Chỉ chạy MỘT phiên bản duy nhất"
+!!! danger "Chỉ chạy MỘT instance duy nhất"
     `/dev/ttyACM0` là thiết bị USB-CDC, nên một lệnh launch **thứ hai** (hoặc một
     tiến trình sót lại từ lần chạy trước) vẫn *mở* được cổng rồi xung đột với cái
     đầu tiên trên bus servo. Triệu chứng gây hiểu nhầm — trông y như phần cứng đã
@@ -126,7 +125,7 @@ chính xác của camera. Khi hiệu chuẩn đã chặt chẽ hơn, hãy bỏ
     Failed to initialize hardware 'FakeSystem'
     ```
 
-    → 0/3 bộ điều khiển → không có `/joint_states` → **RViz đóng băng ở pose mặc
+    → 0/3 controller → không có `/joint_states` → **RViz đóng băng ở pose mặc
     định trong khi cánh tay thật đang ở chỗ khác** → thực thi lỗi với mã `99999`.
     Trước khi launch, hãy chắc chắn không còn gì đang chạy:
     `pgrep -af "ros2_control_node|move_group|mtc_node"`.
@@ -156,7 +155,7 @@ chính xác của camera. Khi hiệu chuẩn đã chặt chẽ hơn, hãy bỏ
 
     MTC không thể thực hiện chuyển động *đầu tiên* vì cùng phép kiểm tra đó chặn
     nó lại. **Hãy đưa cánh tay về một pose hợp lệ trước** — gửi thẳng một quỹ đạo
-    tới bộ điều khiển (`/arm_group_controller/joint_trajectory`, ví dụ toàn số 0
+    tới controller (`/arm_group_controller/joint_trajectory`, ví dụ toàn số 0
     trong khoảng 4 giây) trước khi khởi chạy pipeline, hoặc thêm một bước tự động
     về home trước lần lập kế hoạch đầu tiên.
 

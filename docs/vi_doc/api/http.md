@@ -1,6 +1,6 @@
 # HTTP API
 
-Dịch vụ `robot_web_bridge` mở JetRacer ra qua HTTP. **Không cần cài ROS trên
+Service `robot_web_bridge` mở JetRacer ra qua HTTP. **Không cần cài ROS trên
 máy**, và nó vẫn chạy khi không có robot nào.
 
 Địa chỉ mặc định là `0.0.0.0:8088` — ghi đè bằng `ROBOT_WEB_BRIDGE_HOST` và
@@ -54,7 +54,7 @@ curl -s -X POST localhost:8088/abort
 
 Các route vận hành dưới `/v1/admin/` được bảo vệ bằng mã PIN. Đây là những năng
 lực thực sự nguy hiểm — teleop trực tiếp, đặt lại pose, docking thủ công — nên
-chúng nằm sau một cookie phiên đã được ký.
+chúng nằm sau một cookie session đã được ký.
 
 ```bash
 # đăng nhập một lần; giữ lại cookie jar
@@ -71,7 +71,7 @@ Mọi route trừ `login`, `logout` và `session` sẽ trả về **401** nếu 
 |---|---|---|
 | `ROBOT_WEB_BRIDGE_ADMIN_PIN` | `1234` | Mã PIN vận hành — **hãy đổi nó** |
 | `ROBOT_WEB_BRIDGE_SECRET` | ngẫu nhiên mỗi tiến trình | Khóa ký cookie |
-| `ROBOT_WEB_BRIDGE_ADMIN_TTL` | `28800` (8 giờ) | Thời hạn phiên, tính bằng giây |
+| `ROBOT_WEB_BRIDGE_ADMIN_TTL` | `28800` (8 giờ) | Thời hạn session, tính bằng giây |
 
 !!! danger "Hai giá trị mặc định sẽ gây rắc rối tại sự kiện"
 
@@ -101,4 +101,4 @@ curl -s localhost:8088/openapi.json | jq '.paths | keys'
 !!! tip "Dùng `/docs` để thử nhanh"
     Swagger UI cho phép bấm **Try it out** rồi gửi thẳng request thật tới robot.
     Với các route admin, hãy đăng nhập trước qua `POST /v1/admin/login` để trình
-    duyệt giữ cookie phiên.
+    duyệt giữ cookie session.

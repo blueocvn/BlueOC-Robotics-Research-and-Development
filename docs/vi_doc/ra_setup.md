@@ -48,7 +48,7 @@ upstream tiêu chuẩn mà bạn cài riêng (xem §3):
 | Package | Là gì |
 |---|---|
 | `ra_ws/src/so_arm_description` | URDF + mesh của SO-ARM 101 |
-| `ra_ws/src/so_arm_moveit_config` | Cấu hình MoveIt 2 (SRDF, động học, OMPL, bộ điều khiển, `ros2_control`) |
+| `ra_ws/src/so_arm_moveit_config` | Cấu hình MoveIt 2 (SRDF, động học, OMPL, controller, `ros2_control`) |
 | `ra_ws/src/so_arm_perception` | Các node perception cho cốc + khay + AprilTag (YOLO / HSV / OpenCV) |
 | `ra_ws/src/mtc_tutorial` | `mtc_node` — pipeline gắp → servo → hứng → đặt, kèm các launch file |
 
@@ -85,7 +85,7 @@ python3 -m pip install "numpy>=1.24" "opencv-python>=4.8" "ultralytics>=8.3" \
 ```
 `cv_bridge` lấy từ apt: `sudo apt install ros-jazzy-cv-bridge`.
 Trọng số YOLO (`yolo11n.pt`) tự tải về ở lần chạy đầu tiên; không cần bước thủ
-công nào. `pupil-apriltags` cung cấp bộ nhận dạng AprilTag mà `apriltag_node` dùng
+công nào. `pupil-apriltags` cung cấp detector AprilTag mà `apriltag_node` dùng
 để định vị fiducial trên máy lọc — package này là bắt buộc (launch perception luôn khởi
 động node đó).
 
@@ -137,11 +137,11 @@ Namespace camera là tham số của perception node (`camera_eth_ns` = `top_cam
 
 > **⚠️ Isaac Sim phải chạy trước.** Hãy mở scene cánh tay và bấm **Play**
 > (xem §5) *trước* lệnh dưới đây. `mtc_node` chặn tại
-> `/detected_object/position`, còn `move_group` + các bộ điều khiển cần
+> `/detected_object/position`, còn `move_group` + các controller cần
 > `/isaac_joint_states` và `/clock` — sẽ không có gì chuyển động cho tới khi Isaac
 > chạy và phát những topic đó.
 
-Một lệnh duy nhất dựng MoveIt (`move_group` + bộ điều khiển + RViz), perception và
+Một lệnh duy nhất dựng MoveIt (`move_group` + controller + RViz), perception và
 `mtc_node`, được xếp lệch nhau để phụ thuộc của mỗi lớp lên trước:
 
 ```bash
@@ -150,8 +150,8 @@ ros2 launch mtc_tutorial bringup.launch.py
 ```
 
 Điều gì xảy ra:
-1. `move_group`, `ros2_control`, và các bộ điều khiển `arm_group` / `hand_group` khởi động.
-2. Perception khởi động (bộ nhận dạng cốc YOLO, bộ nhận dạng khay hồng, bộ nhận dạng AprilTag).
+1. `move_group`, `ros2_control`, và các controller `arm_group` / `hand_group` khởi động.
+2. Perception khởi động (detector cốc YOLO, detector khay hồng, detector AprilTag).
 3. `mtc_node` chờ `/detected_object/position`, rồi với mỗi cốc:
    di chuyển thô → visual servoing tới cốc → đóng kẹp → mang tới máy lọc có AprilTag
    → nghiêng/ấn để "hứng nước" → đặt vào khay.
